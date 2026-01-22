@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+        }
+        .header img {
+            width: 100px;
+            height: auto;
+        }
+        .title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        .date-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+        .violations {
+            margin-left: 20px;
+        }
+        .footer {
+            /*position: absolute;*/
+            bottom: 40px;
+            right: 40px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<!-- GCC Logo and Header -->
+<div class="header">
+    <img src="https://chennaicorporation.gov.in/gcc/images/270-2709575_greater-chennai-corporation-dr-greater-chennai-corporation-logo.png" alt="GCC Logo" width="40px" />
+    <div style="font-size: 18px; font-weight: bold;">Greater Chennai Corporation</div>
+    <div style="font-size: 16px;">Chennai</div>
+</div>
+
+<!-- Notice Title -->
+<div class="title">NOTICE</div>
+<div class="subtitle">UNDER CLEAN AND SAFE CONSTRUCTION GUIDELINES 2025</div>
+
+<!-- Date aligned to right -->
+<div class="date-container">
+    Date: <span th:text="${date}">dd/mm/yyyy</span>
+</div>
+
+<!-- Notice Body -->
+<p>
+    Be under the notice that during a recent inspection conducted by the engineers, Greater Chennai Corporation (GCC),
+    your construction site located at <u><span th:utext="'&nbsp;&nbsp;' + ${siteLocation} + '&nbsp;&nbsp;'"></span></u> was found to be in
+    violation of the "Clean and Safe Construction Guidelines 2025".
+</p>
+
+<p>The following violation(s) have been observed at your site:</p>
+<ul class="violations">
+    <li th:each="v : ${violations}" th:text="${v.message}"></li>
+</ul>
+
+<p>
+    These lapses fall under the category of
+    <strong><span th:text="${violationLevel}"></span></strong> Significance Violations as per GCC norms.
+    As per Clause (<span th:text="${#strings.arrayJoin(clause, ', ')}"></span>) of the guidelines, you are hereby directed to:
+</p>
+
+<ol>
+    <li>Rectify the violations within 15 days from the date of receipt of this notice.</li>
+    <li>Submit photographic/video evidence and compliance report to this office upon rectification.</li>
+</ol>
+
+<p>Failure to comply within 15 days from the date of receipt of this notice shall attract:</p>
+<ol>
+    <li>
+        Penalty of Rs <u><span th:text="'&nbsp;&nbsp;' + ${fineAmount} + '&nbsp;&nbsp;'"></span></u>
+        (<span th:text="'&nbsp;&nbsp;' + ${fineAmountWords} + '&nbsp;&nbsp;'"></span>)
+    </li>
+    <li>
+        Failing to comply within 7 Days of imposing of fine may result in a
+        <strong>“Stop Work Notice”</strong> and construction activity at your site will be halted.
+    </li>
+</ol>
+
+<!-- Footer Signature -->
+<div class="footer">
+    <p>
+        AE/JE – DVS: <span th:text="${engineerName}">_____</span><br />
+        Zone <span th:text="${zone}">_____</span>, GCC
+    </p>
+</div>
+
+</body>
+</html>

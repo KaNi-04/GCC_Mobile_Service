@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/html">
+
+<head>
+<base th:href="${assetsBaseUrl}">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" >
+
+  <title>GCC Feedback</title>
+
+  <meta name="description" content="GCC Feedback request application">
+  <meta name="author" content="gcc">
+  <meta name="robots" content="noindex, nofollow">
+
+  <!-- Open Graph Meta -->
+  <meta property="og:title" content="Dashmix - Bootstrap 5 Admin Template &amp; UI Framework">
+  <meta property="og:site_name" content="gcc">
+  <meta property="og:description" content="GCC Public Garbage collection request application">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="">
+  <meta property="og:image" content="">
+
+
+  <link rel="shortcut icon" href="media/favicons/favicon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="media/favicons/favicon-192x192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="media/favicons/apple-touch-icon-180x180.png">
+
+  <link rel="stylesheet" id="css-main" href="css/dashmix.min.css">
+ 
+</head>
+
+<body>
+<style> 
+		  .otp-input-box {
+		      /*display: flex;
+		      justify-content: space-between;*/
+		      width: 100%;
+		  }
+
+		  .otp-input {
+		      width: 30px;
+		      height: 30px;
+		      border: 1px solid #ccc;
+		      border-radius: 5px;
+		      text-align: center;
+		      font-size: 16px;
+		      margin-right: 10px;
+		  }
+	  </style>
+
+<div id="page-container" class="page-header-dark main-content-boxed">
+
+  <!-- Header -->
+  <header id="page-header" style="background-color:#1e6a7f">
+    <!-- Header Content -->
+    <div class="content-header">
+      <!-- Left Section -->
+      <div class="d-flex align-items-center">
+        <!-- Logo -->
+        <a class="fw-semibold text-dual tracking-wide" href="index">
+          <table>
+            <tr>
+              <td>
+                <img id="site-logo" src="//chennaicorporation.gov.in/gcc/images/270-2709575_greater-chennai-corporation-dr-greater-chennai-corporation-logo.png" style="width: 40px;">
+              </td>
+              <td>
+                <h6 id="logo-txt" class="logo-text ml-1" style="font-size: 12.4px; margin-bottom: 0px;">GREATER CHENNAI CORPORATION</h6>
+              </td>
+            </tr>
+          </table>
+        </a>
+        <!-- END Logo -->
+      </div>
+      <!-- END Left Section -->
+
+    </div>
+    <!-- END Header Content -->
+
+    <!-- Please check out the Loaders page under Components category to see examples of showing/hiding it -->
+    <div id="page-header-loader" class="overlay-header bg-sidebar-dark">
+      <div class="content-header">
+        <div class="w-100 text-center">
+          <i class="fa fa-fw fa-2x fa-spinner fa-spin text-primary"></i>
+        </div>
+      </div>
+    </div>
+    <!-- END Header Loader -->
+  </header>
+  <!-- END Header -->
+
+  <!-- Main Container -->
+  <main id="main-container">
+    <!-- Hero -->
+    <!-- 
+    <div class="bg-image" style="background-image: url('/support/assets/media/photos/photo15@2x.jpg');">
+      <div class="bg-primary-dark-op" style="background-color:rgb(4 128 146 / 80%)!important">
+        <div class="content content-full">
+          <div class="py-3 text-center">
+            <h4 class="text-white mb-2">The Greater Chennai Corporation</h4>
+            <h4 class="h4 fw-normal text-white-75 mb-0">பெருநகர சென்னை மாநகராட்சி</h4>
+            <br>
+            <h4 class="text-white mb-2">GCC Official App</h4>
+          </div>
+          <div class="row">
+            <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+              <div class="footer-field" style="color: #fac339;"><i class="fa fa-phone"></i>
+                Tel. no: <a  style="color: white;">4425303609</a>
+              </div>
+              <div class="footer-field" style="color: #fac339;"><i class="fa fa-phone"></i>
+                Mobile. no: <a  style="color: white;">+919444173345</a>
+              </div>
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+              <div class="footer-field" style="color: #fac339;"><i class="icon fas fa-globe"></i>
+                Website: <a
+                            style="color: white;">chennaicorporation.gov.in</a>
+              </div>
+              <div class="footer-field" style="color: #fac339;"><i class="icon fas fa-envelope"></i>
+                Email Id: <a
+                             style="color: white;">gccitcell@icloud.com</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    -->
+    <!-- END Hero -->
+
+
+    <!-- Page Content -->
+    <div class="content" >
+      <div class="row" id="req" style="display: block;">
+        <div class="col-12" style="margin-top:-9px;">
+          <div class="card">
+    <div class="card-header">
+        <b>Privacy Policy</b>
+    </div>
+    <div class="card-body">
+
+        <p>Welcome to the GCC Official App developed by the Greater Chennai Corporation. We are committed to protecting your privacy and ensuring that your personal information is handled in a safe and responsible manner. This privacy policy outlines the types of information we collect, how we use it, and the measures we take to safeguard your information.</p>
+
+        <h5>Information We Collect</h5>
+        <ul>
+            <li><strong>Personal Information:</strong> We may collect personal information such as your name, email address, phone number, and other contact details when you register or use our app.</li>
+            <li><strong>Usage Data:</strong> We collect information about how you interact with our app, including your IP address, device type, operating system, and app usage patterns.</li>
+            <li><strong>Location Data:</strong> With your permission, we may collect and process information about your location to provide location-based services.</li>
+            <li><strong>Other Data:</strong> With your permission we use your device’s camera and photo album for taking photos for registration.</li>
+        </ul>
+
+        <h5>Information We Use</h5>
+        <ul>
+            <li>To provide and improve our services.</li>
+            <li>To communicate with you regarding updates, features, and other important information.</li>
+            <li>To personalize your experience and provide tailored content.</li>
+            <li>To analyze app usage and improve our services.</li>
+            <li>To comply with legal and regulatory requirements.</li>
+        </ul>
+
+        <p>We do not share your personal information with third parties, except in the following circumstances:</p>
+        <ul>
+            <li>With your consent.</li>
+            <li>With service providers who perform services on our behalf, subject to confidentiality agreements.</li>
+            <li>To comply with legal obligations, court orders, or government requests.</li>
+            <li>To protect our rights, privacy, safety, or property, and/or that of the public.</li>
+        </ul>
+
+        <h5>Data Security</h5>
+        <p>We are committed to ensuring the security of your personal information. We implement a variety of security measures to maintain the safety of your personal data. These measures include, but are not limited to:</p>
+        <ul>
+            <li><strong>Encryption:</strong> We use strong encryption protocols to protect personal information during transmission. All data transmitted between our app and our servers is encrypted to prevent unauthorized access.</li>
+            <li><strong>Access Controls:</strong> We restrict access to personal information to authorized personnel only. Access is granted based on role and necessity, and our employees are bound by confidentiality obligations.</li>
+            <li><strong>Data Minimization:</strong> We only collect personal information that is necessary for the purposes outlined in this privacy policy and retain it only for as long as needed to fulfill these purposes.</li>
+        </ul>
+
+        <p>Despite these efforts, no method of transmission over the internet, or method of electronic storage, is 100% secure. Therefore, we cannot guarantee its absolute security. Users are also responsible for maintaining the security of their personal devices and accounts, such as by using strong passwords and not sharing login credentials.</p>
+
+        <h5>Cookies</h5>
+        <p>Cookies are small pieces of data typically used to identify users anonymously. These files are transferred to your browser from the websites you visit and stored in your device's internal storage. Our app does not directly use these “cookies.” However, it may integrate third-party code and libraries that use “cookies” to gather data and improve their services. You have the choice to accept or reject these cookies and can be notified when a cookie is being sent to your device. If you decide to reject cookies, certain parts of this Service might not function properly for you.</p>
+
+        <h5>Links to Other Sites</h5>
+        <p>Our app may include links to other websites or services that we do not operate. By clicking on these links, you will be taken to a third-party website. We highly recommend that you read the privacy policy of each site you visit.</p>
+        <p>We do not have control over and are not responsible for the content, privacy practices, or actions of these external websites or services. Your interaction with these links is at your own discretion, and we advise you to be cautious and to understand the privacy policies of any site that gathers personal data.</p>
+
+        <h5>Changes to This Privacy Policy</h5>
+        <p>We may update this privacy policy from time to time to reflect changes in our practices or legal requirements. We will notify you of any significant changes by posting the new privacy policy on our app. Thus, you are advised to review this page periodically for any changes.</p>
+
+        <h5>Contact Us</h5>
+        <p>If you have any questions or concerns regarding our privacy policy, please feel free to contact us at 044-25303601 or email us at <a href="mailto:it@chennaicorporation.gov.in">it@chennaicorporation.gov.in</a>.</p>
+
+    </div>
+</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  </main>
+</div>
+
+
+
+<!-- Footer -->
+<footer id="page-footer" class="footer-static bg-body-extra-light">
+  <div class="content py-4" style="background-color: #1f6b80; display: flex; align-items: center;">
+
+
+<!--
+    <div class="block-content p-0 m-0 mt-auto text-end">
+      <a class="fw-semibold" href="https://chennaicorporation.gov.in/gcc/" target="_blank"
+         style="color: white;">GREATER CHENNAI CORPORATION</a> &copy; <span style="color: white;"
+                                                                            data-toggle="year-copy"></span>
+    </div>
+-->
+  </div>
+</footer>
+<!-- END Footer -->
+</div>
+<!-- END Page Container -->
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script th:replace="fragments/script :: script"></script>
+</body>
+</html>

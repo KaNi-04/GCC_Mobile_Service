@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/html">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" >
+
+  <title>GCC Feedback</title>
+
+  <meta name="description" content="GCC Feedback request application">
+  <meta name="author" content="gcc">
+  <meta name="robots" content="noindex, nofollow">
+
+  <!-- Open Graph Meta -->
+  <meta property="og:title" content="Dashmix - Bootstrap 5 Admin Template &amp; UI Framework">
+  <meta property="og:site_name" content="gcc">
+  <meta property="og:description" content="GCC Public Garbage collection request application">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="">
+  <meta property="og:image" content="">
+
+
+  <link rel="shortcut icon" href="/assets/media/favicons/favicon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/media/favicons/favicon-192x192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/media/favicons/apple-touch-icon-180x180.png">
+
+  <link rel="stylesheet" id="css-main" href="/assets/css/dashmix.min.css">
+ 
+</head>
+
+<body>
+<style> 
+		  .otp-input-box {
+		      /*display: flex;
+		      justify-content: space-between;*/
+		      width: 100%;
+		  }
+
+		  .otp-input {
+		      width: 30px;
+		      height: 30px;
+		      border: 1px solid #ccc;
+		      border-radius: 5px;
+		      text-align: center;
+		      font-size: 16px;
+		      margin-right: 10px;
+		  }
+	  </style>
+
+<div id="page-container" class="page-header-dark main-content-boxed">
+
+  <!-- Header -->
+  <header id="page-header" style="background-color:#1e6a7f">
+    <!-- Header Content -->
+    <div class="content-header">
+      <!-- Left Section -->
+      <div class="d-flex align-items-center">
+        <!-- Logo -->
+        <a class="fw-semibold text-dual tracking-wide" href="index">
+          <table>
+            <tr>
+              <td>
+                <img id="site-logo" src="//chennaicorporation.gov.in/gcc/images/270-2709575_greater-chennai-corporation-dr-greater-chennai-corporation-logo.png" style="width: 40px;">
+              </td>
+              <td>
+                <h6 id="logo-txt" class="logo-text ml-1" style="font-size: 12.4px; margin-bottom: 0px;">GREATER CHENNAI CORPORATION</h6>
+              </td>
+            </tr>
+          </table>
+        </a>
+        <!-- END Logo -->
+      </div>
+      <!-- END Left Section -->
+
+    </div>
+    <!-- END Header Content -->
+
+    <!-- Please check out the Loaders page under Components category to see examples of showing/hiding it -->
+    <div id="page-header-loader" class="overlay-header bg-sidebar-dark">
+      <div class="content-header">
+        <div class="w-100 text-center">
+          <i class="fa fa-fw fa-2x fa-spinner fa-spin text-primary"></i>
+        </div>
+      </div>
+    </div>
+    <!-- END Header Loader -->
+  </header>
+  <!-- END Header -->
+
+  <!-- Main Container -->
+  <main id="main-container">
+    <!-- Hero -->
+    <div class="bg-image" style="background-image: url('/support/assets/media/photos/photo15@2x.jpg');">
+      <div class="bg-primary-dark-op" style="background-color:rgb(4 128 146 / 80%)!important">
+        <div class="content content-full">
+          <div class="py-3 text-center">
+            <h4 class="text-white mb-2">The Greater Chennai Corporation</h4>
+            <h4 class="h4 fw-normal text-white-75 mb-0">பெருநகர சென்னை மாநகராட்சி</h4>
+            <br>
+            <h4 class="text-white mb-2">GCC Official App</h4>
+          </div>
+          <div class="row">
+            <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+              <div class="footer-field" style="color: #fac339;"><i class="fa fa-phone"></i>
+                Tel. no: <a  style="color: white;">4425303609</a>
+              </div>
+              <div class="footer-field" style="color: #fac339;"><i class="fa fa-phone"></i>
+                Tel. no: <a  style="color: white;">+919444173345</a>
+              </div>
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+              <div class="footer-field" style="color: #fac339;"><i class="icon fas fa-globe"></i>
+                Website: <a
+                            style="color: white;">chennaicorporation.gov.in</a>
+              </div>
+              <div class="footer-field" style="color: #fac339;"><i class="icon fas fa-envelope"></i>
+                Email Id: <a
+                             style="color: white;">gccitcell@icloud.com</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- END Hero -->
+
+
+    <!-- Page Content -->
+    <div class="content" >
+      <div class="row" id="req" style="display: block;">
+        <div class="col-12" style="margin-top:-9px;">
+          <form action="" id="reqForm" onsubmit="return newUserCall();" >
+            <div class="block block-rounded">
+
+
+              <div class="block-content">
+
+                <div class="row">
+                  <div class="col-md-6 alert-light border-0">
+                    <div class="mb-3">
+                      <label class="form-check-label" for="name">Name</label>
+                      <input type="text" class="form-control" id="name"  name="name" required>
+                    </div>
+                  </div>
+                  <div class="col-md-6 alert-light border-0">
+                    <div class="mb-3">
+                      <label class="form-check-label" for="mobile">Mobile No</label>
+                      <input type="text" class="form-control" id="mobile" minlength="10" maxlength="10" name="mobile" required>
+                    </div>
+                  </div>
+
+              </div>
+              <hr class="m-0">
+              <div class="block-content block-content-full text-end">
+                <button type="button" class="btn btn-de-secondary btn-sm" onclick="reset()">Reset</button>
+                <button type="submit" class="btn btn-primary btn-sm" style="background-color: #1f6b80;" >Submit</button>
+              </div>
+
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+    <!--  -->
+    <div class="content" >
+      <div class="row" id="req1" style="display: none;">
+        <div class="col-12">
+          <form action="" id="reqForm1" onsubmit="return deactive();">
+            <div class="block block-rounded">
+
+
+              <div class="block-content">
+
+                <div class="row">
+                  <div class="col-md-6 alert-light border-0">
+                    <div class="mb-3">
+                      <label class="form-check-label" for="name">Name</label>
+                      <input type="text" class="form-control" id="name1"  name="name1" readonly>
+                    </div>
+                  </div>
+                  <div class="col-md-6 alert-light border-0">
+                    <div class="mb-3">
+                      <label class="form-check-label" for="mobile">Mobile No</label>
+                      <input type="text" class="form-control" id="mobile1" minlength="10" maxlength="10" name="mobile1" readonly>
+                    </div>
+                  </div>
+                  <div class="col-md-6 alert-light border-0">
+                    <div class="mb-3">
+                      <label class="form-check-label" for="mobile">Email</label>
+                      <input type="text" class="form-control" id="email" minlength="10" maxlength="10" name="mobile1" readonly>
+                    </div>
+                  </div>
+                  <div class="col-md-6 alert-light border-0">
+                    <div class="mb-3">
+                      <label class="form-check-label" for="mobile">Door No</label>/label>
+                      <input type="text" class="form-control" id="doorno" minlength="10" maxlength="10" name="mobile1"readonly >
+                    </div>
+                  </div>
+                  <div class="col-md-6 alert-light border-0">
+                    <div class="mb-3">
+                      <label class="form-check-label" for="mobile">Area</label>
+                      <input type="text" class="form-control" id="area" minlength="10" maxlength="10" name="mobile1" readonly>
+                    </div>
+                  </div>
+                  <div class="col-md-6 alert-light border-0">
+                    <div class="mb-3">
+                      <label class="form-check-label" for="mobile">aadhar No</label>
+                      <input type="text" class="form-control" id="aadhar" minlength="10" maxlength="10" name="mobile1"readonly >
+                    </div>
+                  </div>
+                  <div class="col-md-6 alert-light border-0">
+                    <div class="mb-3">
+                      <label class="form-check-label" for="mobile">pincode</label>
+                      <input type="text" class="form-control" id="pincode" minlength="10" maxlength="10" name="mobile1" readonly>
+                    </div>
+                  </div>
+                  <div class="col-md-6 alert-light border-0">
+                    <div class="mb-3">
+                      <label class="form-check-label" for="mobile">property No</label>
+                      <input type="text" class="form-control" id="property" minlength="10" maxlength="10" name="mobile1" readonly>
+                    </div>
+                  </div>
+                  
+                  <div class="col-md-6 alert-light border-0">
+                    <div class="mb-3">
+                      <label class="form-check-label" for="mobile">Street</label>
+                      <input type="text" class="form-control" id="Street" minlength="10" maxlength="10" name="mobile1" readonly >
+                    </div>
+                  </div>
+                  <div class="col-md-6 alert-light border-0">
+                    <div class="mb-3">
+                      <label class="form-check-label" for="name">Remark</label>
+                      <input type="text" class="form-control" id="Remark"  name="Remark" required>
+                    </div>
+                  </div>
+
+              </div>
+              <hr class="m-0">
+              <div class="block-content block-content-full text-end">
+                <button type="button" class="btn btn-de-secondary btn-sm" onclick="back()">Back</button>
+                <button type="submit" class="btn btn-danger btn-sm" >Delete</button>
+
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+<!--  -->
+  </main>
+</div>
+
+
+
+<!-- Footer -->
+<footer id="page-footer" class="footer-static bg-body-extra-light">
+  <div class="content py-4" style="background-color: #1f6b80; display: flex; align-items: center;">
+
+
+
+    <div class="block-content p-0 m-0 mt-auto text-end">
+      <a class="fw-semibold" href="https://chennaicorporation.gov.in/gcc/" target="_blank"
+         style="color: white;">GREATER CHENNAI CORPORATION</a> &copy; <span style="color: white;"
+                                                                            data-toggle="year-copy"></span>
+    </div>
+
+  </div>
+</footer>
+<!-- END Footer -->
+</div>
+<!-- END Page Container -->
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script th:replace="fragments/script :: script"></script>
+<script>
+
+function reset(){
+  document.getElementById("reqForm").reset();
+  document.getElementById("reqForm1").reset();
+
+}
+function back(){
+  document.getElementById("req1").style.display="none";
+    document.getElementById("req").style.display="block";
+}
+function newUserCall(){
+ var mobile= document.getElementById('mobile').value;
+  $.ajax({
+                type: "GET",
+                url: "/support/feedback/api/user",
+                data:{'mobile':mobile},
+                success: function(response) {
+                 UserDetails(response) ;
+                }
+			});
+			
+    return false;
+
+}
+
+function UserDetails(res) {
+console.log(res);
+if(res.Message=="Success"){
+    document.getElementById("name1").value=res.Profile[0].NAME;
+    document.getElementById("mobile1").value=res.Profile[0].MOBILE;
+    document.getElementById("email").value=res.Profile[0].EMAIL;
+    document.getElementById("doorno").value=res.Profile[0].DOORNO;
+    document.getElementById("area").value=res.Profile[0].AREA;
+    document.getElementById("aadhar").value=res.Profile[0].AADHAA_NO;
+    document.getElementById("pincode").value=res.Profile[0].PINCODE;
+    document.getElementById("property").value=res.Profile[0].PROPERTYTAXNO;
+    document.getElementById("Street").value=res.Profile[0].STREET;
+    document.getElementById("req").style.display="none";
+    document.getElementById("req1").style.display="block";
+}else if(res.ResultStatus=="false"){
+ // alert("No Data Found");
+  Swal.fire(
+						'Info',
+						'No Data Found :)',
+						'info'
+					);
+}
+else{
+ // alert("your Account is already Deleted ");
+  Swal.fire(
+            'Already Deleted',
+            'your Account is already Deleted :)',
+            'info'
+        );
+
+}
+
+
+ 
+  }
+  function deactive() {
+			var mobile = document.getElementById('mobile1').value;
+			Swal.fire({
+				title: 'Are you sure to Delete the Account ?',
+				text: "Deleting your account is Permanent.when you delete your account all information of you will be permanently removed..!",
+
+
+				icon: 'warning',
+				showCancelButton: true,
+				confirmButtonColor: '#3085d6',
+				cancelButtonColor: '#d33',
+				confirmButtonText: 'Yes, delete it!',
+				cancelButtonText: 'No, cancel!',
+			}).then((result) => {
+				if (result.isConfirmed) {
+					$.ajax({
+						type: "GET",
+						url: "/support/feedback/api/deactive",
+						data: {'mobile': mobile},
+						success: function (response) {
+							console.log(response);
+							Swal.fire(
+								'Deleted!',
+								'Your account has been deleted.',
+								'success'
+							).then(() => {
+								window.location.reload();
+							});
+						}
+					});
+				} else {
+					Swal.fire(
+						'Cancelled',
+						'Your account is safe :)',
+						'info'
+					);
+				}
+			});
+			return false;
+		}
+
+
+ 
+	</script>
+</body>
+</html>

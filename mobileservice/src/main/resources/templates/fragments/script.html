@@ -1,0 +1,33 @@
+
+<script src="/support/assets/js/dashmix.app.min.js"></script>
+    <!-- jQuery (required for DataTables plugin) -->
+    <script src="/support/assets/js/lib/jquery.min.js"></script>
+
+
+    <!-- Page JS Plugins -->
+    <script src="/support/assets/js/plugins/sweetalert2/sweetalert2.min.js"></script>
+	<script>
+		$(document).ready(function() {
+		  // Get the current URL
+		  var currentUrl = window.location.href;
+  
+		  // Loop through each navigation item
+		  $('.nav-main-item').each(function() {
+		    // Get the link for this item
+		    var link = $(this).find('.nav-main-link').attr('href');
+    		//console.log(link + " == " + currentUrl + " == " + currentUrl.indexOf(link));
+		    // Check if the link matches the current URL
+		    if (currentUrl.indexOf(link) !== -1 ) {
+		      // Add the active class to this item
+		      $(this).find('.nav-main-link').addClass('active');
+      
+		      // Add the open class to the parent item
+		      $(this).parents('.nav-main-item').addClass('open');
+		    }
+		  });
+	  		
+		});
+
+		
+		
+	</script>
