@@ -44,8 +44,10 @@ public class HtmlToImageService {
 	
 	public Map<String, Object> processHtmlToPng(String url, String tempId) {
 
-        String pngPath = "gcc_mobile_service_uploads/whatsappreports/report_"
-                + tempId + "_" + System.currentTimeMillis() + ".png";
+        // String pngPath = "gcc_mobile_service_uploads/whatsappreports/report_"
+        //         + tempId + "_" + System.currentTimeMillis() + ".png";
+		String pngPath = "gcc_mobile_service_uploads/whatsappreports/report_"
+                + tempId + "_" + System.currentTimeMillis() + ".jpeg";
 
         Map<String, Object> result = generatePng(url, pngPath);
 

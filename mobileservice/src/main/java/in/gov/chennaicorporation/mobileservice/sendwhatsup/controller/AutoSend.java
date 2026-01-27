@@ -16,7 +16,7 @@ public class AutoSend {
     private HtmlToImageService service;
 	
     // Runs every 2 hours
-    @Scheduled(cron = "0 0 */1 * * *")
+    @Scheduled(cron = "0 0 */8 * * *")
     public void autoSendReports() {
 
         // POS Category Collection
