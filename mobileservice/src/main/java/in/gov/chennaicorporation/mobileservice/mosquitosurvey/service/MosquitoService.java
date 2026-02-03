@@ -179,6 +179,11 @@ public class MosquitoService {
         return jdbcMosquitoTemplate.queryForList(sql);
     }
 
+	public List<Map<String, Object>> getChronicDiseases() {
+        String sql = "SELECT * FROM `chronic_diseases` WHERE isactive=1 ORDER BY `orderby`";
+        return jdbcMosquitoTemplate.queryForList(sql);
+    }
+
 	// ************************************************************************************************************************* //
 	// For House, Companies & Education Institution
 	
@@ -198,7 +203,10 @@ public class MosquitoService {
 			String longitude,
 			String visitstatus,
 			String noofsource,
-			String address) {
+			String address,
+			String coughcold,
+			String ischronic,
+			String chronicdisease) {
 		List<Map<String, Object>> result = null;
 		Map<String, Object> response = new HashMap<>();
 		
@@ -217,8 +225,8 @@ public class MosquitoService {
 */		
 		String sqlQuery = "INSERT INTO `survey_of_house`"
 				+ "(`cid`, `scid`, `q1`, `treatment`, `q2`, `sourcetype`, `cby`, "
-				+ "`name`, `zone`, `ward`, `latitude`, `longitude`,`visitstatus`,`noofsource`,`address`) "
-				+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+				+ "`name`, `zone`, `ward`, `latitude`, `longitude`,`visitstatus`,`noofsource`,`address`,`q3`,`q4`,`chronicdisease`) "
+				+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 		KeyHolder keyHolder = new GeneratedKeyHolder();
 		
@@ -246,6 +254,9 @@ public class MosquitoService {
 					ps.setString(13, visitstatus);
 					ps.setString(14, noofsource);
 					ps.setString(15, address);
+					ps.setString(16, coughcold);
+					ps.setString(17, ischronic);
+					ps.setString(18, chronicdisease);
 					return ps;
 				}
 			}, keyHolder);

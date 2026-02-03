@@ -71,7 +71,9 @@ public class GreenCommitteeController {
              @RequestParam(value = "file_1", required = true) MultipartFile file_1,
              @RequestParam(value = "file_2", required = true) MultipartFile file_2,
              @RequestParam(value = "file_3", required = true) MultipartFile file_3,
-             @RequestParam(value = "treeData", required = true) String treeData
+             @RequestParam(value = "treeData", required = true) String treeData,
+			 @RequestParam(value = "reinspection_id", required = false) String reinspection_id
+
      ) throws Exception {
 		//Object mapper = new ObjectMapper();
 		ObjectMapper mapper = new ObjectMapper(); 
@@ -111,7 +113,8 @@ public class GreenCommitteeController {
  			    file_1,
  			    file_2,
  			    file_3,
- 			    treeList
+ 			    treeList,
+				reinspection_id
          );
     }
 }

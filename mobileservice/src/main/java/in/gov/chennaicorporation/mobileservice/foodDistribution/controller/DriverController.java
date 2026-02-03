@@ -116,9 +116,10 @@ public class DriverController {
     public List<?> getPendingDetails(
     		@RequestParam String loginid,
             @RequestParam String shiftid,
-            @RequestParam String date
+            @RequestParam String date,
+            @RequestParam String hub_id
     ) {
-        return driverService.getPendingDetails(loginid, shiftid, date);
+        return driverService.getPendingDetails(loginid, shiftid, date, hub_id);
     }
     
     @GetMapping("/getRequestUpdated")

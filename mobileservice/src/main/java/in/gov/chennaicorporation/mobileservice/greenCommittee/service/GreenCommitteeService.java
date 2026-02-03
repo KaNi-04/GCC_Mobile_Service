@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.sql.PreparedStatement;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
@@ -259,99 +261,205 @@ public class GreenCommitteeService {
 	    return Collections.singletonList(response);
 	}
 	
+	// @Transactional(readOnly = true)
+	// public List<Map<String, Object>> getComplaintList(String userid) {
+
+	// 	String sql =
+	// 		    "SELECT " +
+	// 		    " rd.id AS reg_id, " +
+	// 		    " rd.ref_id, " +
+	// 		    " rd.p_name, " +
+	// 		    " rd.ph_no, " +
+	// 		    " rd.gender, " +
+	// 		    " rd.address, " +
+	// 		    " rd.latitude, " +
+	// 		    " rd.longitude, " +
+	// 		    " rd.zone, " +
+	// 		    " rd.ward, " +
+	// 		    " rd.total_trees, " +
+	// 		    " rd.dept_id, " +
+	// 		    " rd.dept_name, " +
+	// 		    " rd.govt_type, " +
+	// 		    " rd.designation, " +
+	// 		    " rd.remarks, " +
+	// 		    " rd.source, " +
+	// 		    " DATE_FORMAT(rd.cdate,'%d-%m-%Y %l:%i %p') AS reg_date, " +
+
+	// 		    " cd.id AS complaint_id, " +
+	// 		    " cd.no_of_trees, " +
+
+	// 		    " cn.id AS comp_nature_id, " +
+	// 		    " cn.name AS comp_nature_name, " +
+	// 		    " cn.category AS comp_category, " +
+
+	// 		    " COALESCE( " +
+	// 		    "   JSON_ARRAYAGG( " +
+	// 		    "     JSON_OBJECT( " +
+	// 		    "       'img_path', CONCAT(?, iu.img_path) " +
+	// 		    "     ) " +
+	// 		    "   ), JSON_ARRAY() " +
+	// 		    " ) AS image_paths " +
+
+	// 		    "FROM reg_details rd " +
+
+	// 		    "LEFT JOIN complaint_details cd " +
+	// 		    " ON cd.ref_id = rd.ref_id " +
+	// 		    " AND cd.is_active = 1 " +
+	// 		    " AND cd.is_delete = 0 " +
+
+	// 		    "LEFT JOIN comp_nature cn " +
+	// 		    " ON cn.id = cd.comp_nature_id " +
+	// 		    " AND cn.is_active = 1 " +
+	// 		    " AND cn.is_delete = 0 " +
+
+	// 		    "LEFT JOIN img_uploads iu " +
+	// 		    " ON iu.ref_id = rd.ref_id " +
+	// 		    " AND iu.is_active = 1 " +
+	// 		    " AND iu.is_delete = 0 " +
+	// 		    " AND iu.img_path IS NOT NULL " +
+
+	// 		    "WHERE rd.is_active = 1 " +
+	// 		    " AND rd.is_delete = 0 " +
+
+	// 		    "GROUP BY " +
+	// 		    " rd.id, rd.ref_id, rd.p_name, rd.ph_no, rd.gender, rd.address, " +
+	// 		    " rd.latitude, rd.longitude, rd.zone, rd.ward, rd.total_trees, " +
+	// 		    " rd.dept_id, rd.dept_name, rd.govt_type, rd.designation, " +
+	// 		    " rd.remarks, rd.source, rd.cdate, " +
+	// 		    " cd.id, cd.no_of_trees, " +
+	// 		    " cn.id, cn.name, cn.category";
+
+	//     List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, fileBaseUrl + "/gccofficialapp/files");
+
+	//     ObjectMapper mapper = new ObjectMapper();
+
+	//     for (Map<String, Object> row : results) {
+	//         Object imgObj = row.get("image_paths");
+	//         if (imgObj != null) {
+	//             try {
+	//                 row.put(
+	//                     "image_paths",
+	//                     mapper.readValue(imgObj.toString(), List.class)
+	//                 );
+	//             } catch (Exception e) {
+	//                 // fallback to empty list if JSON parse fails
+	//                 row.put("image_paths", Collections.emptyList());
+	//             }
+	//         }
+	//     }
+	    
+	//     Map<String, Object> response = new HashMap<>();
+	//     response.put("status", "Success");
+	//     response.put("message", "Complaint List");
+	//     response.put("data", results);
+
+	//     return Collections.singletonList(response);
+	// }
+
 	@Transactional(readOnly = true)
-	public List<Map<String, Object>> getComplaintList(String userid) {
+	public List<?> getComplaintList(String loginId) {
 
-		String sql =
-			    "SELECT " +
-			    " rd.id AS reg_id, " +
-			    " rd.ref_id, " +
-			    " rd.p_name, " +
-			    " rd.ph_no, " +
-			    " rd.gender, " +
-			    " rd.address, " +
-			    " rd.latitude, " +
-			    " rd.longitude, " +
-			    " rd.zone, " +
-			    " rd.ward, " +
-			    " rd.total_trees, " +
-			    " rd.dept_id, " +
-			    " rd.dept_name, " +
-			    " rd.govt_type, " +
-			    " rd.designation, " +
-			    " rd.remarks, " +
-			    " rd.source, " +
-			    " DATE_FORMAT(rd.cdate,'%d-%m-%Y %l:%i %p') AS reg_date, " +
+	    // 1️ Get department (GCC / NGO / TNFD)
+	    String department = getUserDepartment(loginId);
 
-			    " cd.id AS complaint_id, " +
-			    " cd.no_of_trees, " +
+	    // 2️ Get only ref_ids NOT inspected by this department
+	    List<String> refIds = getAllinspectionComplaintList(department);
 
-			    " cn.id AS comp_nature_id, " +
-			    " cn.name AS comp_nature_name, " +
-			    " cn.category AS comp_category, " +
+	    List<Map<String, Object>> dataList = new ArrayList<>();
 
-			    " COALESCE( " +
-			    "   JSON_ARRAYAGG( " +
-			    "     JSON_OBJECT( " +
-			    "       'img_path', CONCAT(?, iu.img_path) " +
-			    "     ) " +
-			    "   ), JSON_ARRAY() " +
-			    " ) AS image_paths " +
+	    for (String refId : refIds) {
 
-			    "FROM reg_details rd " +
+	        Map<String, Object> fullData = getfulldetailsdata(refId);
 
-			    "LEFT JOIN complaint_details cd " +
-			    " ON cd.ref_id = rd.ref_id " +
-			    " AND cd.is_active = 1 " +
-			    " AND cd.is_delete = 0 " +
-
-			    "LEFT JOIN comp_nature cn " +
-			    " ON cn.id = cd.comp_nature_id " +
-			    " AND cn.is_active = 1 " +
-			    " AND cn.is_delete = 0 " +
-
-			    "LEFT JOIN img_uploads iu " +
-			    " ON iu.ref_id = rd.ref_id " +
-			    " AND iu.is_active = 1 " +
-			    " AND iu.is_delete = 0 " +
-			    " AND iu.img_path IS NOT NULL " +
-
-			    "WHERE rd.is_active = 1 " +
-			    " AND rd.is_delete = 0 " +
-
-			    "GROUP BY " +
-			    " rd.id, rd.ref_id, rd.p_name, rd.ph_no, rd.gender, rd.address, " +
-			    " rd.latitude, rd.longitude, rd.zone, rd.ward, rd.total_trees, " +
-			    " rd.dept_id, rd.dept_name, rd.govt_type, rd.designation, " +
-			    " rd.remarks, rd.source, rd.cdate, " +
-			    " cd.id, cd.no_of_trees, " +
-			    " cn.id, cn.name, cn.category";
-
-	    List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, fileBaseUrl + "/gccofficialapp/files");
-
-	    ObjectMapper mapper = new ObjectMapper();
-
-	    for (Map<String, Object> row : results) {
-	        Object imgObj = row.get("image_paths");
-	        if (imgObj != null) {
-	            try {
-	                row.put(
-	                    "image_paths",
-	                    mapper.readValue(imgObj.toString(), List.class)
-	                );
-	            } catch (Exception e) {
-	                // fallback to empty list if JSON parse fails
-	                row.put("image_paths", Collections.emptyList());
-	            }
+	        if (fullData != null && !fullData.isEmpty()) {
+	            dataList.add((Map<String, Object>) fullData.get("data"));
 	        }
 	    }
-	    
-	    Map<String, Object> response = new HashMap<>();
-	    response.put("status", "Success");
-	    response.put("message", "Complaint List");
-	    response.put("data", results);
 
-	    return Collections.singletonList(response);
+	    Map<String, Object> wrapper = new HashMap<>();
+	    wrapper.put("data", dataList);
+	    wrapper.put("message", "Complaint List");
+	    wrapper.put("status", "Success");
+
+	    return Collections.singletonList(wrapper);
+	}
+
+	
+	public String getUserDepartment(String loginId) {
+
+	    String sql =
+	        "SELECT inspection_department " +
+	        "FROM user_maping " +
+	        "WHERE userid = ? AND isactive = 1";
+
+	    return jdbcTemplate.queryForObject(sql, String.class, loginId);
+	}
+	
+	public List<String> getAllinspectionComplaintList(String inspectionDepartment) {
+
+	    String sql =
+	        "SELECT rd.ref_id " +
+	        "FROM reg_details rd " +
+	        "LEFT JOIN inspection_data id " +
+	        "  ON rd.ref_id = id.ref_id " +
+	        " AND id.inspection_by = ? " +   
+	        " AND id.isactive = 1 " +
+	        "WHERE rd.is_active = 1 " +
+	        "  AND id.ref_id IS NULL";
+
+	    return jdbcTemplate.query(
+	        sql,
+	        new Object[]{inspectionDepartment},
+	        (rs, rowNum) -> rs.getString("ref_id")
+	    );
+	}
+
+
+	
+	public Map<String, Object> getfulldetailsdata(String refId) {
+
+		Map<String, Object> response = new HashMap<>();
+
+	    // 1 — Application details
+	    Map<String, Object> app = jdbcTemplate.queryForMap(
+	        "SELECT *,DATE_FORMAT(cdate, '%d-%m-%Y %l:%i %p') as r_Cdate,IFNULL(reinspection_id, '') AS com_reinspection_id FROM reg_details WHERE ref_id=? AND is_active=1",
+	        refId
+	    );
+
+	    // 2 — Complaint details (grouped)
+	    List<Map<String, Object>> complaints = jdbcTemplate.queryForList(
+	        "SELECT cn.name AS nature, SUM(cd.no_of_trees) AS count " +
+	        "FROM complaint_details cd JOIN comp_nature cn ON cn.id=cd.comp_nature_id " +
+	        "WHERE cd.ref_id=? GROUP BY cn.name", refId
+	    );
+	    
+	    String compDetails = complaints.stream()
+	            .map(c -> c.get("nature") + "-" + c.get("count"))
+	            .collect(Collectors.joining(","));
+
+	    // 3 — Complaint images
+	    List<Map<String, Object>> imagePaths =
+	            jdbcTemplate.queryForList(
+	                "SELECT img_path FROM img_uploads WHERE ref_id=? AND is_active=1",
+	                new Object[]{refId}
+	            ).stream()
+	            .map(row -> {
+	                Map<String, Object> img = new HashMap<>();
+	                img.put(
+	                    "img_path",
+	                    fileBaseUrl + "/gccofficialapp/files" + row.get("img_path").toString()
+	                );
+	                return img;
+	            })
+	            .collect(Collectors.toList());
+
+	    app.put("complaints", complaints);
+	    app.put("comp_details", compDetails);
+	    app.put("image_paths", imagePaths);
+	    
+	    response.put("data", app);
+
+	    return response;
 	}
 
 	@Transactional
@@ -371,7 +479,8 @@ public class GreenCommitteeService {
 	        MultipartFile file_1,
 	        MultipartFile file_2,
 	        MultipartFile file_3,
-	        List<Map<String, Object>> treeList
+	        List<Map<String, Object>> treeList,
+			String reinspection_id
 	) {
 
 		String filetxt = inby;
@@ -412,12 +521,17 @@ public class GreenCommitteeService {
 	        result.add(response);
 	        return result;
 	    }
+
+		 final Integer finalReinspectionId =
+	            (reinspection_id != null && !reinspection_id.trim().isEmpty())
+	                    ? Integer.parseInt(reinspection_id)
+	                    : null;
 	    
 	    String insertSqltxt = "INSERT INTO `inspection_data` "
 	    		+ "(`ref_id`, `inspection_by`, `file_1`, `file_2`, `file_3`, `visit_type`, `visit_by`, `remarks`, `cby`, "
-	    		+ "`zone`, `ward`, `street_name`, `street_id`, `latitude`, `longitude`) "
+	    		+ "`zone`, `ward`, `street_name`, `street_id`, `latitude`, `longitude`,`reinspection_id`) "
                 + "VALUES "
-                + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	    String insertSql = insertSqltxt;
 	    		
@@ -443,6 +557,11 @@ public class GreenCommitteeService {
 	        ps.setString(i++, street_id);
 	        ps.setString(i++, latitude);
 	        ps.setString(i++, longitude);
+			if (finalReinspectionId  != null) {
+	            ps.setInt(i++, finalReinspectionId );
+	        } else {
+	            ps.setNull(i++, Types.INTEGER);
+	        }
 	        return ps;
 	    }, keyHolder);
 

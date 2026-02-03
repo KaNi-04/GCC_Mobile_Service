@@ -58,7 +58,8 @@ public class DistributionController {
             @RequestParam String absentees_others,
             @RequestParam(value = "absentees_nmr", required = false) String absentees_nmr,
             @RequestParam String shiftid,
-            @RequestParam String request_by
+            @RequestParam String request_by,
+            @RequestParam String hub_id
     ) {
         return distributionService.saveRequest(
                 ward,
@@ -79,7 +80,9 @@ public class DistributionController {
                 absentees_others,
                 absentees_nmr,
                 shiftid,
-                request_by
+                request_by,
+                hub_id
+                
         );
     }
 

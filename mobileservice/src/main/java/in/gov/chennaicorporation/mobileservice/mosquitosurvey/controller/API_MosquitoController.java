@@ -49,6 +49,12 @@ public class API_MosquitoController {
 			) {
         return mosquitoService.getBreadingSourceList();
     }
+
+	@GetMapping("/getChronicDiseases")
+    public List<?> getChronicDiseases(
+			) {
+        return mosquitoService.getChronicDiseases();
+    }
 	
 	// ************************************************************************************************************************* //
 	// For House, Companies & Education Institution
@@ -69,10 +75,13 @@ public class API_MosquitoController {
 			@RequestParam(value = "ward", required = true) String ward,
 			@RequestParam(value = "latitude", required = true) String latitude, 
 			@RequestParam(value = "longitude", required = true) String longitude,
-			@RequestParam(value = "address", required = false) String address
+			@RequestParam(value = "address", required = false) String address,
+			@RequestParam(value = "coughcold", required = false) String coughcold,
+			@RequestParam(value = "ischronic", required = false) String ischronic,
+			@RequestParam(value = "chronicdisease", required = false) String chronicdisease
 			//@RequestParam(value = "file", required = true) MultipartFile file,
 			) {
-		return mosquitoService.saveSurveyFlow1(cid,scid,q1,treatment,q2,sourcetype,cby,name,zone,ward,latitude,longitude,visitstatus,noofsource,address);
+		return mosquitoService.saveSurveyFlow1(cid,scid,q1,treatment,q2,sourcetype,cby,name,zone,ward,latitude,longitude,visitstatus,noofsource,address,coughcold,ischronic, chronicdisease);
 	}
 	
 	@GetMapping("/checkHasPending")

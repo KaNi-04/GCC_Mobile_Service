@@ -237,7 +237,7 @@ public class DriverService {
                 	result = jdbcFoodTemplate.queryForList(sqlQuery, username, password);
                     break;
                 case "vendor":
-                	sqlQuery = "SELECT `loginid`, `name`, `username`  FROM `driver_login` WHERE (`username`=? AND `password`=?) AND (`isactive`=1 AND `isdelete`=0) LIMIT 1";
+                	sqlQuery = "SELECT `loginid`, `name`, `username`, `hub_id`  FROM `driver_login` WHERE (`username`=? AND `password`=?) AND (`isactive`=1 AND `isdelete`=0) LIMIT 1";
                     result = jdbcFoodTemplate.queryForList(sqlQuery, username, password);
                     break;
                 // additional cases can be added here
@@ -519,10 +519,12 @@ public class DriverService {
 	}
 	
 	// Vendor
-	public List<Map<String, Object>> getPendingDetails(String loginid, String shiftid, String date) {
+	public List<Map<String, Object>> getPendingDetails(String loginid, String shiftid, String date, String hub_id) {
 
 		String searchDate = convertDateFormat(date, 0);
+		int hubIdInt = hub_id.isEmpty() ? 0 : Integer.parseInt(hub_id);
 		/*
+	
 	    // 1. Get shortfall details
 		String sql = "SELECT "
 				+ "    dr.required_date, "
@@ -570,11 +572,12 @@ public class DriverService {
 			    "      ON sm.shiftid = dr.shiftid " +
 			    "WHERE dr.required_date = ? " +
 			    "  AND dr.shiftid = ? " +
+				"  AND dr.hub_id = ? " +
 			    "  AND dr.isactive = 1 " +
 			    "  AND dr.isdelete = 0 " +
 			    "GROUP BY dr.required_date, dr.shiftid";
 
-	    List<Map<String, Object>> shortfallDetails = jdbcFoodTemplate.queryForList(sql, searchDate, shiftid);
+	    List<Map<String, Object>> shortfallDetails = jdbcFoodTemplate.queryForList(sql, searchDate, shiftid, hubIdInt);
 
 	    // 2. Get requested food details
 	    sql = "SELECT "
@@ -603,12 +606,13 @@ public class DriverService {
 	    		+ "WHERE "
 	    		+ "    dr.required_date = ? "
 	    		+ "    AND dr.shiftid = ? "
+				+ "    AND dr.hub_id = ? "
 	    		+ "    AND dr.isactive = 1 "
 	    		+ "    AND dr.isdelete = 0 "
 	    		+ "    AND lm.isactive = 1 "
 	    		+ "    AND lm.isdelete = 0";
 
-	    List<Map<String, Object>> requestedInfo = jdbcFoodTemplate.queryForList(sql, searchDate, shiftid);
+	    List<Map<String, Object>> requestedInfo = jdbcFoodTemplate.queryForList(sql, searchDate, shiftid, hubIdInt);
 	    
 	    
 	    /*

@@ -270,7 +270,8 @@ private JdbcTemplate jdbcFoodTemplate;
 	        String absentees_others,
 	        String absentees_nmr,
 	        String shiftid,
-	        String request_by
+	        String request_by, 
+			String hub_id
 	) {
 
 
@@ -295,8 +296,8 @@ private JdbcTemplate jdbcFoodTemplate;
 	    String insertSqltxt = "INSERT INTO `daily_request`(`ward`, `required_date`, `permanent`, `nulm`, `private`, "
 	    		+ "	`others`, `weeklyoff_permanent`, `weeklyoff_nulm`, `weeklyoff_private`, `weeklyoff_others`, "
 	    		+ "	`absentees_permanent`, `absentees_nulm`, `absentees_private`, `absentees_others`, `shiftid`, "
-	    		+ "	`request_by`,`nmr`,`weeklyoff_nmr`,`absentees_nmr`) "
-                + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+	    		+ "	`request_by`,`nmr`,`weeklyoff_nmr`,`absentees_nmr`, `hub_id`) "
+                + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	    String insertSql = insertSqltxt;
 	    		
@@ -324,6 +325,7 @@ private JdbcTemplate jdbcFoodTemplate;
 	        ps.setString(i++, nmr);
 	        ps.setString(i++, weeklyoff_nmr);
 	        ps.setString(i++, absentees_nmr);
+			ps.setInt(i++, hub_id.isEmpty() ? 0 : Integer.parseInt(hub_id));
 	        return ps;
 	    }, keyHolder);
 
@@ -1210,5 +1212,238 @@ private JdbcTemplate jdbcFoodTemplate;
 	    List<Map<String, Object>> results = jdbcFoodTemplate.queryForList(sql);
 
 	    return results;
+	}
+
+	// -------------------- FETCH REQUESTS BY HUBID --------------------
+	/**
+	 * Fetch all requests for a specific hub mapped to loginId
+	 * The loginId is mapped to hubid through a user-hub mapping table
+	 */
+	public List<Map<String, Object>> getRequestsByHubId(String loginId) {
+	    try {
+	        // First, get hubid from loginId mapping
+	        String getHubIdSql = "SELECT hub_id FROM user_hub_mapping WHERE user_login = ? LIMIT 1";
+	        List<Map<String, Object>> hubMapping = jdbcFoodTemplate.queryForList(getHubIdSql, loginId);
+	        
+	        if (hubMapping.isEmpty()) {
+	            Map<String, Object> errorResponse = new HashMap<>();
+	            errorResponse.put("status", "error");
+	            errorResponse.put("message", "No hub mapping found for user login: " + loginId);
+	            return Collections.singletonList(errorResponse);
+	        }
+	        
+	        String hubId = hubMapping.get(0).get("hub_id").toString();
+	        
+	        // Fetch all requests for this hub
+	        String sql = "SELECT requestid, hub_id, ward, required_date, permanent, nulm, private_, others, nmr, "
+	        		+ "weeklyoff_permanent, weeklyoff_nulm, weeklyoff_private, weeklyoff_others, weeklyoff_nmr, "
+	        		+ "absentees_permanent, absentees_nulm, absentees_private, absentees_others, absentees_nmr, "
+	        		+ "shiftid, request_by, status, created_date, updated_date "
+	        		+ "FROM food_request_master "
+	        		+ "WHERE hub_id = ? AND isactive = 1 AND isdelete = 0 "
+	        		+ "ORDER BY created_date DESC";
+	        
+	        return jdbcFoodTemplate.queryForList(sql, hubId);
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        Map<String, Object> errorResponse = new HashMap<>();
+	        errorResponse.put("status", "error");
+	        errorResponse.put("message", e.getMessage());
+	        return Collections.singletonList(errorResponse);
+	    }
+	}
+
+	/**
+	 * Fetch requests for a specific hub and date
+	 */
+	public List<Map<String, Object>> getRequestsByHubIdAndDate(String loginId, String required_date) {
+	    try {
+	        // Get hubid from loginId mapping
+	        String getHubIdSql = "SELECT hub_id FROM user_hub_mapping WHERE user_login = ? LIMIT 1";
+	        List<Map<String, Object>> hubMapping = jdbcFoodTemplate.queryForList(getHubIdSql, loginId);
+	        
+	        if (hubMapping.isEmpty()) {
+	            Map<String, Object> errorResponse = new HashMap<>();
+	            errorResponse.put("status", "error");
+	            errorResponse.put("message", "No hub mapping found for user login: " + loginId);
+	            return Collections.singletonList(errorResponse);
+	        }
+	        
+	        String hubId = hubMapping.get(0).get("hub_id").toString();
+	        
+	        // Fetch requests for this hub and date
+	        String sql = "SELECT requestid, hub_id, ward, required_date, permanent, nulm, private_, others, nmr, "
+	        		+ "weeklyoff_permanent, weeklyoff_nulm, weeklyoff_private, weeklyoff_others, weeklyoff_nmr, "
+	        		+ "absentees_permanent, absentees_nulm, absentees_private, absentees_others, absentees_nmr, "
+	        		+ "shiftid, request_by, status, created_date, updated_date "
+	        		+ "FROM food_request_master "
+	        		+ "WHERE hub_id = ? AND required_date = ? AND isactive = 1 AND isdelete = 0 "
+	        		+ "ORDER BY created_date DESC";
+	        
+	        return jdbcFoodTemplate.queryForList(sql, hubId, required_date);
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        Map<String, Object> errorResponse = new HashMap<>();
+	        errorResponse.put("status", "error");
+	        errorResponse.put("message", e.getMessage());
+	        return Collections.singletonList(errorResponse);
+	    }
+	}
+
+	/**
+	 * Get request details by hubid and requestid
+	 */
+	public List<Map<String, Object>> getRequestDetailsByHubId(String loginId, String requestid) {
+	    try {
+	        // Get hubid from loginId mapping
+	        String getHubIdSql = "SELECT hub_id FROM user_hub_mapping WHERE user_login = ? LIMIT 1";
+	        List<Map<String, Object>> hubMapping = jdbcFoodTemplate.queryForList(getHubIdSql, loginId);
+	        
+	        if (hubMapping.isEmpty()) {
+	            Map<String, Object> errorResponse = new HashMap<>();
+	            errorResponse.put("status", "error");
+	            errorResponse.put("message", "No hub mapping found for user login: " + loginId);
+	            return Collections.singletonList(errorResponse);
+	        }
+	        
+	        String hubId = hubMapping.get(0).get("hub_id").toString();
+	        
+	        // Fetch request details
+	        String sql = "SELECT requestid, hub_id, ward, required_date, permanent, nulm, private_, others, nmr, "
+	        		+ "weeklyoff_permanent, weeklyoff_nulm, weeklyoff_private, weeklyoff_others, weeklyoff_nmr, "
+	        		+ "absentees_permanent, absentees_nulm, absentees_private, absentees_others, absentees_nmr, "
+	        		+ "shiftid, request_by, status, created_date, updated_date "
+	        		+ "FROM food_request_master "
+	        		+ "WHERE hub_id = ? AND requestid = ? AND isactive = 1 AND isdelete = 0 "
+	        		+ "LIMIT 1";
+	        
+	        List<Map<String, Object>> result = jdbcFoodTemplate.queryForList(sql, hubId, requestid);
+	        
+	        if (result.isEmpty()) {
+	            Map<String, Object> errorResponse = new HashMap<>();
+	            errorResponse.put("status", "error");
+	            errorResponse.put("message", "Request not found for the given hub and request ID");
+	            return Collections.singletonList(errorResponse);
+	        }
+	        
+	        return result;
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        Map<String, Object> errorResponse = new HashMap<>();
+	        errorResponse.put("status", "error");
+	        errorResponse.put("message", e.getMessage());
+	        return Collections.singletonList(errorResponse);
+	    }
+	}
+
+	/**
+	 * Update request for a specific hub identified by loginId
+	 * Validates that the request belongs to the hub before updating
+	 */
+	@Transactional
+	public List<Map<String, Object>> updateRequestByHubId(
+	        String loginId,
+	        String requestid,
+	        String ward,
+	        String permanent,
+	        String nulm,
+	        String private_,
+	        String others,
+	        String nmr,
+	        String weeklyoff_permanent,
+	        String weeklyoff_nulm,
+	        String weeklyoff_private,
+	        String weeklyoff_others,
+	        String weeklyoff_nmr,
+	        String absentees_permanent,
+	        String absentees_nulm,
+	        String absentees_private,
+	        String absentees_others,
+	        String absentees_nmr) {
+	    
+	    Map<String, Object> response = new HashMap<>();
+	    try {
+	        // Get hubid from loginId mapping
+	        String getHubIdSql = "SELECT hub_id FROM user_hub_mapping WHERE user_login = ? LIMIT 1";
+	        List<Map<String, Object>> hubMapping = jdbcFoodTemplate.queryForList(getHubIdSql, loginId);
+	        
+	        if (hubMapping.isEmpty()) {
+	            response.put("status", "error");
+	            response.put("message", "No hub mapping found for user login: " + loginId);
+	            return Collections.singletonList(response);
+	        }
+	        
+	        String hubId = hubMapping.get(0).get("hub_id").toString();
+	        
+	        // Verify request exists for this hub
+	        String verifyRequestSql = "SELECT COUNT(*) as count FROM food_request_master "
+	        		+ "WHERE requestid = ? AND hub_id = ? AND isactive = 1 AND isdelete = 0";
+	        Map<String, Object> verifyResult = jdbcFoodTemplate.queryForMap(verifyRequestSql, requestid, hubId);
+	        
+	        Integer count = ((Number) verifyResult.get("count")).intValue();
+	        if (count == 0) {
+	            response.put("status", "error");
+	            response.put("message", "Request does not exist for the given hub");
+	            return Collections.singletonList(response);
+	        }
+	        
+	        // Update the request
+	        String updateSql = "UPDATE food_request_master SET "
+	        		+ "ward = ?, "
+	        		+ "permanent = ?, "
+	        		+ "nulm = ?, "
+	        		+ "private_ = ?, "
+	        		+ "others = ?, "
+	        		+ "nmr = ?, "
+	        		+ "weeklyoff_permanent = ?, "
+	        		+ "weeklyoff_nulm = ?, "
+	        		+ "weeklyoff_private = ?, "
+	        		+ "weeklyoff_others = ?, "
+	        		+ "weeklyoff_nmr = ?, "
+	        		+ "absentees_permanent = ?, "
+	        		+ "absentees_nulm = ?, "
+	        		+ "absentees_private = ?, "
+	        		+ "absentees_others = ?, "
+	        		+ "absentees_nmr = ?, "
+	        		+ "updated_date = NOW() "
+	        		+ "WHERE requestid = ? AND hub_id = ? AND isactive = 1 AND isdelete = 0";
+	        
+	        int affectedRows = jdbcFoodTemplate.update(updateSql,
+	                ward,
+	                permanent,
+	                nulm,
+	                private_,
+	                others,
+	                nmr,
+	                weeklyoff_permanent,
+	                weeklyoff_nulm,
+	                weeklyoff_private,
+	                weeklyoff_others,
+	                weeklyoff_nmr,
+	                absentees_permanent,
+	                absentees_nulm,
+	                absentees_private,
+	                absentees_others,
+	                absentees_nmr,
+	                requestid,
+	                hubId
+	        );
+	        
+	        if (affectedRows > 0) {
+	            response.put("status", "success");
+	            response.put("message", "Request updated successfully");
+	            response.put("affectedRows", affectedRows);
+	        } else {
+	            response.put("status", "error");
+	            response.put("message", "Failed to update request");
+	        }
+	        
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        response.put("status", "error");
+	        response.put("message", e.getMessage());
+	    }
+	    
+	    return Collections.singletonList(response);
 	}
 }
