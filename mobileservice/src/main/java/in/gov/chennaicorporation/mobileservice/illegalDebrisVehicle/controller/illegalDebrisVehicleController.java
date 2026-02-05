@@ -118,9 +118,9 @@ public class illegalDebrisVehicleController {
         return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/step3list")
+    @GetMapping("/getChallanPaidList")
     public ResponseEntity<List<Map<String, Object>>> step3list(@RequestParam String loginid) {
-        List<Map<String, Object>> result = illegaldebrisvehicleService.step3list( loginid);
+        List<Map<String, Object>> result = illegaldebrisvehicleService.getChallanPaidList( loginid);
         return ResponseEntity.ok(result);
     }
 
@@ -133,10 +133,9 @@ public class illegalDebrisVehicleController {
             @RequestParam String longitude,
             @RequestParam MultipartFile file,
             @RequestParam String remarks,
-            @RequestBody List<Map<String, String>> wastetype,
             @RequestParam String cby) {
         List<Map<String, Object>> result = illegaldebrisvehicleService.saveClose(vclid, zone, ward, latitude, longitude,
-                file, remarks, wastetype, cby);
+                file, remarks, cby);
         return ResponseEntity.ok(result);
     }
 

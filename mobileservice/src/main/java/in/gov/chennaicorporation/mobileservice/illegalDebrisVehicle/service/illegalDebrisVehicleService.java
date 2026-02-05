@@ -344,13 +344,14 @@ public class illegalDebrisVehicleService {
 				+ "    ON vclm.typeid = wt.typeid "
 				+ "WHERE vclm.isactive = 1 "
 				+ "  AND vclm.status !='Close' "
-				+ "  AND vclm.ward = ? ";
+				+ "  AND vclm.ward = ? "
+				+"	 AND vclm.status = 'Pending'";
 
 		return jdbcTemplate.queryForList(sql, ward);
 	}
 
 	private void inactiveTheReply(String vclid) {
-		String sql = "UPDATE `waste_reply` SET `isactive`=0 WHERE `vclid`=?";
+		String sql = "UPDATE `waste_reply` SET `is_active`=0 WHERE `vclid`=?";
 		jdbcTemplate.update(sql, vclid);
 	}
 
@@ -489,7 +490,7 @@ public class illegalDebrisVehicleService {
 				vcc.challan_by, vcc.violator_name, vcc.violator_phone, vclm.vehicle_no,
 				cast(vcc.fine_amount as unsigned) as fine_amount,vcc.orderid,vcc.status From vehicle_catch_challan vcc
                 left join vehicle_catch_location_mapping vclm on vcc.vclid = vclm.vclid
-                WHERE (vcc.isactive=1 AND vcc.isdelete=0) AND (vcc.status <> 'Transaction success' AND vcc.status <> 'out')
+                WHERE (vcc.isactive=1 AND vcc.isdelete=0) AND (vcc.status <> 'Transaction success' AND vcc.status <> 'out' AND vcc.status <> 'challan')
 		""";
 
 		if (orderid != null && !orderid.isEmpty() && !orderid.isBlank()) {
@@ -860,20 +861,27 @@ public class illegalDebrisVehicleService {
 	}
 
 	@Transactional
-	public List<Map<String, Object>> step3list(
+	public List<Map<String, Object>> getChallanPaidList(
 			String loginid) {
 
-		String sqlQuery = "SELECT `id`, `cinfoids`, `challan_by`,  "
-				+ "DATE_FORMAT(`challan_date`, '%d-%m-%Y %H:%i') AS challan_date, "
-				+ "`latitude`, `longitude`, `zone`, `ward`, `streetid`, `streetname`, "
-				+ "`image`, `remarks`, `status`, `isactive`, `isdelete`, `violator_name`, "
-				+ "`violator_phone`, `fine_amount`, `orderid`, `depotid`, "
-				+ "LENGTH(cinfoids) - LENGTH(REPLACE(cinfoids, ',', '')) + 1 AS cattlecount, "
-				+ "CONCAT('" + fileBaseUrl + "/gccofficialapp/files',`image`) as imageurl "
-				+ " From `vehicle_catch_challan` WHERE (`isactive`=1 AND `isdelete`=0) AND (`status`='Transaction success')";
+		String sqlQuery = "SELECT vcc.id as challanId, vcc.vclid, vclm.vehicle_no, vclm.place_name, wt.name as waste_type, "+
+								" vt.name as vehicle_type, vclm.tonage,  cast(vcc.fine_amount as unsigned) as fine_amount, "+
+								" vcc.challan_by,  DATE_FORMAT(vcc.challan_date, '%d-%m-%Y %H:%i') AS challan_date, "+
+								" vclm.latitude, vclm.longitude, vclm.zone, vclm.ward, "+
+								" vcc.remarks, vcc.status, vcc.violator_name, "+
+								" vcc.violator_phone, vcc.orderid, "+
+								" CONCAT('" + fileBaseUrl + "/gccofficialapp/files', vclm.file) as catchImageurl, "+
+								" CONCAT('" + fileBaseUrl + "/gccofficialapp/files', ydd.image_path) as yardImageurl, "+
+                                " vcc.isactive, vcc.isdelete "+
+								" From vehicle_catch_challan vcc "+
+								" left join vehicle_catch_location_mapping vclm on vcc.vclid = vclm.vclid "+
+								" left join yard_dump_details ydd on vclm.vclid = ydd.vclid "+
+                                " left join waste_type wt on vclm.typeid = wt.typeid "+
+                                " left join vehicle_type vt on vclm.vtypeid = vt.vtypeid "+
+								" WHERE (vcc.isactive=1 AND vcc.isdelete=0) AND (vcc.status='Transaction success')";
 
 		if (loginid != null && !loginid.isEmpty() && !loginid.isBlank()) {
-			sqlQuery = sqlQuery + " AND `challan_by`='" + loginid + "'";
+			sqlQuery = sqlQuery + " AND vcc.challan_by='" + loginid + "'";
 		}
 
 		// sqlQuery = sqlQuery + " LIMIT 1";
@@ -897,7 +905,6 @@ public class illegalDebrisVehicleService {
 			String longitude,
 			MultipartFile file,
 			String remarks,
-			List<Map<String, String>> wastetype,
 			String cby) {
 		List<Map<String, Object>> result = null;
 		Map<String, Object> response = new HashMap<>();
@@ -958,18 +965,17 @@ public class illegalDebrisVehicleService {
 				Number generatedId = keyHolder.getKey();
 				lastInsertId = (generatedId != null) ? generatedId.intValue() : 0;
 
-				// 2️⃣ Insert waste_info (MULTIPLE ROWS)
-				String insertWasteInfoSql = "INSERT INTO waste_info (typeid, kg, vclid, wrid) " +
-						"VALUES (?,?,?,?)";
+				// String insertWasteInfoSql = "INSERT INTO waste_info (typeid, kg, vclid, wrid) " +
+				// 		"VALUES (?,?,?,?)";
 
-				for (Map<String, String> wt : wastetype) {
-					jdbcTemplate.update(
-							insertWasteInfoSql,
-							wt.get("id"),
-							wt.get("kg"),
-							vclid,
-							lastInsertId);
-				}
+				// for (Map<String, String> wt : wastetype) {
+				// 	jdbcTemplate.update(
+				// 			insertWasteInfoSql,
+				// 			wt.get("id"),
+				// 			wt.get("kg"),
+				// 			vclid,
+				// 			lastInsertId);
+				// }
 
 				updateStatus(vclid, lastInsertId, "Close"); // Update the complaint status
 

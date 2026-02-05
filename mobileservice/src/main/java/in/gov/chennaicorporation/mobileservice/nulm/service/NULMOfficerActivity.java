@@ -164,7 +164,6 @@ public class NULMOfficerActivity {
         return Collections.singletonList(response);
 	}
 	
-	
 	public List<Map<String, Object>> getStaffListForAttendance(
 			String reporterId
 			){
@@ -379,4 +378,10 @@ public class NULMOfficerActivity {
 	    else
 	    	return result;
 	}
+
+	public List<Map<String, Object>> getStaffListForAttendanceMultipleIncharge(String reporterId) {
+        String sql = "SELECT incharge_id FROM additional_incharge WHERE FIND_IN_SET(?, additional_id)";
+        String id = jdbcNULMTemplate.queryForObject(sql, String.class, reporterId);
+        return getStaffListForAttendance(id);
+    }
 }

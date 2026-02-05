@@ -46,6 +46,7 @@ public class APINULMOfficerController {
 		return nulmOfficerActivity.updateStaffFaceRegister(reporterId, enrollId, status);
 	}
 	
+	
 	@GetMapping(value="/getStaffListForAttendance") // Template
 	public List<?> getStaffListForAttendance(
 			@RequestParam(value="reporterId", required = false) String reporterId
@@ -78,6 +79,13 @@ public class APINULMOfficerController {
 		
 		return nulmOfficerActivity.getAttendanceListByStaff(year, month, empId, attendanceType);
 		
+	}
+
+	@GetMapping(value="/getStaffListForAttendanceMultipleIncharge") // Template
+	public List<?> getStaffListForAttendanceMultipleIncharge(
+			@RequestParam(value="reporterId", required = false) String reporterId
+			){
+		return nulmOfficerActivity.getStaffListForAttendanceMultipleIncharge(reporterId);
 	}
 
 }
