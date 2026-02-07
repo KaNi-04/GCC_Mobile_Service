@@ -181,6 +181,7 @@ public class NULMOfficerActivity {
 				+ "  AND e.appointed = 1 "
 				+ "  AND e.facial_attendance = 1 "
 				+ "  AND e.incharge_id = '" + reporterId + "'";
+		// + " AND FIND_IN_SET(e.incharge_id, '"+reporterId+"') > 0 ";
 
 		System.out.println(sqlQuery);
 		List<Map<String, Object>> result = jdbcNULMTemplate.queryForList(sqlQuery);

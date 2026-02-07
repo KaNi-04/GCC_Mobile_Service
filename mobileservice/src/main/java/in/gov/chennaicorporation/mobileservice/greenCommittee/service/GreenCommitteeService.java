@@ -46,25 +46,25 @@ import in.gov.chennaicorporation.mobileservice.gccactivity.service.DateTimeUtil;
 @Service("greencommitteeservice")
 public class GreenCommitteeService {
 	private JdbcTemplate jdbcTemplate;
-	
+
 	private final Environment environment;
 	private String fileBaseUrl;
-	
+
 	private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    private static final int STRING_LENGTH = 15;
-    private static final Random RANDOM = new SecureRandom();
-    
-    @Autowired
+	private static final int STRING_LENGTH = 15;
+	private static final Random RANDOM = new SecureRandom();
+
+	@Autowired
 	public void setDataSource(@Qualifier("mysqlGccGreenCommitteeSource") DataSource GreenCommitteeDataSource) {
 		this.jdbcTemplate = new JdbcTemplate(GreenCommitteeDataSource);
 	}
-    
-    @Autowired
+
+	@Autowired
 	public GreenCommitteeService(Environment environment) {
 		this.environment = environment;
-		this.fileBaseUrl=environment.getProperty("fileBaseUrl");
+		this.fileBaseUrl = environment.getProperty("fileBaseUrl");
 	}
-    
+
 	public static String generateRandomString() {
 		StringBuilder result = new StringBuilder(STRING_LENGTH);
 		for (int i = 0; i < STRING_LENGTH; i++) {
@@ -72,7 +72,7 @@ public class GreenCommitteeService {
 		}
 		return result.toString();
 	}
-	
+
 	public static String generateRandomFileString(int lenthval) {
 		StringBuilder result = new StringBuilder(lenthval);
 		for (int i = 0; i < lenthval; i++) {
@@ -104,34 +104,34 @@ public class GreenCommitteeService {
 
 	// Function to convert date string from dd-MM-yyyy to yyyy-MM-dd
 	public static String convertDateFormat(String inputDate, int add) {
-	    // Check if the inputDate is not null or blank
-	    if (inputDate != null && !inputDate.isBlank()) {
-	        try {
-	            // Define the input and output date formats
-	            DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-	            DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+		// Check if the inputDate is not null or blank
+		if (inputDate != null && !inputDate.isBlank()) {
+			try {
+				// Define the input and output date formats
+				DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+				DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-	            // Parse the input date string to LocalDate
-	            LocalDate date = LocalDate.parse(inputDate, inputFormatter);
+				// Parse the input date string to LocalDate
+				LocalDate date = LocalDate.parse(inputDate, inputFormatter);
 
-	            // Add the specified number of days to the date if 'add' is greater than 0
-	            if (add > 0) {
-	                date = date.plusDays(add);
-	            }
+				// Add the specified number of days to the date if 'add' is greater than 0
+				if (add > 0) {
+					date = date.plusDays(add);
+				}
 
-	            // Format the date to the new format
-	            return date.format(outputFormatter);
+				// Format the date to the new format
+				return date.format(outputFormatter);
 
-	        } catch (DateTimeParseException e) {
-	            // Handle the case where the input date is invalid
-	            System.out.println("Invalid date format: " + inputDate);
-	            return "";
-	        }
-	    } else {
-	        return "";
-	    }
+			} catch (DateTimeParseException e) {
+				// Handle the case where the input date is invalid
+				System.out.println("Invalid date format: " + inputDate);
+				return "";
+			}
+		} else {
+			return "";
+		}
 	}
-		
+
 	public String fileUpload(String name, String id, MultipartFile file, String filetype) {
 
 		int lastInsertId = 0;
@@ -153,47 +153,46 @@ public class GreenCommitteeService {
 
 			// Datetime string
 			String datetimetxt = DateTimeUtil.getCurrentDateTime();
-			
-			datetimetxt = datetimetxt + "_"+ generateRandomFileString(6); // Attached Random text
-			
+
+			datetimetxt = datetimetxt + "_" + generateRandomFileString(6); // Attached Random text
+
 			// File name
 			String fileName = name + "_" + id + "_" + datetimetxt + "_" + file.getOriginalFilename();
 			fileName = fileName.replaceAll("\\s+", ""); // Remove space on filename
 
 			String filePath = uploadDirectory + "/" + fileName;
 
-			String filepath_txt = "/" + serviceFolderName + filetype + "/" + year + "/" + month + "/" + date + "/" + fileName;
+			String filepath_txt = "/" + serviceFolderName + filetype + "/" + year + "/" + month + "/" + date + "/"
+					+ fileName;
 
 			// Create a new Path object
 			Path path = Paths.get(filePath);
 
 			// Get the bytes of the file
 			byte[] bytes = file.getBytes();
-			
-			if(filetype.equalsIgnoreCase("image"))
-			{
+
+			if (filetype.equalsIgnoreCase("image")) {
 				// Compress the image
 				BufferedImage image = ImageIO.read(new ByteArrayInputStream(bytes));
 				byte[] compressedBytes = compressImage(image, 0.5f); // Compress with 50% quality
 				// Write the bytes to the file
 				Files.write(path, compressedBytes);
-			}
-			else {
+			} else {
 				// Write the bytes to the file
 				Files.write(path, bytes);
 			}
-				// Get current date & time
-		        LocalDateTime now = LocalDateTime.now();
-	
-		        // Format date-time (optional)
-		        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
-		        
-				System.out.println("Date: "+ now.format(formatter));
-				System.out.println("Activity: " + serviceFolderName);
-				System.out.println("File Type: " + filetype);
-				System.out.println("File Upload Path: " + filePath);
-				System.out.println("File Path: " + filepath_txt);
-				
+			// Get current date & time
+			LocalDateTime now = LocalDateTime.now();
+
+			// Format date-time (optional)
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+
+			System.out.println("Date: " + now.format(formatter));
+			System.out.println("Activity: " + serviceFolderName);
+			System.out.println("File Type: " + filetype);
+			System.out.println("File Upload Path: " + filePath);
+			System.out.println("File Path: " + filepath_txt);
+
 			return filepath_txt;
 
 		} catch (IOException e) {
@@ -202,448 +201,749 @@ public class GreenCommitteeService {
 			return "error";
 		}
 	}
-	
+
 	@Transactional(readOnly = true)
 	public List<Map<String, Object>> getInspectionBy(String userid) {
-		
-		String sql =
-	    	    "SELECT `mapid`, `userid`, `name`, `mobile`, `inspection_department`, "
-	    	    + "`zone`, `ward`, `isactive` FROM `user_maping` WHERE userid = ? LIMIT 1";
 
-	    List<Map<String, Object>> results =
-	    	    jdbcTemplate.queryForList(sql,userid);
-	    
-	    Map<String, Object> response = new HashMap<>();
-	    response.put("status", "Success");
-	    response.put("message", "Inspection BY");
-	    response.put("data", results);
+		String sql = "SELECT `mapid`, `userid`, `name`, `mobile`, `inspection_department`, "
+				+ "`zone`, `ward`, `isactive` FROM `user_maping` WHERE userid = ? LIMIT 1";
 
-	    return Collections.singletonList(response);
+		List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, userid);
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("status", "Success");
+		response.put("message", "Inspection BY");
+		response.put("data", results);
+
+		return Collections.singletonList(response);
 	}
-	
+
 	@Transactional(readOnly = true)
 	public List<Map<String, Object>> getInspectionDepartmentList() {
-		
-		String sql =
-	    	    "SELECT * "
-	    	    + "FROM inspection_department "
-	    	    + "WHERE isactive = 1 AND isdelete = 0 "
-	    	    + "ORDER BY `orderby`";
 
-	    List<Map<String, Object>> results =
-	    	    jdbcTemplate.queryForList(sql);
-	    
-	    Map<String, Object> response = new HashMap<>();
-	    response.put("status", "Success");
-	    response.put("message", "Inspection Department List");
-	    response.put("data", results);
+		String sql = "SELECT * "
+				+ "FROM inspection_department "
+				+ "WHERE isactive = 1 AND isdelete = 0 "
+				+ "ORDER BY `orderby`";
 
-	    return Collections.singletonList(response);
+		List<Map<String, Object>> results = jdbcTemplate.queryForList(sql);
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("status", "Success");
+		response.put("message", "Inspection Department List");
+		response.put("data", results);
+
+		return Collections.singletonList(response);
 	}
-	
+
 	@Transactional(readOnly = true)
 	public List<Map<String, Object>> getRecommendMasterList() {
-		
-		String sql =
-	    	    "SELECT * "
-	    	    + "FROM inspection_recommend_master "
-	    	    + "WHERE isactive = 1 AND isdelete = 0 "
-	    	    + "ORDER BY `orderby`";
 
-	    List<Map<String, Object>> results =
-	    	    jdbcTemplate.queryForList(sql);
-	    
-	    Map<String, Object> response = new HashMap<>();
-	    response.put("status", "Success");
-	    response.put("message", "Recommend Master List");
-	    response.put("data", results);
+		String sql = "SELECT * "
+				+ "FROM inspection_recommend_master "
+				+ "WHERE isactive = 1 AND isdelete = 0 "
+				+ "ORDER BY `orderby`";
 
-	    return Collections.singletonList(response);
+		List<Map<String, Object>> results = jdbcTemplate.queryForList(sql);
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("status", "Success");
+		response.put("message", "Recommend Master List");
+		response.put("data", results);
+
+		return Collections.singletonList(response);
 	}
-	
+
 	// @Transactional(readOnly = true)
 	// public List<Map<String, Object>> getComplaintList(String userid) {
 
-	// 	String sql =
-	// 		    "SELECT " +
-	// 		    " rd.id AS reg_id, " +
-	// 		    " rd.ref_id, " +
-	// 		    " rd.p_name, " +
-	// 		    " rd.ph_no, " +
-	// 		    " rd.gender, " +
-	// 		    " rd.address, " +
-	// 		    " rd.latitude, " +
-	// 		    " rd.longitude, " +
-	// 		    " rd.zone, " +
-	// 		    " rd.ward, " +
-	// 		    " rd.total_trees, " +
-	// 		    " rd.dept_id, " +
-	// 		    " rd.dept_name, " +
-	// 		    " rd.govt_type, " +
-	// 		    " rd.designation, " +
-	// 		    " rd.remarks, " +
-	// 		    " rd.source, " +
-	// 		    " DATE_FORMAT(rd.cdate,'%d-%m-%Y %l:%i %p') AS reg_date, " +
+	// String sql =
+	// "SELECT " +
+	// " rd.id AS reg_id, " +
+	// " rd.ref_id, " +
+	// " rd.p_name, " +
+	// " rd.ph_no, " +
+	// " rd.gender, " +
+	// " rd.address, " +
+	// " rd.latitude, " +
+	// " rd.longitude, " +
+	// " rd.zone, " +
+	// " rd.ward, " +
+	// " rd.total_trees, " +
+	// " rd.dept_id, " +
+	// " rd.dept_name, " +
+	// " rd.govt_type, " +
+	// " rd.designation, " +
+	// " rd.remarks, " +
+	// " rd.source, " +
+	// " DATE_FORMAT(rd.cdate,'%d-%m-%Y %l:%i %p') AS reg_date, " +
 
-	// 		    " cd.id AS complaint_id, " +
-	// 		    " cd.no_of_trees, " +
+	// " cd.id AS complaint_id, " +
+	// " cd.no_of_trees, " +
 
-	// 		    " cn.id AS comp_nature_id, " +
-	// 		    " cn.name AS comp_nature_name, " +
-	// 		    " cn.category AS comp_category, " +
+	// " cn.id AS comp_nature_id, " +
+	// " cn.name AS comp_nature_name, " +
+	// " cn.category AS comp_category, " +
 
-	// 		    " COALESCE( " +
-	// 		    "   JSON_ARRAYAGG( " +
-	// 		    "     JSON_OBJECT( " +
-	// 		    "       'img_path', CONCAT(?, iu.img_path) " +
-	// 		    "     ) " +
-	// 		    "   ), JSON_ARRAY() " +
-	// 		    " ) AS image_paths " +
+	// " COALESCE( " +
+	// " JSON_ARRAYAGG( " +
+	// " JSON_OBJECT( " +
+	// " 'img_path', CONCAT(?, iu.img_path) " +
+	// " ) " +
+	// " ), JSON_ARRAY() " +
+	// " ) AS image_paths " +
 
-	// 		    "FROM reg_details rd " +
+	// "FROM reg_details rd " +
 
-	// 		    "LEFT JOIN complaint_details cd " +
-	// 		    " ON cd.ref_id = rd.ref_id " +
-	// 		    " AND cd.is_active = 1 " +
-	// 		    " AND cd.is_delete = 0 " +
+	// "LEFT JOIN complaint_details cd " +
+	// " ON cd.ref_id = rd.ref_id " +
+	// " AND cd.is_active = 1 " +
+	// " AND cd.is_delete = 0 " +
 
-	// 		    "LEFT JOIN comp_nature cn " +
-	// 		    " ON cn.id = cd.comp_nature_id " +
-	// 		    " AND cn.is_active = 1 " +
-	// 		    " AND cn.is_delete = 0 " +
+	// "LEFT JOIN comp_nature cn " +
+	// " ON cn.id = cd.comp_nature_id " +
+	// " AND cn.is_active = 1 " +
+	// " AND cn.is_delete = 0 " +
 
-	// 		    "LEFT JOIN img_uploads iu " +
-	// 		    " ON iu.ref_id = rd.ref_id " +
-	// 		    " AND iu.is_active = 1 " +
-	// 		    " AND iu.is_delete = 0 " +
-	// 		    " AND iu.img_path IS NOT NULL " +
+	// "LEFT JOIN img_uploads iu " +
+	// " ON iu.ref_id = rd.ref_id " +
+	// " AND iu.is_active = 1 " +
+	// " AND iu.is_delete = 0 " +
+	// " AND iu.img_path IS NOT NULL " +
 
-	// 		    "WHERE rd.is_active = 1 " +
-	// 		    " AND rd.is_delete = 0 " +
+	// "WHERE rd.is_active = 1 " +
+	// " AND rd.is_delete = 0 " +
 
-	// 		    "GROUP BY " +
-	// 		    " rd.id, rd.ref_id, rd.p_name, rd.ph_no, rd.gender, rd.address, " +
-	// 		    " rd.latitude, rd.longitude, rd.zone, rd.ward, rd.total_trees, " +
-	// 		    " rd.dept_id, rd.dept_name, rd.govt_type, rd.designation, " +
-	// 		    " rd.remarks, rd.source, rd.cdate, " +
-	// 		    " cd.id, cd.no_of_trees, " +
-	// 		    " cn.id, cn.name, cn.category";
+	// "GROUP BY " +
+	// " rd.id, rd.ref_id, rd.p_name, rd.ph_no, rd.gender, rd.address, " +
+	// " rd.latitude, rd.longitude, rd.zone, rd.ward, rd.total_trees, " +
+	// " rd.dept_id, rd.dept_name, rd.govt_type, rd.designation, " +
+	// " rd.remarks, rd.source, rd.cdate, " +
+	// " cd.id, cd.no_of_trees, " +
+	// " cn.id, cn.name, cn.category";
 
-	//     List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, fileBaseUrl + "/gccofficialapp/files");
+	// List<Map<String, Object>> results = jdbcTemplate.queryForList(sql,
+	// fileBaseUrl + "/gccofficialapp/files");
 
-	//     ObjectMapper mapper = new ObjectMapper();
+	// ObjectMapper mapper = new ObjectMapper();
 
-	//     for (Map<String, Object> row : results) {
-	//         Object imgObj = row.get("image_paths");
-	//         if (imgObj != null) {
-	//             try {
-	//                 row.put(
-	//                     "image_paths",
-	//                     mapper.readValue(imgObj.toString(), List.class)
-	//                 );
-	//             } catch (Exception e) {
-	//                 // fallback to empty list if JSON parse fails
-	//                 row.put("image_paths", Collections.emptyList());
-	//             }
-	//         }
-	//     }
-	    
-	//     Map<String, Object> response = new HashMap<>();
-	//     response.put("status", "Success");
-	//     response.put("message", "Complaint List");
-	//     response.put("data", results);
+	// for (Map<String, Object> row : results) {
+	// Object imgObj = row.get("image_paths");
+	// if (imgObj != null) {
+	// try {
+	// row.put(
+	// "image_paths",
+	// mapper.readValue(imgObj.toString(), List.class)
+	// );
+	// } catch (Exception e) {
+	// // fallback to empty list if JSON parse fails
+	// row.put("image_paths", Collections.emptyList());
+	// }
+	// }
+	// }
 
-	//     return Collections.singletonList(response);
+	// Map<String, Object> response = new HashMap<>();
+	// response.put("status", "Success");
+	// response.put("message", "Complaint List");
+	// response.put("data", results);
+
+	// return Collections.singletonList(response);
 	// }
 
 	@Transactional(readOnly = true)
 	public List<?> getComplaintList(String loginId) {
 
-	    // 1️ Get department (GCC / NGO / TNFD)
-	    String department = getUserDepartment(loginId);
+		// 1️ Get department (GCC / NGO / TNFD)
+		String department = getUserDepartment(loginId);
 
-	    // 2️ Get only ref_ids NOT inspected by this department
-	    List<String> refIds = getAllinspectionComplaintList(department);
+		// 2️ Get only ref_ids NOT inspected by this department
+		List<String> refIds = getAllinspectionComplaintList(department);
 
-	    List<Map<String, Object>> dataList = new ArrayList<>();
+		List<Map<String, Object>> dataList = new ArrayList<>();
 
-	    for (String refId : refIds) {
+		for (String refId : refIds) {
 
-	        Map<String, Object> fullData = getfulldetailsdata(refId);
+			Map<String, Object> fullData = getfulldetailsdata(refId);
 
-	        if (fullData != null && !fullData.isEmpty()) {
-	            dataList.add((Map<String, Object>) fullData.get("data"));
-	        }
-	    }
+			if (fullData != null && !fullData.isEmpty()) {
+				dataList.add((Map<String, Object>) fullData.get("data"));
+			}
+		}
 
-	    Map<String, Object> wrapper = new HashMap<>();
-	    wrapper.put("data", dataList);
-	    wrapper.put("message", "Complaint List");
-	    wrapper.put("status", "Success");
+		Map<String, Object> wrapper = new HashMap<>();
+		wrapper.put("data", dataList);
+		wrapper.put("message", "Complaint List");
+		wrapper.put("status", "Success");
 
-	    return Collections.singletonList(wrapper);
+		return Collections.singletonList(wrapper);
 	}
 
-	
 	public String getUserDepartment(String loginId) {
 
-	    String sql =
-	        "SELECT inspection_department " +
-	        "FROM user_maping " +
-	        "WHERE userid = ? AND isactive = 1";
+		String sql = "SELECT inspection_department " +
+				"FROM user_maping " +
+				"WHERE userid = ? AND isactive = 1";
 
-	    return jdbcTemplate.queryForObject(sql, String.class, loginId);
+		return jdbcTemplate.queryForObject(sql, String.class, loginId);
 	}
-	
+
 	public List<String> getAllinspectionComplaintList(String inspectionDepartment) {
 
-	    String sql =
-	        "SELECT rd.ref_id " +
-	        "FROM reg_details rd " +
-	        "LEFT JOIN inspection_data id " +
-	        "  ON rd.ref_id = id.ref_id " +
-	        " AND id.inspection_by = ? " +   
-	        " AND id.isactive = 1 " +
-	        "WHERE rd.is_active = 1 " +
-	        "  AND id.ref_id IS NULL";
+		String sql = "SELECT rd.ref_id " +
+				"FROM reg_details rd " +
+				"LEFT JOIN inspection_data id " +
+				"  ON rd.ref_id = id.ref_id " +
+				" AND id.inspection_by = ? " +
+				" AND id.isactive = 1 " +
+				"WHERE rd.is_active = 1 " +
+				"  AND id.ref_id IS NULL";
 
-	    return jdbcTemplate.query(
-	        sql,
-	        new Object[]{inspectionDepartment},
-	        (rs, rowNum) -> rs.getString("ref_id")
-	    );
+		return jdbcTemplate.query(
+				sql,
+				new Object[] { inspectionDepartment },
+				(rs, rowNum) -> rs.getString("ref_id"));
 	}
 
-
-	
 	public Map<String, Object> getfulldetailsdata(String refId) {
 
 		Map<String, Object> response = new HashMap<>();
 
-	    // 1 — Application details
-	    Map<String, Object> app = jdbcTemplate.queryForMap(
-	        "SELECT *,DATE_FORMAT(cdate, '%d-%m-%Y %l:%i %p') as r_Cdate,IFNULL(reinspection_id, '') AS com_reinspection_id FROM reg_details WHERE ref_id=? AND is_active=1",
-	        refId
-	    );
+		// 1 — Application details
+		Map<String, Object> app = jdbcTemplate.queryForMap(
+				"SELECT *,DATE_FORMAT(cdate, '%d-%m-%Y %l:%i %p') as r_Cdate,IFNULL(reinspection_id, '') AS com_reinspection_id FROM reg_details WHERE ref_id=? AND is_active=1",
+				refId);
 
-	    // 2 — Complaint details (grouped)
-	    List<Map<String, Object>> complaints = jdbcTemplate.queryForList(
-	        "SELECT cn.name AS nature, SUM(cd.no_of_trees) AS count " +
-	        "FROM complaint_details cd JOIN comp_nature cn ON cn.id=cd.comp_nature_id " +
-	        "WHERE cd.ref_id=? GROUP BY cn.name", refId
-	    );
-	    
-	    String compDetails = complaints.stream()
-	            .map(c -> c.get("nature") + "-" + c.get("count"))
-	            .collect(Collectors.joining(","));
+		// 2 — Complaint details (grouped)
+		List<Map<String, Object>> complaints = jdbcTemplate.queryForList(
+				"SELECT cn.name AS nature, SUM(cd.no_of_trees) AS count " +
+						"FROM complaint_details cd JOIN comp_nature cn ON cn.id=cd.comp_nature_id " +
+						"WHERE cd.ref_id=? GROUP BY cn.name",
+				refId);
 
-	    // 3 — Complaint images
-	    List<Map<String, Object>> imagePaths =
-	            jdbcTemplate.queryForList(
-	                "SELECT img_path FROM img_uploads WHERE ref_id=? AND is_active=1",
-	                new Object[]{refId}
-	            ).stream()
-	            .map(row -> {
-	                Map<String, Object> img = new HashMap<>();
-	                img.put(
-	                    "img_path",
-	                    fileBaseUrl + "/gccofficialapp/files" + row.get("img_path").toString()
-	                );
-	                return img;
-	            })
-	            .collect(Collectors.toList());
+		String compDetails = complaints.stream()
+				.map(c -> c.get("nature") + "-" + c.get("count"))
+				.collect(Collectors.joining(","));
 
-	    app.put("complaints", complaints);
-	    app.put("comp_details", compDetails);
-	    app.put("image_paths", imagePaths);
-	    
-	    response.put("data", app);
+		// 3 — Complaint images
+		List<Map<String, Object>> imagePaths = jdbcTemplate.queryForList(
+				"SELECT img_path FROM img_uploads WHERE ref_id=? AND is_active=1",
+				new Object[] { refId }).stream()
+				.map(row -> {
+					Map<String, Object> img = new HashMap<>();
+					img.put(
+							"img_path",
+							fileBaseUrl + "/gccofficialapp/files" + row.get("img_path").toString());
+					return img;
+				})
+				.collect(Collectors.toList());
 
-	    return response;
+		app.put("complaints", complaints);
+		app.put("comp_details", compDetails);
+		app.put("image_paths", imagePaths);
+
+		response.put("data", app);
+
+		return response;
 	}
 
 	@Transactional
 	public List<Map<String, Object>> saveInspectionData(
-	        String ref_id,
-	        String inspection_by,
-	        String visit_type,
-	        String visit_by,
-	        String remarks,
-	        String zone,
-	        String ward,
-	        String street_name,
-	        String street_id,
-	        String latitude,
-	        String longitude,
-	        String inby,
-	        MultipartFile file_1,
-	        MultipartFile file_2,
-	        MultipartFile file_3,
-	        List<Map<String, Object>> treeList,
-			String reinspection_id
-	) {
+			String ref_id,
+			String inspection_by,
+			String visit_type,
+			String visit_by,
+			String remarks,
+			String zone,
+			String ward,
+			String street_name,
+			String street_id,
+			String latitude,
+			String longitude,
+			String inby,
+			MultipartFile file_1,
+			MultipartFile file_2,
+			MultipartFile file_3,
+			List<Map<String, Object>> treeList,
+			String reinspection_id) {
 
 		String filetxt = inby;
-		
-	    Map<String, Object> response = new HashMap<>();
-	    List<Map<String, Object>> result = new ArrayList<>();
 
-	    // For Image
-	    String filetype = "image";
-	    String action = "inspection";
-	    
-	    // for Image 1
-	    String file1 = fileUpload(action, filetxt, file_1, filetype);
-	    
-	    if ("error".equalsIgnoreCase(file1)) {
-	        response.put("status", "error");
-	        response.put("message", "Image-1 insert failed.");
-	        result.add(response);
-	        return result;
-	    }
-	    
-	    // for Image 2
-	    String file2 = fileUpload(action, filetxt, file_2, filetype);
-	    
-	    if ("error".equalsIgnoreCase(file2)) {
-	        response.put("status", "error");
-	        response.put("message", "Image-2 insert failed.");
-	        result.add(response);
-	        return result;
-	    }
-	    
-	    // for Image 3
-	    String file3 = fileUpload(action, filetxt, file_3, filetype);
-	    
-	    if ("error".equalsIgnoreCase(file3)) {
-	        response.put("status", "error");
-	        response.put("message", "Image-3 insert failed.");
-	        result.add(response);
-	        return result;
-	    }
+		Map<String, Object> response = new HashMap<>();
+		List<Map<String, Object>> result = new ArrayList<>();
 
-		 final Integer finalReinspectionId =
-	            (reinspection_id != null && !reinspection_id.trim().isEmpty())
-	                    ? Integer.parseInt(reinspection_id)
-	                    : null;
-	    
-	    String insertSqltxt = "INSERT INTO `inspection_data` "
-	    		+ "(`ref_id`, `inspection_by`, `file_1`, `file_2`, `file_3`, `visit_type`, `visit_by`, `remarks`, `cby`, "
-	    		+ "`zone`, `ward`, `street_name`, `street_id`, `latitude`, `longitude`,`reinspection_id`) "
-                + "VALUES "
-                + "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+		// For Image
+		String filetype = "image";
+		String action = "inspection";
 
-	    String insertSql = insertSqltxt;
-	    		
-	    KeyHolder keyHolder = new GeneratedKeyHolder();
+		// for Image 1
+		String file1 = fileUpload(action, filetxt, file_1, filetype);
 
-	    int affectedRows = jdbcTemplate.update(connection -> {
-	        PreparedStatement ps = connection.prepareStatement(insertSql, new String[]{"inspection_data_id"});
-	        int i = 1;
-	        ps.setString(i++, ref_id);
-	        ps.setString(i++, inspection_by);
-	        ps.setString(i++, file1);
-	        ps.setString(i++, file2);
-	        ps.setString(i++, file3);
-	        
-	        ps.setString(i++, visit_type);
-	        ps.setString(i++, visit_by);
-	        ps.setString(i++, remarks);
-	        ps.setString(i++, inby);
-	        ps.setString(i++, zone);
-	        
-	        ps.setString(i++, ward);
-	        ps.setString(i++, street_name);
-	        ps.setString(i++, street_id);
-	        ps.setString(i++, latitude);
-	        ps.setString(i++, longitude);
-			if (finalReinspectionId  != null) {
-	            ps.setInt(i++, finalReinspectionId );
-	        } else {
-	            ps.setNull(i++, Types.INTEGER);
-	        }
-	        return ps;
-	    }, keyHolder);
+		if ("error".equalsIgnoreCase(file1)) {
+			response.put("status", "error");
+			response.put("message", "Image-1 insert failed.");
+			result.add(response);
+			return result;
+		}
 
-	    if (affectedRows > 0) {
-	        int lastInsertId = keyHolder.getKey().intValue();
-	        for (Map<String, Object> tree : treeList) {
-		        String tree_species_name=tree.get("tree_species_name").toString();
-		        String tree_count=tree.get("tree_count").toString();
-		        String work_status_id=tree.get("work_status_id").toString();
-		        String work_status_name="";
-		        
-		        if(saveInspectionTreeData(lastInsertId, ref_id, inby, tree_species_name, tree_count, work_status_id, work_status_name)) {
-		        	response.put("tree_inpection", action + " insertId: " +lastInsertId);
-			        response.put("status", "success");
-			        response.put("message", "Tree inpection data inserted successfully.");
-		        }
-		        else {
-		        	response.put("tree_inpection", action + " error!");
-			        response.put("status", "error");
-			        response.put("message", "Tree inpection data insert failed.");
-		        }
-	        }
-	    } else {
-	    	response.put("tree_inpection", action + " error!");
-	        response.put("status", "error");
-	        response.put("message", "Tree inpection data insert failed.");
-	    }
-	
-	    result.add(response);
-	    return result;
+		// for Image 2
+		String file2 = fileUpload(action, filetxt, file_2, filetype);
+
+		if ("error".equalsIgnoreCase(file2)) {
+			response.put("status", "error");
+			response.put("message", "Image-2 insert failed.");
+			result.add(response);
+			return result;
+		}
+
+		// for Image 3
+		String file3 = fileUpload(action, filetxt, file_3, filetype);
+
+		if ("error".equalsIgnoreCase(file3)) {
+			response.put("status", "error");
+			response.put("message", "Image-3 insert failed.");
+			result.add(response);
+			return result;
+		}
+
+		final Integer finalReinspectionId = (reinspection_id != null && !reinspection_id.trim().isEmpty())
+				? Integer.parseInt(reinspection_id)
+				: null;
+
+		String insertSqltxt = "INSERT INTO `inspection_data` "
+				+ "(`ref_id`, `inspection_by`, `file_1`, `file_2`, `file_3`, `visit_type`, `visit_by`, `remarks`, `cby`, "
+				+ "`zone`, `ward`, `street_name`, `street_id`, `latitude`, `longitude`,`reinspection_id`) "
+				+ "VALUES "
+				+ "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+		String insertSql = insertSqltxt;
+
+		KeyHolder keyHolder = new GeneratedKeyHolder();
+
+		int affectedRows = jdbcTemplate.update(connection -> {
+			PreparedStatement ps = connection.prepareStatement(insertSql, new String[] { "inspection_data_id" });
+			int i = 1;
+			ps.setString(i++, ref_id);
+			ps.setString(i++, inspection_by);
+			ps.setString(i++, file1);
+			ps.setString(i++, file2);
+			ps.setString(i++, file3);
+
+			ps.setString(i++, visit_type);
+			ps.setString(i++, visit_by);
+			ps.setString(i++, remarks);
+			ps.setString(i++, inby);
+			ps.setString(i++, zone);
+
+			ps.setString(i++, ward);
+			ps.setString(i++, street_name);
+			ps.setString(i++, street_id);
+			ps.setString(i++, latitude);
+			ps.setString(i++, longitude);
+			if (finalReinspectionId != null) {
+				ps.setInt(i++, finalReinspectionId);
+			} else {
+				ps.setNull(i++, Types.INTEGER);
+			}
+			return ps;
+		}, keyHolder);
+
+		if (affectedRows > 0) {
+			int lastInsertId = keyHolder.getKey().intValue();
+			for (Map<String, Object> tree : treeList) {
+				String tree_species_name = tree.get("tree_species_name").toString();
+				String tree_count = tree.get("tree_count").toString();
+				String work_status_id = tree.get("work_status_id").toString();
+				String work_status_name = "";
+
+				if (saveInspectionTreeData(lastInsertId, ref_id, inby, tree_species_name, tree_count, work_status_id,
+						work_status_name)) {
+					response.put("tree_inpection", action + " insertId: " + lastInsertId);
+					response.put("status", "success");
+					response.put("message", "Tree inpection data inserted successfully.");
+				} else {
+					response.put("tree_inpection", action + " error!");
+					response.put("status", "error");
+					response.put("message", "Tree inpection data insert failed.");
+				}
+			}
+		} else {
+			response.put("tree_inpection", action + " error!");
+			response.put("status", "error");
+			response.put("message", "Tree inpection data insert failed.");
+		}
+
+		result.add(response);
+		return result;
 	}
-	
-	//Add tree Inspection details
+
+	// Add tree Inspection details
 	public Boolean saveInspectionTreeData(
-	        int inspection_data_id,
-	        String ref_id,
-	        String inby,
-	        String treename,
-	        String nooftrees,
-	        String actionid,
-	        String action
-	) {
+			int inspection_data_id,
+			String ref_id,
+			String inby,
+			String treename,
+			String nooftrees,
+			String actionid,
+			String action) {
 
 		String filetxt = inby;
-		
-	    Map<String, Object> response = new HashMap<>();
-	    List<Map<String, Object>> result = new ArrayList<>();
 
-	    String insertSqltxt = "INSERT INTO `inspection_tree_data` "
-	    		+ "(`treename`, `nooftrees`, `action`, `inspection_data_id`, `ref_id`, `cby`) "
-                + "VALUES "
-                + "(?,?,?,?,?,?)";
+		Map<String, Object> response = new HashMap<>();
+		List<Map<String, Object>> result = new ArrayList<>();
 
-	    String insertSql = insertSqltxt;
-	    		
-	    KeyHolder keyHolder = new GeneratedKeyHolder();
+		String insertSqltxt = "INSERT INTO `inspection_tree_data` "
+				+ "(`treename`, `nooftrees`, `action`, `inspection_data_id`, `ref_id`, `cby`) "
+				+ "VALUES "
+				+ "(?,?,?,?,?,?)";
 
-	    int affectedRows = jdbcTemplate.update(connection -> {
-	        PreparedStatement ps = connection.prepareStatement(insertSql, new String[]{"tid"});
-	        int i = 1;
-	        ps.setString(i++, treename);
-	        ps.setString(i++, nooftrees);
-	        ps.setString(i++, actionid);
-	        ps.setInt(i++, inspection_data_id);
-	        ps.setString(i++, ref_id);
-	        ps.setString(i++, inby);
-	        return ps;
-	    }, keyHolder);
+		String insertSql = insertSqltxt;
 
-	    if (affectedRows > 0) {
-	        int lastInsertId = keyHolder.getKey().intValue();
-	        return true;
-	    } else {
-	    	// Update on inspection_data to delete status
-	    	String updateSQL = "UPDATE `inspection_data` SET isactive=0, isdelete=1 WHERE inspection_data_id=?";
-	    	jdbcTemplate.update(updateSQL,inspection_data_id);
-	    	
-	    	updateSQL = "UPDATE `inspection_tree_data` SET isactive=0, isdelete=1 WHERE inspection_data_id=?";
-	    	jdbcTemplate.update(updateSQL,inspection_data_id);
-	    	
-	    	return false;
-	    } 
+		KeyHolder keyHolder = new GeneratedKeyHolder();
+
+		int affectedRows = jdbcTemplate.update(connection -> {
+			PreparedStatement ps = connection.prepareStatement(insertSql, new String[] { "tid" });
+			int i = 1;
+			ps.setString(i++, treename);
+			ps.setString(i++, nooftrees);
+			ps.setString(i++, actionid);
+			ps.setInt(i++, inspection_data_id);
+			ps.setString(i++, ref_id);
+			ps.setString(i++, inby);
+			return ps;
+		}, keyHolder);
+
+		if (affectedRows > 0) {
+			int lastInsertId = keyHolder.getKey().intValue();
+			return true;
+		} else {
+			// Update on inspection_data to delete status
+			String updateSQL = "UPDATE `inspection_data` SET isactive=0, isdelete=1 WHERE inspection_data_id=?";
+			jdbcTemplate.update(updateSQL, inspection_data_id);
+
+			updateSQL = "UPDATE `inspection_tree_data` SET isactive=0, isdelete=1 WHERE inspection_data_id=?";
+			jdbcTemplate.update(updateSQL, inspection_data_id);
+
+			return false;
+		}
 	}
-	
+
+	public List<Map<String, Object>> getabscount(String startDate, String endDate) {
+
+		String baseSql = "SELECT  " +
+				"   zm.zone_name, " +
+				"   COALESCE(COUNT(DISTINCT rd.ref_id), 0) AS total_requests, " +
+
+				"   COALESCE(SUM(CASE " +
+				"       WHEN rd.ref_id IS NOT NULL " +
+				"        AND rd.is_withdraw = 0 " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM committee_data WHERE isactive=1) " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM reinspection WHERE isactive=1) " +
+				"        AND rd.ref_id NOT IN ( " +
+				"            SELECT id.ref_id FROM inspection_data id " +
+				"            WHERE id.inspection_by='NGO' AND id.isactive=1 " +
+				"              AND ( (rd.reinspection_id IS NULL AND id.reinspection_id IS NULL) " +
+				"                 OR (rd.reinspection_id=id.reinspection_id) ) " +
+				"        ) " +
+				"       THEN 1 ELSE 0 END), 0) AS ngo_pending, " +
+
+				"   COALESCE(SUM(CASE " +
+				"       WHEN rd.ref_id IS NOT NULL " +
+				"        AND rd.is_withdraw = 0 " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM committee_data WHERE isactive=1) " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM reinspection WHERE isactive=1) " +
+				"        AND rd.ref_id NOT IN ( " +
+				"            SELECT id.ref_id FROM inspection_data id " +
+				"            WHERE id.inspection_by='GCC' AND id.isactive=1 " +
+				"              AND ( (rd.reinspection_id IS NULL AND id.reinspection_id IS NULL) " +
+				"                 OR (rd.reinspection_id=id.reinspection_id) ) " +
+				"        ) " +
+				"       THEN 1 ELSE 0 END), 0) AS gcc_pending, " +
+
+				"   COALESCE(SUM(CASE " +
+				"       WHEN rd.ref_id IS NOT NULL " +
+				"        AND rd.is_withdraw = 0 " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM committee_data WHERE isactive=1) " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM reinspection WHERE isactive=1) " +
+				"        AND rd.ref_id NOT IN ( " +
+				"            SELECT id.ref_id FROM inspection_data id " +
+				"            WHERE id.inspection_by='TNFD' AND id.isactive=1 " +
+				"              AND ( (rd.reinspection_id IS NULL AND id.reinspection_id IS NULL) " +
+				"                 OR (rd.reinspection_id=id.reinspection_id) ) " +
+				"        ) " +
+				"       THEN 1 ELSE 0 END), 0) AS tnfd_pending, " +
+
+				"   COALESCE(SUM(CASE " +
+				"       WHEN rd.ref_id IS NOT NULL " +
+				"        AND rd.is_withdraw = 0 " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM committee_data WHERE isactive=1) " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM reinspection WHERE isactive=1) " +
+				"        AND ( " +
+				"            SELECT COUNT(DISTINCT inspection_by) " +
+				"            FROM inspection_data id " +
+				"            WHERE id.ref_id = rd.ref_id AND id.isactive=1 " +
+				"              AND ( (rd.reinspection_id IS NULL AND id.reinspection_id IS NULL) " +
+				"                 OR (rd.reinspection_id=id.reinspection_id) ) " +
+				"        ) = 3 " +
+				"       THEN 1 ELSE 0 END), 0) AS committee_pending, " +
+
+				"   COALESCE(SUM(CASE WHEN rd.is_withdraw = 1 THEN 1 ELSE 0 END), 0) AS withdrawn, " +
+
+				"   COALESCE(SUM(CASE " +
+				"       WHEN rd.ref_id IN (SELECT ref_id FROM committee_data WHERE isactive=1) " +
+				"       THEN 1 ELSE 0 END), 0) AS completed " +
+
+				"FROM zone_master zm " +
+				"LEFT JOIN reg_details rd " +
+				"  ON rd.zone = zm.zone_name " +
+				" AND rd.is_active = 1 ";
+
+		StringBuilder sql = new StringBuilder(baseSql);
+		List<Object> params = new ArrayList<>();
+
+		if (startDate != null && !startDate.isEmpty()) {
+			sql.append(" AND DATE(rd.cdate) >= ? ");
+			params.add(startDate);
+		}
+
+		if (endDate != null && !endDate.isEmpty()) {
+			sql.append(" AND DATE(rd.cdate) <= ? ");
+			params.add(endDate);
+		}
+
+		sql.append(
+				" WHERE zm.is_active = 1 " +
+						"   AND zm.is_delete = 0 " +
+						" GROUP BY zm.zone_name " +
+						" ORDER BY zm.zone_name ");
+
+		return jdbcTemplate.queryForList(sql.toString(), params.toArray());
+	}
+
+	public List<Map<String, Object>> getWardDetailsByZone(
+			String zone,
+			String startDate,
+			String endDate) {
+
+		String baseSql = "SELECT " +
+				"   wm.zone_id, " +
+				"   wm.ward_name, " +
+
+				"   COALESCE(COUNT(DISTINCT rd.ref_id), 0) AS total_requests, " +
+
+				"   COALESCE(SUM(CASE " +
+				"       WHEN rd.ref_id IS NOT NULL " +
+				"        AND rd.is_withdraw = 0 " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM committee_data WHERE isactive=1) " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM reinspection WHERE isactive=1) " +
+				"        AND rd.ref_id NOT IN ( " +
+				"            SELECT id.ref_id FROM inspection_data id " +
+				"            WHERE id.inspection_by='NGO' AND id.isactive=1 " +
+				"              AND ( (rd.reinspection_id IS NULL AND id.reinspection_id IS NULL) " +
+				"                 OR (rd.reinspection_id = id.reinspection_id) ) " +
+				"        ) " +
+				"       THEN 1 ELSE 0 END), 0) AS ngo_pending, " +
+
+				"   COALESCE(SUM(CASE " +
+				"       WHEN rd.ref_id IS NOT NULL " +
+				"        AND rd.is_withdraw = 0 " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM committee_data WHERE isactive=1) " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM reinspection WHERE isactive=1) " +
+				"        AND rd.ref_id NOT IN ( " +
+				"            SELECT id.ref_id FROM inspection_data id " +
+				"            WHERE id.inspection_by='GCC' AND id.isactive=1 " +
+				"              AND ( (rd.reinspection_id IS NULL AND id.reinspection_id IS NULL) " +
+				"                 OR (rd.reinspection_id = id.reinspection_id) ) " +
+				"        ) " +
+				"       THEN 1 ELSE 0 END), 0) AS gcc_pending, " +
+
+				"   COALESCE(SUM(CASE " +
+				"       WHEN rd.ref_id IS NOT NULL " +
+				"        AND rd.is_withdraw = 0 " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM committee_data WHERE isactive=1) " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM reinspection WHERE isactive=1) " +
+				"        AND rd.ref_id NOT IN ( " +
+				"            SELECT id.ref_id FROM inspection_data id " +
+				"            WHERE id.inspection_by='TNFD' AND id.isactive=1 " +
+				"              AND ( (rd.reinspection_id IS NULL AND id.reinspection_id IS NULL) " +
+				"                 OR (rd.reinspection_id = id.reinspection_id) ) " +
+				"        ) " +
+				"       THEN 1 ELSE 0 END), 0) AS tnfd_pending, " +
+
+				"   COALESCE(SUM(CASE " +
+				"       WHEN rd.ref_id IS NOT NULL " +
+				"        AND rd.is_withdraw = 0 " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM committee_data WHERE isactive=1) " +
+				"        AND rd.ref_id NOT IN (SELECT ref_id FROM reinspection WHERE isactive=1) " +
+				"        AND ( " +
+				"            SELECT COUNT(DISTINCT inspection_by) " +
+				"            FROM inspection_data id " +
+				"            WHERE id.ref_id = rd.ref_id AND id.isactive=1 " +
+				"              AND ( (rd.reinspection_id IS NULL AND id.reinspection_id IS NULL) " +
+				"                 OR (rd.reinspection_id = id.reinspection_id) ) " +
+				"        ) = 3 " +
+				"       THEN 1 ELSE 0 END), 0) AS committee_pending, " +
+
+				"   COALESCE(SUM(CASE WHEN rd.is_withdraw=1 THEN 1 ELSE 0 END), 0) AS withdrawn, " +
+
+				"   COALESCE(SUM(CASE " +
+				"       WHEN rd.ref_id IN (SELECT ref_id FROM committee_data WHERE isactive=1) " +
+				"       THEN 1 ELSE 0 END), 0) AS completed " +
+
+				"FROM ward_master wm " +
+				"JOIN zone_master zm ON zm.id = wm.zone_id AND zm.zone_name = ? " +
+				"LEFT JOIN reg_details rd " +
+				"  ON rd.ward = wm.ward_name " +
+				" AND rd.is_active = 1 ";
+
+		StringBuilder sql = new StringBuilder(baseSql);
+		List<Object> params = new ArrayList<>();
+
+		params.add(zone);
+
+		if (startDate != null && !startDate.isEmpty()) {
+			sql.append(" AND DATE(rd.cdate) >= ? ");
+			params.add(startDate);
+		}
+
+		if (endDate != null && !endDate.isEmpty()) {
+			sql.append(" AND DATE(rd.cdate) <= ? ");
+			params.add(endDate);
+		}
+
+		sql.append(
+				" WHERE wm.is_active=1 AND wm.is_delete=0 " +
+						" GROUP BY wm.zone_id, wm.ward_name " +
+						" ORDER BY wm.ward_name ");
+
+		return jdbcTemplate.queryForList(sql.toString(), params.toArray());
+	}
+
+	public List<String> getPendingRefIds(
+			String zone,
+			String ward,
+			String type,
+			String startDate,
+			String endDate) {
+
+		String baseSql;
+
+		switch (type.toUpperCase()) {
+
+			case "NGO":
+				baseSql = "SELECT rd.ref_id FROM reg_details rd " +
+						"WHERE rd.zone=? AND rd.ward=? " +
+						"AND rd.is_active=1 AND rd.is_withdraw=0 " +
+						"AND rd.ref_id NOT IN (SELECT ref_id FROM committee_data WHERE isactive=1) " +
+						"AND rd.ref_id NOT IN (SELECT ref_id FROM reinspection WHERE isactive=1) " +
+						"AND rd.ref_id NOT IN ( " +
+						"   SELECT id.ref_id FROM inspection_data id " +
+						"   WHERE id.inspection_by='NGO' AND id.isactive=1 " +
+						"   AND ( (rd.reinspection_id IS NULL AND id.reinspection_id IS NULL) " +
+						"      OR (rd.reinspection_id = id.reinspection_id) ) " +
+						")";
+				break;
+
+			case "GCC":
+				baseSql = "SELECT rd.ref_id FROM reg_details rd " +
+						"WHERE rd.zone=? AND rd.ward=? " +
+						"AND rd.is_active=1 AND rd.is_withdraw=0 " +
+						"AND rd.ref_id NOT IN (SELECT ref_id FROM committee_data WHERE isactive=1) " +
+						"AND rd.ref_id NOT IN (SELECT ref_id FROM reinspection WHERE isactive=1) " +
+						"AND rd.ref_id NOT IN ( " +
+						"   SELECT id.ref_id FROM inspection_data id " +
+						"   WHERE id.inspection_by='GCC' AND id.isactive=1 " +
+						"   AND ( (rd.reinspection_id IS NULL AND id.reinspection_id IS NULL) " +
+						"      OR (rd.reinspection_id = id.reinspection_id) ) " +
+						")";
+				break;
+
+			case "TNFD":
+				baseSql = "SELECT rd.ref_id FROM reg_details rd " +
+						"WHERE rd.zone=? AND rd.ward=? " +
+						"AND rd.is_active=1 AND rd.is_withdraw=0 " +
+						"AND rd.ref_id NOT IN (SELECT ref_id FROM committee_data WHERE isactive=1) " +
+						"AND rd.ref_id NOT IN (SELECT ref_id FROM reinspection WHERE isactive=1) " +
+						"AND rd.ref_id NOT IN ( " +
+						"   SELECT id.ref_id FROM inspection_data id " +
+						"   WHERE id.inspection_by='TNFD' AND id.isactive=1 " +
+						"   AND ( (rd.reinspection_id IS NULL AND id.reinspection_id IS NULL) " +
+						"      OR (rd.reinspection_id = id.reinspection_id) ) " +
+						")";
+				break;
+
+			case "WITHDRAW":
+				baseSql = "SELECT rd.ref_id FROM reg_details rd " +
+						"WHERE rd.zone=? AND rd.ward=? AND rd.is_withdraw=1";
+				break;
+
+			default:
+				return Collections.emptyList();
+		}
+
+		StringBuilder sql = new StringBuilder(baseSql);
+		List<Object> params = new ArrayList<>();
+
+		params.add(zone);
+		params.add(ward);
+
+		if (startDate != null && !startDate.isEmpty()) {
+			sql.append(" AND DATE(rd.cdate) >= ? ");
+			params.add(startDate);
+		}
+
+		if (endDate != null && !endDate.isEmpty()) {
+			sql.append(" AND DATE(rd.cdate) <= ? ");
+			params.add(endDate);
+		}
+
+		return jdbcTemplate.query(
+				sql.toString(),
+				params.toArray(),
+				(rs, rowNum) -> rs.getString("ref_id"));
+	}
+
+	// public Map<String, Object> getfulldetailsdata(String refId) {
+
+	// Map<String, Object> response = new HashMap<>();
+
+	// // 1 — Application details
+	// Map<String, Object> app = jdbcTemplate.queryForMap(
+	// "SELECT *,DATE_FORMAT(cdate, '%d-%m-%Y %l:%i %p') as
+	// r_Cdate,IFNULL(reinspection_id, '') AS com_reinspection_id FROM reg_details
+	// WHERE ref_id=? AND is_active=1",
+	// refId);
+
+	// // 2 — Complaint details (grouped)
+	// List<Map<String, Object>> complaints = jdbcTemplate.queryForList(
+	// "SELECT cn.name AS nature, SUM(cd.no_of_trees) AS count " +
+	// "FROM complaint_details cd JOIN comp_nature cn ON cn.id=cd.comp_nature_id " +
+	// "WHERE cd.ref_id=? GROUP BY cn.name",
+	// refId);
+
+	// String compDetails = complaints.stream()
+	// .map(c -> c.get("nature") + "-" + c.get("count"))
+	// .collect(Collectors.joining(","));
+
+	// // 3 — Complaint images
+	// List<Map<String, Object>> imagePaths = jdbcTemplate.queryForList(
+	// "SELECT img_path FROM img_uploads WHERE ref_id=? AND is_active=1",
+	// new Object[] { refId }).stream()
+	// .map(row -> {
+	// Map<String, Object> img = new HashMap<>();
+	// img.put(
+	// "img_path",
+	// fileBaseUrl + "/gccofficialapp/files" + row.get("img_path").toString());
+	// return img;
+	// })
+	// .collect(Collectors.toList());
+
+	// app.put("complaints", complaints);
+	// app.put("comp_details", compDetails);
+	// app.put("image_paths", imagePaths);
+
+	// response.put("data", app);
+
+	// return response;
+	// }
+
 }
