@@ -193,6 +193,39 @@ public class NULMOfficerActivity {
 		return Collections.singletonList(response);
 	}
 
+	public List<Map<String, Object>> getStaffListForMultipleUserAttendance(
+			String reporterId) {
+
+		String sqlQuery = "SELECT e.*, "
+				+ "       IFNULL(DATE_FORMAT(a.indatetime, '%d-%m-%Y %l:%i %p'), '') AS indatetime, "
+				+ "       IFNULL(DATE_FORMAT(a.outdatetime, '%d-%m-%Y %l:%i %p'), '') AS outdatetime, "
+				+ "       a.inby, "
+				+ "       a.outby, "
+				+ "       a.inphoto, "
+				+ "       a.outphoto "
+				+ "FROM enrollment_table e "
+				+ "LEFT JOIN attendance a ON e.enrollment_id = a.enrollment_id"
+				+ "    AND a.indatetime = ("
+				+ "        SELECT MAX(a2.indatetime) "
+				+ "        FROM attendance a2 "
+				+ "        WHERE a2.enrollment_id = e.enrollment_id"
+				+ "    )"
+				+ "WHERE e.isactive = 1 "
+				+ "  AND e.appointed = 1 "
+				+ "  AND e.facial_attendance = 1 "
+				+ " AND FIND_IN_SET(e.incharge_id, '" + reporterId + "') > 0 ";
+		// + " AND e.incharge_id = '" + reporterId + "'";
+
+		System.out.println(sqlQuery);
+		List<Map<String, Object>> result = jdbcNULMTemplate.queryForList(sqlQuery);
+		Map<String, Object> response = new HashMap<>();
+		response.put("status", "Success");
+		response.put("message", "Request List");
+		response.put("Data", result);
+
+		return Collections.singletonList(response);
+	}
+
 	@Transactional
 	public List<Map<String, Object>> markAttendance(
 			String reporterId,
@@ -382,36 +415,36 @@ public class NULMOfficerActivity {
 	public List<Map<String, Object>> getStaffListForAttendanceMultipleIncharge(String reporterId) {
 		// String sql = "SELECT incharge_id FROM additional_incharge WHERE
 		// FIND_IN_SET(?, additional_id)";
-
-		String sql = "SELECT "
-				+ "    CASE "
-				+ "        WHEN EXISTS ( "
-				+ "            SELECT 1  "
-				+ "            FROM additional_incharge  "
-				+ "            WHERE incharge_id = ?  "
-				+ "              AND is_active = 1  "
-				+ "              AND is_delete = 0 "
-				+ "        ) "
-				+ "        THEN ( "
-				+ "            SELECT additional_id "
-				+ "            FROM additional_incharge "
-				+ "            WHERE incharge_id = ? "
-				+ "              AND is_active = 1 "
-				+ "              AND is_delete = 0 "
-				+ "            LIMIT 1 "
-				+ "        ) "
-				+ "        WHEN EXISTS ( "
-				+ "            SELECT 1  "
-				+ "            FROM additional_incharge "
-				+ "            WHERE FIND_IN_SET( ? , additional_id) > 0 "
-				+ "              AND is_active = 1 "
-				+ "              AND is_delete = 0 "
-				+ "        ) "
-				+ "        THEN ? "
-				+ "        ELSE NULL "
-				+ "    END AS result ";
-		String id = jdbcNULMTemplate.queryForObject(sql, String.class, reporterId, reporterId, reporterId, reporterId);
-		// String id = jdbcNULMTemplate.queryForObject(sql, String.class, reporterId);
-		return getStaffListForAttendance(id);
+		String sql = "SELECT CASE " +
+				"   WHEN EXISTS ( " +
+				"       SELECT 1 FROM additional_incharge " +
+				"       WHERE incharge_id = ? AND is_active = 1 AND is_delete = 0 " +
+				"   ) " +
+				"   THEN ( " +
+				"       SELECT CONCAT( " +
+				"           REPLACE( " +
+				"               REPLACE( " +
+				"                   GROUP_CONCAT(additional_id), " +
+				"                   CONCAT(',', ?), '' " +
+				"               ), " +
+				"               CONCAT(?, ','), '' " +
+				"           ), " +
+				"           ',', ? " +
+				"       ) " +
+				"       FROM additional_incharge " +
+				"       WHERE incharge_id = ? AND is_active = 1 AND is_delete = 0 " +
+				"   ) " +
+				"   WHEN EXISTS ( " +
+				"       SELECT 1 FROM additional_incharge " +
+				"       WHERE FIND_IN_SET(?, additional_id) > 0 " +
+				"       AND is_active = 1 AND is_delete = 0 " +
+				"   ) " +
+				"   THEN ? " +
+				"   ELSE NULL " +
+				"END AS result";
+		String id = jdbcNULMTemplate.queryForObject(sql, String.class, reporterId, reporterId, reporterId, reporterId,
+				reporterId, reporterId, reporterId);
+		System.out.println("ID = " + id);
+		return getStaffListForMultipleUserAttendance(id);
 	}
 }

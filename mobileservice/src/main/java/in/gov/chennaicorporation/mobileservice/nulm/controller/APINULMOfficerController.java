@@ -80,11 +80,11 @@ public class APINULMOfficerController {
 
 	}
 
-	// @GetMapping(value = "/getStaffListForAttendanceMultipleIncharge")
-	// public List<?> getStaffListForAttendanceMultipleIncharge(
-	// @RequestParam(value = "reporterId", required = false) String reporterId) {
-	// return
-	// nulmOfficerActivity.getStaffListForAttendanceMultipleIncharge(reporterId);
-	// }
+	@GetMapping(value = "/getStaffListForAttendanceMultipleIncharge")
+	public List<?> getStaffListForAttendanceMultipleIncharge(
+	@RequestParam(value = "reporterId", required = false) String reporterId) {
+	return
+	nulmOfficerActivity.getStaffListForAttendanceMultipleIncharge(reporterId);
+	}
 
 }
