@@ -43,8 +43,14 @@ public class APINULMOfficerController {
 		return nulmOfficerActivity.updateStaffFaceRegister(reporterId, enrollId, status);
 	}
 
-	@GetMapping(value = "/getStaffListForAttendance") // Template
-	public List<?> getStaffListForAttendance(
+//	@GetMapping(value = "/getStaffListForAttendance") // Template
+//	public List<?> getStaffListForAttendance(
+//			@RequestParam(value = "reporterId", required = false) String reporterId) {
+//		return nulmOfficerActivity.getStaffListForAttendance(reporterId);
+//	}
+	
+	@GetMapping(value = "/getStaffListForAttendance_New") // Template
+	public List<?> getStaffListForAttendance_New(
 			@RequestParam(value = "reporterId", required = false) String reporterId) {
 		return nulmOfficerActivity.getStaffListForAttendance(reporterId);
 	}
@@ -54,14 +60,25 @@ public class APINULMOfficerController {
 	// @RequestParam(value = "reporterId", required = false) String reporterId) {
 	// return nulmOfficerActivity.getStaffListForAttendance(reporterId);
 	// }
+//	@GetMapping(value = "/markAttendance") // Template
+//	public List<?> markAttendance(
+//			@RequestParam(value = "reporterId", required = false) String reporterId,
+//			@RequestParam(value = "enrollId", required = false) String enrollId,
+//			@RequestParam(value = "action", required = false) String status,
+//			@RequestParam(value = "photourl", required = false) String photourl) {
+//		return nulmOfficerActivity.markAttendance(reporterId, enrollId, status, photourl);
+//	}
 
-	@GetMapping(value = "/markAttendance") // Template
-	public List<?> markAttendance(
+	@GetMapping(value = "/markAttendance_New") // Template
+	public List<?> markAttendance_New(
 			@RequestParam(value = "reporterId", required = false) String reporterId,
 			@RequestParam(value = "enrollId", required = false) String enrollId,
 			@RequestParam(value = "action", required = false) String status,
-			@RequestParam(value = "photourl", required = false) String photourl) {
-		return nulmOfficerActivity.markAttendance(reporterId, enrollId, status, photourl);
+			@RequestParam(value = "photourl", required = false) String photourl,
+	        @RequestParam(value = "address", required = false) String address,
+            @RequestParam(value = "versionName", required = false) String versionName,
+            @RequestParam(value = "mobilePlatform", required = false) String mobilePlatform) {
+		return nulmOfficerActivity.markAttendance_New(reporterId, enrollId, status, photourl, address, versionName, mobilePlatform);
 	}
 
 	@GetMapping(value = "/getStaffAttendanceListByDate") // Template
@@ -80,11 +97,14 @@ public class APINULMOfficerController {
 
 	}
 
+
 	@GetMapping(value = "/getStaffListForAttendanceMultipleIncharge")
 	public List<?> getStaffListForAttendanceMultipleIncharge(
 	@RequestParam(value = "reporterId", required = false) String reporterId) {
-	return
-	nulmOfficerActivity.getStaffListForAttendanceMultipleIncharge(reporterId);
+	return nulmOfficerActivity.getStaffListForAttendanceMultipleIncharge(reporterId);
 	}
+	
+
+	
 
 }

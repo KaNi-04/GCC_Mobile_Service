@@ -226,12 +226,133 @@ public class NULMOfficerActivity {
 		return Collections.singletonList(response);
 	}
 
+//	@Transactional
+//	public List<Map<String, Object>> markAttendance(
+//			String reporterId,
+//			String enrollId,
+//			String action, // "in" for check-in, "out" for check-out
+//			String photourl) {
+//
+//		Map<String, Object> response = new HashMap<>();
+//		int lastQueryId = 0;
+//
+//		String datetimetxt = DateTimeUtil.getCurrentDateTimeMysql(); // Current timestamp
+//
+//		try {
+//			if ("in".equalsIgnoreCase(action)) {
+//				// Insert a new attendance record for check-in
+//				String sqlQuery = "INSERT INTO attendance (indatetime, inby, inphoto, enrollment_id) "
+//						+ "VALUES (?, ?, ?, ?)";
+//
+//				KeyHolder keyHolder = new GeneratedKeyHolder();
+//				int affectedRows = jdbcNULMTemplate.update(new PreparedStatementCreator() {
+//					@Override
+//					public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
+//						PreparedStatement ps = connection.prepareStatement(sqlQuery, new String[] { "id" });
+//						ps.setString(1, datetimetxt); // Check-in time
+//						ps.setString(2, reporterId); // Mark By
+//						ps.setString(3, photourl); // Photo URL for check-in
+//						ps.setString(4, enrollId); // Employee ID (enrollId)
+//						return ps;
+//					}
+//				}, keyHolder);
+//
+//				if (affectedRows > 0) {
+//					Number generatedId = keyHolder.getKey();
+//					lastQueryId = (generatedId != null) ? generatedId.intValue() : 0;
+//					response.put("Id", lastQueryId);
+//					response.put("status", "success");
+//					response.put("message", "Check-in was recorded successfully!");
+//					System.out.println("Check-in was recorded successfully! Attendance ID: " + generatedId);
+//				} else {
+//					response.put("status", "error");
+//					response.put("message", "Failed to record check-in.");
+//				}
+//
+//			} else if ("out".equalsIgnoreCase(action)) {
+//				// Update the existing attendance record for check-out
+//				String sqlQuery = "UPDATE attendance SET outdatetime = ?, outby = ?, outphoto = ? "
+//						+ "WHERE enrollment_id = ? AND outdatetime IS NULL "
+//						+ "ORDER BY indatetime DESC LIMIT 1";
+//
+//				int affectedRows = jdbcNULMTemplate.update(sqlQuery, datetimetxt, reporterId, photourl, enrollId);
+//
+//				if (affectedRows > 0) {
+//					response.put("status", "success");
+//					response.put("message", "Check-out was recorded successfully!");
+//					System.out.println("Check-out was recorded successfully!");
+//				} else {
+//					response.put("status", "error");
+//					response.put("message", "Failed to record check-out. No pending check-in found.");
+//				}
+//			} else if ("od".equalsIgnoreCase(action)) {
+//				// Mark On Duty (OD) even if no check-in
+//				String sqlQuery = "INSERT INTO attendance (oddatetime, odby, enrollment_id) "
+//						+ "VALUES (?, ?, ?)";
+//
+//				int affectedRows = jdbcNULMTemplate.update(sqlQuery, datetimetxt, reporterId, enrollId);
+//
+//				if (affectedRows > 0) {
+//					response.put("status", "success");
+//					response.put("message", "On Duty was recorded successfully!");
+//					System.out.println("On Duty was recorded successfully!");
+//				} else {
+//					response.put("status", "error");
+//					response.put("message", "Failed to record On Duty.");
+//				}
+//
+//			} else if ("leave".equalsIgnoreCase(action)) {
+//				// Mark Leave even if no check-in
+//				String sqlQuery = "INSERT INTO attendance (leavedatetime, leaveby, enrollment_id) "
+//						+ "VALUES (?, ?, ?)";
+//
+//				int affectedRows = jdbcNULMTemplate.update(sqlQuery, datetimetxt, reporterId, enrollId);
+//
+//				if (affectedRows > 0) {
+//					response.put("status", "success");
+//					response.put("message", "Leave was recorded successfully!");
+//					System.out.println("Leave was recorded successfully!");
+//				} else {
+//					response.put("status", "error");
+//					response.put("message", "Failed to record Leave.");
+//				}
+//
+//			} else {
+//				response.put("status", "error");
+//				response.put("message",
+//						"Invalid action. Use 'in' for check-in, 'out' for check-out, 'od' for On Duty, or 'leave' for Leave.");
+//			}
+//		} catch (DataAccessException e) {
+//			System.out.println("Data Access Exception:");
+//			Throwable rootCause = e.getMostSpecificCause();
+//			if (rootCause instanceof SQLException) {
+//				SQLException sqlException = (SQLException) rootCause;
+//				System.out.println("SQL State: " + sqlException.getSQLState());
+//				System.out.println("Error Code: " + sqlException.getErrorCode());
+//				System.out.println("Message: " + sqlException.getMessage());
+//				response.put("status", "error");
+//				response.put("message", sqlException.getMessage());
+//				response.put("sqlState", sqlException.getSQLState());
+//				response.put("errorCode", sqlException.getErrorCode());
+//			} else {
+//				System.out.println("Message: " + rootCause.getMessage());
+//				response.put("status", "error");
+//				response.put("message", rootCause.getMessage());
+//			}
+//		}
+//
+//		return Collections.singletonList(response);
+//	}
+	
 	@Transactional
-	public List<Map<String, Object>> markAttendance(
+	public List<Map<String, Object>> markAttendance_New(
 			String reporterId,
 			String enrollId,
 			String action, // "in" for check-in, "out" for check-out
-			String photourl) {
+			String photourl,
+			String address, 
+			String versionName, 
+			String mobilePlatform) {
 
 		Map<String, Object> response = new HashMap<>();
 		int lastQueryId = 0;
@@ -241,8 +362,8 @@ public class NULMOfficerActivity {
 		try {
 			if ("in".equalsIgnoreCase(action)) {
 				// Insert a new attendance record for check-in
-				String sqlQuery = "INSERT INTO attendance (indatetime, inby, inphoto, enrollment_id) "
-						+ "VALUES (?, ?, ?, ?)";
+				String sqlQuery = "INSERT INTO attendance (indatetime, inby, inphoto, enrollment_id, location, appversion, apptype) "
+						+ "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
 				KeyHolder keyHolder = new GeneratedKeyHolder();
 				int affectedRows = jdbcNULMTemplate.update(new PreparedStatementCreator() {
@@ -253,6 +374,9 @@ public class NULMOfficerActivity {
 						ps.setString(2, reporterId); // Mark By
 						ps.setString(3, photourl); // Photo URL for check-in
 						ps.setString(4, enrollId); // Employee ID (enrollId)
+						ps.setString(5, address);  
+						ps.setString(6, versionName);
+						ps.setString(7, mobilePlatform);
 						return ps;
 					}
 				}, keyHolder);
@@ -271,11 +395,11 @@ public class NULMOfficerActivity {
 
 			} else if ("out".equalsIgnoreCase(action)) {
 				// Update the existing attendance record for check-out
-				String sqlQuery = "UPDATE attendance SET outdatetime = ?, outby = ?, outphoto = ? "
+				String sqlQuery = "UPDATE attendance SET outdatetime = ?, outby = ?, outphoto = ?, location = ?, appversion = ?, apptype = ? "
 						+ "WHERE enrollment_id = ? AND outdatetime IS NULL "
 						+ "ORDER BY indatetime DESC LIMIT 1";
 
-				int affectedRows = jdbcNULMTemplate.update(sqlQuery, datetimetxt, reporterId, photourl, enrollId);
+				int affectedRows = jdbcNULMTemplate.update(sqlQuery, datetimetxt, reporterId, photourl, address, versionName, mobilePlatform, enrollId);
 
 				if (affectedRows > 0) {
 					response.put("status", "success");
@@ -287,10 +411,10 @@ public class NULMOfficerActivity {
 				}
 			} else if ("od".equalsIgnoreCase(action)) {
 				// Mark On Duty (OD) even if no check-in
-				String sqlQuery = "INSERT INTO attendance (oddatetime, odby, enrollment_id) "
-						+ "VALUES (?, ?, ?)";
+				String sqlQuery = "INSERT INTO attendance (oddatetime, odby, enrollment_id, location, appversion, apptype) "
+						+ "VALUES (?, ?, ?, ?, ?, ?)";
 
-				int affectedRows = jdbcNULMTemplate.update(sqlQuery, datetimetxt, reporterId, enrollId);
+				int affectedRows = jdbcNULMTemplate.update(sqlQuery, datetimetxt, reporterId, enrollId, address, versionName, mobilePlatform);
 
 				if (affectedRows > 0) {
 					response.put("status", "success");
@@ -303,10 +427,10 @@ public class NULMOfficerActivity {
 
 			} else if ("leave".equalsIgnoreCase(action)) {
 				// Mark Leave even if no check-in
-				String sqlQuery = "INSERT INTO attendance (leavedatetime, leaveby, enrollment_id) "
-						+ "VALUES (?, ?, ?)";
+				String sqlQuery = "INSERT INTO attendance (leavedatetime, leaveby, enrollment_id, location, appversion, apptype) "
+						+ "VALUES (?, ?, ?, ?, ?, ?)";
 
-				int affectedRows = jdbcNULMTemplate.update(sqlQuery, datetimetxt, reporterId, enrollId);
+				int affectedRows = jdbcNULMTemplate.update(sqlQuery, datetimetxt, reporterId, enrollId, address, versionName, mobilePlatform);
 
 				if (affectedRows > 0) {
 					response.put("status", "success");
