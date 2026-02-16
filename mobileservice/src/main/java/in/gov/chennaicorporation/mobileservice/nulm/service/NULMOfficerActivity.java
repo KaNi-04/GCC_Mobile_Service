@@ -192,6 +192,137 @@ public class NULMOfficerActivity {
 
 		return Collections.singletonList(response);
 	}
+	
+	public List<Map<String, Object>> getStaffListForAttendance_Loc_NULM(
+			String reporterId) {
+
+		String sqlQuery = "SELECT e.*, "
+				+ "       IFNULL(DATE_FORMAT(a.indatetime, '%d-%m-%Y %l:%i %p'), '') AS indatetime, "
+				+ "       IFNULL(DATE_FORMAT(a.outdatetime, '%d-%m-%Y %l:%i %p'), '') AS outdatetime, "
+				+ "       a.inby, "
+				+ "       a.outby, "
+				+ "       a.inphoto, "
+				+ "       a.outphoto "
+				+ " FROM enrollment_table e "
+				+ " LEFT JOIN attendance a ON e.enrollment_id = a.enrollment_id"
+				+ "    AND a.indatetime = ("
+				+ "        SELECT MAX(a2.indatetime) "
+				+ "        FROM attendance a2 "
+				+ "        WHERE a2.enrollment_id = e.enrollment_id"
+				+ "    )"
+				+ " WHERE e.isactive = 1 "
+				+ "  AND e.appointed = 1 "
+				+ "  AND e.facial_attendance = 1 "
+				+ "  AND e.incharge_id = '" + reporterId + "'"
+				+ "  AND e.emp_type = 'NULM'";
+		// + " AND FIND_IN_SET(e.incharge_id, '"+reporterId+"') > 0 ";
+
+		System.out.println(sqlQuery);
+		List<Map<String, Object>> result = jdbcNULMTemplate.queryForList(sqlQuery);
+		Map<String, Object> response = new HashMap<>();
+		response.put("status", "Success");
+		response.put("message", "Request List");
+		response.put("Data", result);
+
+		return Collections.singletonList(response);
+	}
+	
+	public List<Map<String, Object>> getStaffListForAttendance_Loc_Park(String reporterId, String ids) {
+
+		String sqlQuery = "SELECT e.*, "
+				+ "       IFNULL(DATE_FORMAT(a.indatetime, '%d-%m-%Y %l:%i %p'), '') AS indatetime, "
+				+ "       IFNULL(DATE_FORMAT(a.outdatetime, '%d-%m-%Y %l:%i %p'), '') AS outdatetime, "
+				+ "       a.inby, "
+				+ "       a.outby, "
+				+ "       a.inphoto, "
+				+ "       a.outphoto "
+				+ " FROM enrollment_table e "
+				+ " LEFT JOIN attendance a ON e.enrollment_id = a.enrollment_id"
+				+ "    AND a.indatetime = ("
+				+ "        SELECT MAX(a2.indatetime) "
+				+ "        FROM attendance a2 "
+				+ "        WHERE a2.enrollment_id = e.enrollment_id"
+				+ "    )"
+				+ " WHERE e.isactive = 1 "
+				+ "  AND e.appointed = 1 "
+				+ "  AND e.facial_attendance = 1 "
+				+ "  AND e.emp_type = 'Park' "
+				+ "  AND e.incharge_id = '" + reporterId + "' "
+		        + " AND FIND_IN_SET('" + ids + "', e.park_id) > 0 ";
+
+		System.out.println(sqlQuery);
+		List<Map<String, Object>> result = jdbcNULMTemplate.queryForList(sqlQuery);
+		Map<String, Object> response = new HashMap<>();
+		response.put("status", "Success");
+		response.put("message", "Request List");
+		response.put("Data", result);
+
+		return Collections.singletonList(response);
+	}
+	
+	public List<?> checkLatLong_Loc(String reporterId, String latitude, String longitude, String type) {
+		  List<?> result = null;
+		  
+		if(type.equalsIgnoreCase("1")){
+			// NULM
+			result = getStaffListForAttendance_Loc_NULM(reporterId);
+		} else {
+			// PARK
+			String sql ="SELECT IFNULL(GROUP_CONCAT(DISTINCT t.park_id ORDER BY t.park_id), '') AS park_ids " +
+			        " FROM ( " +
+			        "    SELECT p.park_id, p.radius, " +
+			        "    (6371000 * ACOS( " +
+			        "        LEAST(1, GREATEST(-1, " +
+			        "            COS(RADIANS(?)) * COS(RADIANS(CAST(p.latitude AS DECIMAL(10,6)))) * " +
+			        "            COS(RADIANS(CAST(p.longitude AS DECIMAL(10,6))) - RADIANS(?)) + " +
+			        "            SIN(RADIANS(?)) * SIN(RADIANS(CAST(p.latitude AS DECIMAL(10,6)))) " +
+			        "        )) " +
+			        "    )) AS distance_in_meters " +
+			        "    FROM park_details p " +
+			        "    WHERE (p.ae_id = ? OR p.supervisor_id = ?) " +
+			        "      AND p.is_active = 1 " +
+			        "      AND p.is_delete = 0 " +
+			        " ) t " +
+			        " WHERE t.distance_in_meters <= t.radius";
+			String ids = jdbcNULMTemplate.queryForObject(sql, String.class, latitude, longitude, latitude, reporterId, reporterId);
+			
+			result = getStaffListForAttendance_Loc_Park(reporterId, ids);
+		}
+		return result;
+	}
+	
+//	public List<Map<String, Object>> getStaffListForAttendance_Loc(
+//			String reporterId) {
+//
+//		String sqlQuery = "SELECT e.*, "
+//				+ "       IFNULL(DATE_FORMAT(a.indatetime, '%d-%m-%Y %l:%i %p'), '') AS indatetime, "
+//				+ "       IFNULL(DATE_FORMAT(a.outdatetime, '%d-%m-%Y %l:%i %p'), '') AS outdatetime, "
+//				+ "       a.inby, "
+//				+ "       a.outby, "
+//				+ "       a.inphoto, "
+//				+ "       a.outphoto "
+//				+ "FROM enrollment_table e "
+//				+ "LEFT JOIN attendance a ON e.enrollment_id = a.enrollment_id"
+//				+ "    AND a.indatetime = ("
+//				+ "        SELECT MAX(a2.indatetime) "
+//				+ "        FROM attendance a2 "
+//				+ "        WHERE a2.enrollment_id = e.enrollment_id"
+//				+ "    )"
+//				+ "WHERE e.isactive = 1 "
+//				+ "  AND e.appointed = 1 "
+//				+ "  AND e.facial_attendance = 1 "
+//				+ "  AND e.incharge_id = '" + reporterId + "'";
+//		// + " AND FIND_IN_SET(e.incharge_id, '"+reporterId+"') > 0 ";
+//
+//		System.out.println(sqlQuery);
+//		List<Map<String, Object>> result = jdbcNULMTemplate.queryForList(sqlQuery);
+//		Map<String, Object> response = new HashMap<>();
+//		response.put("status", "Success");
+//		response.put("message", "Request List");
+//		response.put("Data", result);
+//
+//		return Collections.singletonList(response);
+//	}
 
 	public List<Map<String, Object>> getStaffListForMultipleUserAttendance(
 			String reporterId) {
@@ -571,4 +702,6 @@ public class NULMOfficerActivity {
 		System.out.println("ID = " + id);
 		return getStaffListForMultipleUserAttendance(id);
 	}
+
+	
 }

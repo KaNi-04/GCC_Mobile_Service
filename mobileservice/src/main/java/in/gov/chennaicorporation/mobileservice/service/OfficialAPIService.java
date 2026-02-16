@@ -99,23 +99,23 @@ public class OfficialAPIService {
 	
 	@Transactional
 	public List<Map<String, Object>> getloginList(String username, String password, String usertype) {
-		
+		// PIN added in response for session logout needed by vaibalan 
 		String sqlQuery = ""; 
 		List<Map<String, Object>> result=null;
 		try {
             switch (usertype) {
                 case "erp":
                     //sqlQuery = "SELECT * FROM `EG_USER` WHERE `ISPORTALUSER` <> 1 AND `ISACTIVE` = 1 AND `EXTRAFIELD2` = ? AND `PIN` = ? LIMIT 1";
-                	sqlQuery = "SELECT id, USER_NAME, EXTRAFIELD2 FROM `EG_USER` WHERE `EXTRAFIELD2` = ? AND `PIN` = ? AND `ISACTIVE`=1 LIMIT 1";
+                	sqlQuery = "SELECT id, USER_NAME, EXTRAFIELD2, PIN FROM `EG_USER` WHERE `EXTRAFIELD2` = ? AND `PIN` = ? AND `ISACTIVE`=1 LIMIT 1";
                 	result = jdbcOfficalTemplate.queryForList(sqlQuery, username, password);
                     break;
                 case "nonerp":
-                    sqlQuery = "SELECT id, USER_NAME, EXTRAFIELD2 FROM `EG_USER` WHERE `EXTRAFIELD2` = ? AND `PIN` = ? AND `ISACTIVE`=1  LIMIT 1";
+                    sqlQuery = "SELECT id, USER_NAME, EXTRAFIELD2, PIN FROM `EG_USER` WHERE `EXTRAFIELD2` = ? AND `PIN` = ? AND `ISACTIVE`=1  LIMIT 1";
                     result = jdbcOfficalTemplate.queryForList(sqlQuery, username, password);
                     break;
                 // additional cases can be added here
                 default:
-                	sqlQuery = "SELECT id, USER_NAME, EXTRAFIELD2 FROM `EG_USER` WHERE `EXTRAFIELD2` = ? AND `PIN` = ? AND `ISACTIVE`=1  LIMIT 1";
+                	sqlQuery = "SELECT id, USER_NAME, EXTRAFIELD2, PIN FROM `EG_USER` WHERE `EXTRAFIELD2` = ? AND `PIN` = ? AND `ISACTIVE`=1  LIMIT 1";
                     result = jdbcOfficalTemplate.queryForList(sqlQuery, username, password);
                     //result = Collections.emptyList();
                     break;

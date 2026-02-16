@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import in.gov.chennaicorporation.mobileservice.nulm.service.NULMOfficerActivity;
 
+
+
 @RequestMapping("/gccofficialapp/api/nulm/officer/")
 @RestController("gccofficialappOffcierNULMRest")
 public class APINULMOfficerController {
@@ -49,10 +51,22 @@ public class APINULMOfficerController {
 //		return nulmOfficerActivity.getStaffListForAttendance(reporterId);
 //	}
 	
-	@GetMapping(value = "/getStaffListForAttendance_New") // Template
-	public List<?> getStaffListForAttendance_New(
-			@RequestParam(value = "reporterId", required = false) String reporterId) {
+//	@GetMapping(value = "/getStaffListForAttendance_New") // Template
+//	public List<?> getStaffListForAttendance_New(@RequestParam(value = "reporterId", required = false) String reporterId) {
+//		return nulmOfficerActivity.getStaffListForAttendance(reporterId);
+//	}
+	
+	@GetMapping(value = "/getStaffListForAttendance_OD") // Template
+	public List<?> getStaffListForAttendance_OD(@RequestParam(value = "reporterId", required = false) String reporterId) {
 		return nulmOfficerActivity.getStaffListForAttendance(reporterId);
+	}
+	
+	@GetMapping(value = "/getStaffListForAttendance_Loc") // Template
+	public List<?> getStaffListForAttendance_Loc(@RequestParam(value = "reporterId", required = false) String reporterId,
+			@RequestParam(value = "latitude", required = false) String latitude,
+			@RequestParam(value = "longitude", required = false) String longitude,
+			@RequestParam(value = "type", required = false) String type) {
+		return nulmOfficerActivity.checkLatLong_Loc(reporterId, latitude, longitude, type);
 	}
 
 	// @GetMapping(value = "/getStaffListForAttendanceMultipleIncharge") // Template
