@@ -249,9 +249,30 @@ public class NULMOfficerActivity {
 				+ "  AND e.emp_type = 'Park' "
 				+ "  AND e.incharge_id = '" + reporterId + "' "
 		        + " AND FIND_IN_SET('" + ids + "', e.park_id) > 0 ";
+//		String sqlQuery = "SELECT e.*, " +
+//	            "IFNULL(DATE_FORMAT(a.indatetime, '%d-%m-%Y %l:%i %p'), '') AS indatetime, " +
+//	            "IFNULL(DATE_FORMAT(a.outdatetime, '%d-%m-%Y %l:%i %p'), '') AS outdatetime, " +
+//	            "a.inby, " +
+//	            "a.outby, " +
+//	            "a.inphoto, " +
+//	            "a.outphoto " +
+//	            "FROM enrollment_table e " +
+//	            "LEFT JOIN attendance a " +
+//	            "ON e.enrollment_id = a.enrollment_id " +
+//	            "AND a.indatetime = ( " +
+//	            "    SELECT MAX(a2.indatetime) " +
+//	            "    FROM attendance a2 " +
+//	            "    WHERE a2.enrollment_id = e.enrollment_id " +
+//	            ") " +
+//	            "WHERE e.isactive = 1 " +
+//	            "AND e.appointed = 1 " +
+//	            "AND e.facial_attendance = 1 " +
+//	            "AND e.emp_type = 'Park' " +
+//	            "AND e.incharge_id = ? " +
+//	            "AND e.park_id REGEXP CONCAT('(^|,)(', REPLACE(?, ',', '|'), ')(,|$)')";
 
-		System.out.println(sqlQuery);
-		List<Map<String, Object>> result = jdbcNULMTemplate.queryForList(sqlQuery);
+		System.out.println(""+sqlQuery);
+		List<Map<String, Object>> result = jdbcNULMTemplate.queryForList(sqlQuery, reporterId, ids);
 		Map<String, Object> response = new HashMap<>();
 		response.put("status", "Success");
 		response.put("message", "Request List");
@@ -526,11 +547,19 @@ public class NULMOfficerActivity {
 
 			} else if ("out".equalsIgnoreCase(action)) {
 				// Update the existing attendance record for check-out
-				String sqlQuery = "UPDATE attendance SET outdatetime = ?, outby = ?, outphoto = ?, location = ?, appversion = ?, apptype = ? "
-						+ "WHERE enrollment_id = ? AND outdatetime IS NULL "
-						+ "ORDER BY indatetime DESC LIMIT 1";
+//				String sqlQuery = "UPDATE attendance SET outdatetime = ?, outby = ?, outphoto = ?, location = ?, appversion = ?, apptype = ? "
+//						+ "WHERE enrollment_id = ? AND outdatetime IS NULL "
+//						+ "ORDER BY indatetime DESC LIMIT 1";
+				String sqlQuery = "UPDATE attendance " +
+				        "SET outdatetime = ?, outby = ?, outphoto = ?, location = ?, appversion = ?, apptype = ? " +
+				        "WHERE enrollment_id = ? " +
+				        "AND outdatetime IS NULL " +
+				        "AND ? >= DATE_ADD(indatetime, INTERVAL 2 HOUR) " +
+				        "ORDER BY indatetime DESC " +
+				        "LIMIT 1";
 
-				int affectedRows = jdbcNULMTemplate.update(sqlQuery, datetimetxt, reporterId, photourl, address, versionName, mobilePlatform, enrollId);
+				//int affectedRows = jdbcNULMTemplate.update(sqlQuery, datetimetxt, reporterId, photourl, address, versionName, mobilePlatform, enrollId);
+				int affectedRows = jdbcNULMTemplate.update(sqlQuery, datetimetxt, reporterId, photourl, address, versionName, mobilePlatform, enrollId, datetimetxt);
 
 				if (affectedRows > 0) {
 					response.put("status", "success");
