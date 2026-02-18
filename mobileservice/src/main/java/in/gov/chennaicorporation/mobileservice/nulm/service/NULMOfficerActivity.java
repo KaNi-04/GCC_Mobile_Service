@@ -230,6 +230,7 @@ public class NULMOfficerActivity {
 	public List<Map<String, Object>> getStaffListForAttendance_Loc_Park(String reporterId, String ids) {
 
 		String sqlQuery = "SELECT e.*, "
+				 + "       '" + ids + "' AS emp_park_id, "
 				+ "       IFNULL(DATE_FORMAT(a.indatetime, '%d-%m-%Y %l:%i %p'), '') AS indatetime, "
 				+ "       IFNULL(DATE_FORMAT(a.outdatetime, '%d-%m-%Y %l:%i %p'), '') AS outdatetime, "
 				+ "       a.inby, "
@@ -272,7 +273,7 @@ public class NULMOfficerActivity {
 //	            "AND e.park_id REGEXP CONCAT('(^|,)(', REPLACE(?, ',', '|'), ')(,|$)')";
 
 		System.out.println(""+sqlQuery);
-		List<Map<String, Object>> result = jdbcNULMTemplate.queryForList(sqlQuery, reporterId, ids);
+		List<Map<String, Object>> result = jdbcNULMTemplate.queryForList(sqlQuery);
 		Map<String, Object> response = new HashMap<>();
 		response.put("status", "Success");
 		response.put("message", "Request List");

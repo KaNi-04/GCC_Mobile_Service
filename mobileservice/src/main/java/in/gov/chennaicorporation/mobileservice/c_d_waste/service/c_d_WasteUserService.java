@@ -431,160 +431,228 @@ public class c_d_WasteUserService {
 	    return new HashMap<>(); // or return null based on your needs
 	}
 	
-	public List<Map<String, Object>> getApprovalPendingList(String loginId, String ward) {
-		
-		//String approve_check_ward = getWardByLoginId(loginId,"");
-		
-		Map<String, Object> approve_check=getWardByLoginId(loginId,"");
-		
-		
-		String type="";
-		String zone="00";
-		String userWard="000";
-		
-		if (approve_check != null && !approve_check.isEmpty()) {
+//	public List<Map<String, Object>> getApprovalPendingList(String loginId, String ward) {
+//		
+//		//String approve_check_ward = getWardByLoginId(loginId,"");
+//		
+//		Map<String, Object> approve_check=getWardByLoginId(loginId,"");
+//		
+//		
+//		String type="";
+//		String zone="00";
+//		String userWard="000";
+//		
+//		if (approve_check != null && !approve_check.isEmpty()) {
+//
+//	         type = approve_check.get("type") != null 
+//	                      ? approve_check.get("type").toString() 
+//	                      : "";
+//
+//	         zone = approve_check.get("zone") != null 
+//	                      ? approve_check.get("zone").toString() 
+//	                      : "00";
+//
+//	         userWard = approve_check.get("ward") != null 
+//	                          ? approve_check.get("ward").toString() 
+//	                          : "000";
+//
+////	        System.out.println("Type: " + type);
+////	        System.out.println("Zone: " + zone);
+////	        System.out.println("Ward: " + userWard);
+//	    }
+//		
+//		System.out.println("Login ID: "+ loginId 
+//				+ "/n Type: ae "
+//				+ "/n approve_check_ward: "+userWard);
+//		
+//		
+//		if("swmee".equals(type)) {
+//			
+//			//System.out.println("if block");
+//			
+//			String sql = "SELECT  "
+//	        		+ "    `wlid` AS comp_id,  "
+//	        		+ "    `zone` AS comp_zone,  "
+//	        		+ "    `ward` AS comp_ward,  "
+//	        		+ "    `waste_location_mapping`.`user_mobile` AS comp_contact,  "
+//	        		+ "		`waste_location_mapping`.`user_name` AS comp_name, "
+//	        		//+ "    `EG_USER`.`FIRST_NAME` AS comp_name,  "
+//	        		+ "		DATE_FORMAT(`cdate`, '%d-%m-%Y %r') AS comp_date, "
+//	        		+ "    `latitude` AS comp_latitude,  "
+//	        		+ "    `longitude` AS comp_longitude,  "
+//	        		+ "    `address` AS comp_area,  "
+//	        		+ "    `tonage` AS appx_tonage,  "
+//	        		+ "    wt.`name` AS comp_type,  "
+//	        		+ "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', `file`) AS image,  "
+//	        		+ "    `status` AS comp_status  "
+//	        		+ "FROM  "
+//	        		+ "    `waste_location_mapping` "
+//	        		+ "JOIN  "
+//	        		+ "    `erp_pgr`.`EG_USER`  "
+//	        		+ "    ON `EG_USER`.id =  `waste_location_mapping`.`cby`"
+//	        		+ "LEFT JOIN "
+//		            + "    `waste_type` wt " 
+//		            + "    ON waste_location_mapping.type = wt.typeid "
+//	        		+ "WHERE  "
+//	        		+ "    `waste_location_mapping`.isactive = 1 "
+//	        		//+ " AND `ward`= ? "
+//	        		+ " AND `escalation_flag`=1 "
+//	        		//+ " AND `request_by_type`='Vendor' "
+//	        		+ " AND `status`='open' "
+//	        		+ " AND `approved`='pending' "
+//	        		+ "ORDER BY `cdate` DESC";
+//	        
+//	        return jdbcUserWasteTemplate.queryForList(sql);
+//			
+//		}
+//		
+//		else if("zo".equals(type)) {
+//			//System.out.println("else if block");
+//			
+//			String sql = "SELECT  "
+//	        		+ "    `wlid` AS comp_id,  "
+//	        		+ "    `zone` AS comp_zone,  "
+//	        		+ "    `ward` AS comp_ward,  "
+//	        		+ "    `waste_location_mapping`.`user_mobile` AS comp_contact,  "
+//	        		+ "		`waste_location_mapping`.`user_name` AS comp_name, "
+//	        		//+ "    `EG_USER`.`FIRST_NAME` AS comp_name,  "
+//	        		+ "		DATE_FORMAT(`cdate`, '%d-%m-%Y %r') AS comp_date, "
+//	        		+ "    `latitude` AS comp_latitude,  "
+//	        		+ "    `longitude` AS comp_longitude,  "
+//	        		+ "    `address` AS comp_area,  "
+//	        		+ "    `tonage` AS appx_tonage,  "
+//	        		+ "    wt.`name` AS comp_type,  "
+//	        		+ "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', `file`) AS image,  "
+//	        		+ "    `status` AS comp_status  "
+//	        		+ "FROM  "
+//	        		+ "    `waste_location_mapping` "
+//	        		+ "JOIN  "
+//	        		+ "    `erp_pgr`.`EG_USER`  "
+//	        		+ "    ON `EG_USER`.id =  `waste_location_mapping`.`cby`"
+//	        		+ "LEFT JOIN "
+//		            + "    `waste_type` wt " 
+//		            + "    ON waste_location_mapping.type = wt.typeid "
+//	        		+ "WHERE  "
+//	        		+ "    `waste_location_mapping`.isactive = 1 "
+//	        		//+ " AND `ward`= ? "
+//	        		+ " AND `escalation_flag`=1 "
+//	        		+ " AND `zone`= ? "
+//	        		//+ " AND `request_by_type`='Vendor' "
+//	        		+ " AND `status`='open' "
+//	        		+ " AND `approved`='pending' "
+//	        		+ "ORDER BY `cdate` DESC";
+//	        
+//	        return jdbcUserWasteTemplate.queryForList(sql, zone);
+//			
+//		}
+//		
+//		else {
+//			
+//			//System.out.println("else block");
+//		
+//	        String sql = "SELECT  "
+//	        		+ "    `wlid` AS comp_id,  "
+//	        		+ "    `zone` AS comp_zone,  "
+//	        		+ "    `ward` AS comp_ward,  "
+//	        		+ "    `waste_location_mapping`.`user_mobile` AS comp_contact,  "
+//	        		+ "		`waste_location_mapping`.`user_name` AS comp_name, "
+//	        		//+ "    `EG_USER`.`FIRST_NAME` AS comp_name,  "
+//	        		+ "		DATE_FORMAT(`cdate`, '%d-%m-%Y %r') AS comp_date, "
+//	        		+ "    `latitude` AS comp_latitude,  "
+//	        		+ "    `longitude` AS comp_longitude,  "
+//	        		+ "    `address` AS comp_area,  "
+//	        		+ "    `tonage` AS appx_tonage,  "
+//	        		+ "    wt.`name` AS comp_type,  "
+//	        		+ "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', `file`) AS image,  "
+//	        		+ "    `status` AS comp_status  "
+//	        		+ "FROM  "
+//	        		+ "    `waste_location_mapping` "
+//	        		+ "JOIN  "
+//	        		+ "    `erp_pgr`.`EG_USER`  "
+//	        		+ "    ON `EG_USER`.id =  `waste_location_mapping`.`cby`"
+//	        		+ "LEFT JOIN "
+//		            + "    `waste_type` wt " 
+//		            + "    ON waste_location_mapping.type = wt.typeid "
+//	        		+ "WHERE  "
+//	        		+ "    `waste_location_mapping`.isactive = 1 "
+//	        		+ " AND `ward`= ? "
+//	        		//+ " AND `request_by_type`='Vendor' "
+//	        		+ " AND `status`='open' "
+//	        		+ " AND `approved`='pending' "
+//	        		+ "ORDER BY `cdate` DESC";
+//	        
+//	        return jdbcUserWasteTemplate.queryForList(sql, userWard);
+//        
+//		}
+//    }
+	
+	
+	public List<Map<String, Object>> getApprovalPendingList(String loginId, String ward, String type) {
 
-	         type = approve_check.get("type") != null 
-	                      ? approve_check.get("type").toString() 
-	                      : "";
+	    Map<String, Object> approve_check = getWardByLoginId(loginId, "");
 
-	         zone = approve_check.get("zone") != null 
-	                      ? approve_check.get("zone").toString() 
-	                      : "00";
+	    String dtype = "";
+	    String zone = "00";
+	    String userWard = "000";
 
-	         userWard = approve_check.get("ward") != null 
-	                          ? approve_check.get("ward").toString() 
-	                          : "000";
-
-//	        System.out.println("Type: " + type);
-//	        System.out.println("Zone: " + zone);
-//	        System.out.println("Ward: " + userWard);
+	    if (approve_check != null && !approve_check.isEmpty()) {
+	        dtype = approve_check.get("type") != null ? approve_check.get("type").toString() : "";
+	        zone = approve_check.get("zone") != null ? approve_check.get("zone").toString() : "00";
+	        userWard = approve_check.get("ward") != null ? approve_check.get("ward").toString() : "000";
 	    }
-		
-		System.out.println("Login ID: "+ loginId 
-				+ "/n Type: ae "
-				+ "/n approve_check_ward: "+userWard);
-		
-		
-		if("swmee".equals(type)) {
-			
-			//System.out.println("if block");
-			
-			String sql = "SELECT  "
-	        		+ "    `wlid` AS comp_id,  "
-	        		+ "    `zone` AS comp_zone,  "
-	        		+ "    `ward` AS comp_ward,  "
-	        		+ "    `waste_location_mapping`.`user_mobile` AS comp_contact,  "
-	        		+ "		`waste_location_mapping`.`user_name` AS comp_name, "
-	        		//+ "    `EG_USER`.`FIRST_NAME` AS comp_name,  "
-	        		+ "		DATE_FORMAT(`cdate`, '%d-%m-%Y %r') AS comp_date, "
-	        		+ "    `latitude` AS comp_latitude,  "
-	        		+ "    `longitude` AS comp_longitude,  "
-	        		+ "    `address` AS comp_area,  "
-	        		+ "    `tonage` AS appx_tonage,  "
-	        		+ "    wt.`name` AS comp_type,  "
-	        		+ "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', `file`) AS image,  "
-	        		+ "    `status` AS comp_status  "
-	        		+ "FROM  "
-	        		+ "    `waste_location_mapping` "
-	        		+ "JOIN  "
-	        		+ "    `erp_pgr`.`EG_USER`  "
-	        		+ "    ON `EG_USER`.id =  `waste_location_mapping`.`cby`"
-	        		+ "LEFT JOIN "
-		            + "    `waste_type` wt " 
-		            + "    ON waste_location_mapping.type = wt.typeid "
-	        		+ "WHERE  "
-	        		+ "    `waste_location_mapping`.isactive = 1 "
-	        		//+ " AND `ward`= ? "
-	        		+ " AND `escalation_flag`=1 "
-	        		//+ " AND `request_by_type`='Vendor' "
-	        		+ " AND `status`='open' "
-	        		+ " AND `approved`='pending' "
-	        		+ "ORDER BY `cdate` DESC";
-	        
-	        return jdbcUserWasteTemplate.queryForList(sql);
-			
-		}
-		
-		else if("zo".equals(type)) {
-			//System.out.println("else if block");
-			
-			String sql = "SELECT  "
-	        		+ "    `wlid` AS comp_id,  "
-	        		+ "    `zone` AS comp_zone,  "
-	        		+ "    `ward` AS comp_ward,  "
-	        		+ "    `waste_location_mapping`.`user_mobile` AS comp_contact,  "
-	        		+ "		`waste_location_mapping`.`user_name` AS comp_name, "
-	        		//+ "    `EG_USER`.`FIRST_NAME` AS comp_name,  "
-	        		+ "		DATE_FORMAT(`cdate`, '%d-%m-%Y %r') AS comp_date, "
-	        		+ "    `latitude` AS comp_latitude,  "
-	        		+ "    `longitude` AS comp_longitude,  "
-	        		+ "    `address` AS comp_area,  "
-	        		+ "    `tonage` AS appx_tonage,  "
-	        		+ "    wt.`name` AS comp_type,  "
-	        		+ "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', `file`) AS image,  "
-	        		+ "    `status` AS comp_status  "
-	        		+ "FROM  "
-	        		+ "    `waste_location_mapping` "
-	        		+ "JOIN  "
-	        		+ "    `erp_pgr`.`EG_USER`  "
-	        		+ "    ON `EG_USER`.id =  `waste_location_mapping`.`cby`"
-	        		+ "LEFT JOIN "
-		            + "    `waste_type` wt " 
-		            + "    ON waste_location_mapping.type = wt.typeid "
-	        		+ "WHERE  "
-	        		+ "    `waste_location_mapping`.isactive = 1 "
-	        		//+ " AND `ward`= ? "
-	        		+ " AND `escalation_flag`=1 "
-	        		+ " AND `zone`= ? "
-	        		//+ " AND `request_by_type`='Vendor' "
-	        		+ " AND `status`='open' "
-	        		+ " AND `approved`='pending' "
-	        		+ "ORDER BY `cdate` DESC";
-	        
-	        return jdbcUserWasteTemplate.queryForList(sql, zone);
-			
-		}
-		
-		else {
-			
-			//System.out.println("else block");
-		
-	        String sql = "SELECT  "
-	        		+ "    `wlid` AS comp_id,  "
-	        		+ "    `zone` AS comp_zone,  "
-	        		+ "    `ward` AS comp_ward,  "
-	        		+ "    `waste_location_mapping`.`user_mobile` AS comp_contact,  "
-	        		+ "		`waste_location_mapping`.`user_name` AS comp_name, "
-	        		//+ "    `EG_USER`.`FIRST_NAME` AS comp_name,  "
-	        		+ "		DATE_FORMAT(`cdate`, '%d-%m-%Y %r') AS comp_date, "
-	        		+ "    `latitude` AS comp_latitude,  "
-	        		+ "    `longitude` AS comp_longitude,  "
-	        		+ "    `address` AS comp_area,  "
-	        		+ "    `tonage` AS appx_tonage,  "
-	        		+ "    wt.`name` AS comp_type,  "
-	        		+ "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', `file`) AS image,  "
-	        		+ "    `status` AS comp_status  "
-	        		+ "FROM  "
-	        		+ "    `waste_location_mapping` "
-	        		+ "JOIN  "
-	        		+ "    `erp_pgr`.`EG_USER`  "
-	        		+ "    ON `EG_USER`.id =  `waste_location_mapping`.`cby`"
-	        		+ "LEFT JOIN "
-		            + "    `waste_type` wt " 
-		            + "    ON waste_location_mapping.type = wt.typeid "
-	        		+ "WHERE  "
-	        		+ "    `waste_location_mapping`.isactive = 1 "
-	        		+ " AND `ward`= ? "
-	        		//+ " AND `request_by_type`='Vendor' "
-	        		+ " AND `status`='open' "
-	        		+ " AND `approved`='pending' "
-	        		+ "ORDER BY `cdate` DESC";
-	        
-	        return jdbcUserWasteTemplate.queryForList(sql, userWard);
-        
-		}
-    }
+	    
+		System.out.println("Login ID: "+ loginId + " Type: "+dtype+  " approve_check_ward: "+userWard);
+
+	    StringBuilder sql = new StringBuilder();
+
+	    sql.append("SELECT ")
+	       .append(" wlid AS comp_id, ")
+	       .append(" zone AS comp_zone, ")
+	       .append(" ward AS comp_ward, ")
+	       .append(" waste_location_mapping.user_mobile AS comp_contact, ")
+	       .append(" waste_location_mapping.user_name AS comp_name, ")
+	       .append(" DATE_FORMAT(cdate, '%d-%m-%Y %r') AS comp_date, ")
+	       .append(" latitude AS comp_latitude, ")
+	       .append(" longitude AS comp_longitude, ")
+	       .append(" address AS comp_area, ")
+	       .append(" tonage AS appx_tonage, ")
+	       .append(" wt.name AS comp_type, ")
+	       .append(" CONCAT('").append(fileBaseUrl).append("/gccofficialapp/files', file) AS image, ")
+	       .append(" status AS comp_status ")
+	       .append(" FROM waste_location_mapping ")
+	       .append(" JOIN erp_pgr.EG_USER ON EG_USER.id = waste_location_mapping.cby ")
+	       .append(" LEFT JOIN waste_type wt ON waste_location_mapping.type = wt.typeid ")
+	       .append(" WHERE waste_location_mapping.isactive = 1 ")
+	       .append(" AND status = 'open' ")
+	       .append(" AND approved = 'pending' ");
+
+	    List<Object> params = new ArrayList<>();
+
+	    //  Role-based filtering
+	    if ("swmee".equals(dtype)) {
+	        sql.append(" AND escalation_flag = 1 ");
+	    } 
+	    else if ("zo".equals(dtype)) {
+	        sql.append(" AND escalation_flag = 1 ");
+	        sql.append(" AND zone = ? ");
+	        params.add(zone);
+	    } 
+	    else {
+	        sql.append(" AND ward = ? ");
+	        params.add(userWard);
+	    }
+
+	    //  type dynamic condition
+	    if (type != null && !type.trim().isEmpty()) {
+	        int wasteType = Integer.parseInt(type);
+	        sql.append(" AND waste_location_mapping.type = ? ");
+	        params.add(wasteType);
+	    }
+
+	    sql.append(" ORDER BY cdate DESC ");
+
+	    return jdbcUserWasteTemplate.queryForList(sql.toString(), params.toArray());
+	}
 	
 	
 	//scheduler method

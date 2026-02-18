@@ -61,8 +61,16 @@ public class APINULMOfficerController {
 		return nulmOfficerActivity.getStaffListForAttendance(reporterId);
 	}
 	
-	@GetMapping(value = "/getStaffListForAttendance_Loc") // Template
-	public List<?> getStaffListForAttendance_Loc(@RequestParam(value = "reporterId", required = false) String reporterId,
+//	@GetMapping(value = "/getStaffListForAttendance_Loc") // Template
+//	public List<?> getStaffListForAttendance_Loc(@RequestParam(value = "reporterId", required = false) String reporterId,
+//			@RequestParam(value = "latitude", required = false) String latitude,
+//			@RequestParam(value = "longitude", required = false) String longitude,
+//			@RequestParam(value = "type", required = false) String type) {
+//		return nulmOfficerActivity.checkLatLong_Loc(reporterId, latitude, longitude, type);
+//	}
+	
+	@GetMapping(value = "/getStaffListForAttendance_Loc_parkId") // Template
+	public List<?> getStaffListForAttendance_Loc_parkId(@RequestParam(value = "reporterId", required = false) String reporterId,
 			@RequestParam(value = "latitude", required = false) String latitude,
 			@RequestParam(value = "longitude", required = false) String longitude,
 			@RequestParam(value = "type", required = false) String type) {

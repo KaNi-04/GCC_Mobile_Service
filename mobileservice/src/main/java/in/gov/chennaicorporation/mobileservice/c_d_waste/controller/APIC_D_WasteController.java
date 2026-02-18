@@ -88,21 +88,40 @@ public class APIC_D_WasteController {
 	}
 	
 	
+//	@GetMapping("/getMyticketllist")
+//    public List<?> getMyticketllist(
+//			@RequestParam(value = "loginId", required = true) String loginId,
+//			@RequestParam(value = "fromDate", required = false) String fromDATE,
+//			@RequestParam(value = "toDate", required = false) String toDATE
+//			) {
+//        return c_d_WasteService.getMyticketllist(loginId,fromDATE,toDATE);
+//    }
+//	
+//	@GetMapping("/getApprovalPendingList")
+//    public List<?> getApprovalPendingList(
+//			@RequestParam(value = "loginId", required = true) String loginId,
+//			@RequestParam(value = "ward", required = true) String ward
+//			) {
+//        return c_d_WasteService.getApprovalPendingList(loginId,ward);
+//    }
+	
 	@GetMapping("/getMyticketllist")
     public List<?> getMyticketllist(
 			@RequestParam(value = "loginId", required = true) String loginId,
 			@RequestParam(value = "fromDate", required = false) String fromDATE,
-			@RequestParam(value = "toDate", required = false) String toDATE
+			@RequestParam(value = "toDate", required = false) String toDATE,
+			@RequestParam(value = "type", required = false) String type
 			) {
-        return c_d_WasteService.getMyticketllist(loginId,fromDATE,toDATE);
+        return c_d_WasteService.getMyticketllist(loginId,fromDATE,toDATE,type);
     }
 	
 	@GetMapping("/getApprovalPendingList")
     public List<?> getApprovalPendingList(
 			@RequestParam(value = "loginId", required = true) String loginId,
-			@RequestParam(value = "ward", required = true) String ward
+			@RequestParam(value = "ward", required = true) String ward,
+			@RequestParam(value = "type", required = false) String type
 			) {
-        return c_d_WasteService.getApprovalPendingList(loginId,ward);
+        return c_d_WasteService.getApprovalPendingList(loginId,ward,type);
     }
 	
 	@GetMapping("/checkApprovalLocation")
@@ -181,11 +200,104 @@ public class APIC_D_WasteController {
         return c_d_WasteService.getWardWiseCount(fromDATE,toDATE, zone,requestBy);
     }
 	
+//	@GetMapping("/getOfficerZoneWiseCount")
+//    public List<?> getOfficerZoneWiseCount(
+//			@RequestParam(value = "fromDate", required = true) String fromDATE,
+//			@RequestParam(value = "toDate", required = true) String toDATE,
+//			@RequestParam(value = "requestBy", required = false) String requestBy
+//			) {
+//		
+//			if (requestBy == null || requestBy.isBlank()) {
+//				requestBy = "'Officer'";
+//			}
+//			else {
+//				requestBy = "'"+requestBy+"'";
+//			}
+//			
+//        return c_d_WasteService.getOfficerZoneWiseCount(fromDATE,toDATE,requestBy);
+//    }
+//	
+//	@GetMapping("/getOfficerWardWiseCount")
+//    public List<?> getOfficerWardWiseCount(
+//			@RequestParam(value = "fromDate", required = true) String fromDATE,
+//			@RequestParam(value = "toDate", required = true) String toDATE,
+//			@RequestParam(value = "zone", required = true) String zone,
+//			@RequestParam(value = "requestBy", required = false) String requestBy
+//			) {
+//		
+//			if (requestBy == null || requestBy.isBlank()) {
+//				requestBy = "'Officer'";
+//			}
+//			else {
+//				requestBy = "'"+requestBy+"'";
+//			}
+//			
+//        return c_d_WasteService.getOfficerWardWiseCount(fromDATE,toDATE, zone,requestBy);
+//    }
+//	
+//	@GetMapping("/getVendorZoneWiseCount")
+//    public List<?> getVendorZoneWiseCount(
+//			@RequestParam(value = "fromDate", required = true) String fromDATE,
+//			@RequestParam(value = "toDate", required = true) String toDATE,
+//			@RequestParam(value = "requestBy", required = false) String requestBy
+//			) {
+//		
+//			if (requestBy == null || requestBy.isBlank()) {
+//				requestBy = "'Vendor','councillor','IE'";
+//			}
+//			else {
+//				requestBy = "'"+requestBy+"'";
+//			}
+//			
+//        return c_d_WasteService.getVendorZoneWiseCount(fromDATE,toDATE,requestBy);
+//    }
+//	
+//	@GetMapping("/getVendorWardWiseCount")
+//    public List<?> getVendorWardWiseCount(
+//			@RequestParam(value = "fromDate", required = true) String fromDATE,
+//			@RequestParam(value = "toDate", required = true) String toDATE,
+//			@RequestParam(value = "zone", required = true) String zone,
+//			@RequestParam(value = "requestBy", required = false) String requestBy
+//			) {
+//		
+//			if (requestBy == null || requestBy.isBlank()) {
+//				requestBy = "'Vendor','councillor','IE'";
+//			}
+//			else {
+//				requestBy = "'"+requestBy+"'";
+//			}
+//			
+//        return c_d_WasteService.getVendorWardWiseCount(fromDATE,toDATE, zone,requestBy);
+//    }
+//	
+//	@GetMapping("/getListByStatus")
+//    public List<?> getComplaintList(
+//			@RequestParam(value = "fromDate", required = true) String fromDATE,
+//			@RequestParam(value = "toDate", required = true) String toDATE,
+//			@RequestParam(value = "zone", required = true) String zone,
+//			@RequestParam(value = "ward", required = true) String ward,
+//			@RequestParam(value = "status", required = true) String status,
+//			@RequestParam(value = "requestBy", required = false) String requestBy
+//			) {
+//		
+//			if (requestBy == null || requestBy.isBlank()) {
+//				requestBy = "'Vendor','Officer','councillor','IE'";
+//			}
+//			else {
+//				//requestBy = "'"+requestBy+"'";
+//			}
+//				
+//        return c_d_WasteService.getListByStatus(fromDATE,toDATE, zone, ward, status,requestBy);
+//    }
+	
+	
+	
 	@GetMapping("/getOfficerZoneWiseCount")
     public List<?> getOfficerZoneWiseCount(
 			@RequestParam(value = "fromDate", required = true) String fromDATE,
 			@RequestParam(value = "toDate", required = true) String toDATE,
-			@RequestParam(value = "requestBy", required = false) String requestBy
+			@RequestParam(value = "requestBy", required = false) String requestBy,
+			@RequestParam(value = "type", required = false) String type
 			) {
 		
 			if (requestBy == null || requestBy.isBlank()) {
@@ -195,7 +307,7 @@ public class APIC_D_WasteController {
 				requestBy = "'"+requestBy+"'";
 			}
 			
-        return c_d_WasteService.getOfficerZoneWiseCount(fromDATE,toDATE,requestBy);
+        return c_d_WasteService.getOfficerZoneWiseCount(fromDATE,toDATE,requestBy,type);
     }
 	
 	@GetMapping("/getOfficerWardWiseCount")
@@ -203,7 +315,8 @@ public class APIC_D_WasteController {
 			@RequestParam(value = "fromDate", required = true) String fromDATE,
 			@RequestParam(value = "toDate", required = true) String toDATE,
 			@RequestParam(value = "zone", required = true) String zone,
-			@RequestParam(value = "requestBy", required = false) String requestBy
+			@RequestParam(value = "requestBy", required = false) String requestBy,
+			@RequestParam(value = "type", required = false) String type
 			) {
 		
 			if (requestBy == null || requestBy.isBlank()) {
@@ -213,14 +326,15 @@ public class APIC_D_WasteController {
 				requestBy = "'"+requestBy+"'";
 			}
 			
-        return c_d_WasteService.getOfficerWardWiseCount(fromDATE,toDATE, zone,requestBy);
+        return c_d_WasteService.getOfficerWardWiseCount(fromDATE,toDATE, zone,requestBy,type);
     }
 	
 	@GetMapping("/getVendorZoneWiseCount")
     public List<?> getVendorZoneWiseCount(
 			@RequestParam(value = "fromDate", required = true) String fromDATE,
 			@RequestParam(value = "toDate", required = true) String toDATE,
-			@RequestParam(value = "requestBy", required = false) String requestBy
+			@RequestParam(value = "requestBy", required = false) String requestBy,
+			@RequestParam(value = "type", required = false) String type
 			) {
 		
 			if (requestBy == null || requestBy.isBlank()) {
@@ -230,7 +344,7 @@ public class APIC_D_WasteController {
 				requestBy = "'"+requestBy+"'";
 			}
 			
-        return c_d_WasteService.getVendorZoneWiseCount(fromDATE,toDATE,requestBy);
+        return c_d_WasteService.getVendorZoneWiseCount(fromDATE,toDATE,requestBy,type);
     }
 	
 	@GetMapping("/getVendorWardWiseCount")
@@ -238,7 +352,8 @@ public class APIC_D_WasteController {
 			@RequestParam(value = "fromDate", required = true) String fromDATE,
 			@RequestParam(value = "toDate", required = true) String toDATE,
 			@RequestParam(value = "zone", required = true) String zone,
-			@RequestParam(value = "requestBy", required = false) String requestBy
+			@RequestParam(value = "requestBy", required = false) String requestBy,
+			@RequestParam(value = "type", required = false) String type
 			) {
 		
 			if (requestBy == null || requestBy.isBlank()) {
@@ -248,7 +363,7 @@ public class APIC_D_WasteController {
 				requestBy = "'"+requestBy+"'";
 			}
 			
-        return c_d_WasteService.getVendorWardWiseCount(fromDATE,toDATE, zone,requestBy);
+        return c_d_WasteService.getVendorWardWiseCount(fromDATE,toDATE, zone,requestBy,type);
     }
 	
 	@GetMapping("/getListByStatus")
@@ -258,7 +373,8 @@ public class APIC_D_WasteController {
 			@RequestParam(value = "zone", required = true) String zone,
 			@RequestParam(value = "ward", required = true) String ward,
 			@RequestParam(value = "status", required = true) String status,
-			@RequestParam(value = "requestBy", required = false) String requestBy
+			@RequestParam(value = "requestBy", required = false) String requestBy,
+			@RequestParam(value = "type", required = false) String type
 			) {
 		
 			if (requestBy == null || requestBy.isBlank()) {
@@ -268,8 +384,9 @@ public class APIC_D_WasteController {
 				//requestBy = "'"+requestBy+"'";
 			}
 				
-        return c_d_WasteService.getListByStatus(fromDATE,toDATE, zone, ward, status,requestBy);
+        return c_d_WasteService.getListByStatus(fromDATE,toDATE, zone, ward, status,requestBy,type);
     }
+	
 	
 	@GetMapping("/getWardSumReport")
     public List<?> getWardSumReport(

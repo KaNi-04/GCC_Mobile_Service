@@ -35,12 +35,22 @@ public class API_C_D_WasteUserController {
 		return c_d_WasteUserService.saveUserWaste(latitude,longitude,zone,ward,address,tonage,file,type,ref_id);
 	}
 	
+//	@GetMapping("/getUserApprovalPendingList")
+//    public List<?> getApprovalPendingList(
+//			@RequestParam(value = "loginId", required = true) String loginId,
+//			@RequestParam(value = "ward", required = true) String ward
+//			) {
+//        return c_d_WasteUserService.getApprovalPendingList(loginId,ward);
+//    }
+	
+	
 	@GetMapping("/getUserApprovalPendingList")
     public List<?> getApprovalPendingList(
 			@RequestParam(value = "loginId", required = true) String loginId,
-			@RequestParam(value = "ward", required = true) String ward
+			@RequestParam(value = "ward", required = true) String ward,
+			@RequestParam(value = "type", required = false) String type
 			) {
-        return c_d_WasteUserService.getApprovalPendingList(loginId,ward);
+        return c_d_WasteUserService.getApprovalPendingList(loginId,ward,type);
     }
 	
 	@PostMapping(value="/saveUserApproval") 

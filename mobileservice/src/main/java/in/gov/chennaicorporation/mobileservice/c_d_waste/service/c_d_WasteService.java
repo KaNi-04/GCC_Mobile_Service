@@ -678,54 +678,54 @@ public class c_d_WasteService {
 		return Collections.singletonList(response);
 	}
 	
-	public List<Map<String, Object>> getMyticketllist(String loginId, String fromDATE, String toDATE) {
-		
-		// Define the input and output date formats
-        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        // Parse the input dates to LocalDate
-        LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
-        LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
-
-        // Format the LocalDate to the required format
-        String formattedFromDate = fromDate.format(outputFormatter);
-        String formattedToDate = toDate.format(outputFormatter);
-        
-        String sql = "SELECT  "
-        		+ "    `wlid` AS comp_id,  "
-        		+ "    `zone` AS comp_zone,  "
-        		+ "    `ward` AS comp_ward,  "
-        		+ "    `EG_USER`.`EXTRAFIELD2` AS comp_contact,  "
-        		//+ "    `EG_USER`.`FIRST_NAME` AS comp_name,  "
-        		+ "		CONCAT(COALESCE(EG_USER.FIRST_NAME, ''), ' ', COALESCE(EG_USER.MIDDLE_NAME, '')) AS comp_name, "
-        		+ "		DATE_FORMAT(`cdate`, '%d-%m-%Y %r') AS comp_date, "
-        		+ "    `latitude` AS comp_latitude,  "
-        		+ "    `longitude` AS comp_longitude,  "
-        		+ "    `address` AS comp_area,  "
-        		+ "    `tonage` AS appx_tonage,  "
-        		+ "    wt.`name` AS comp_type,  "
-        		+ "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', `file`) AS image,  "
-        		+ "    `status` AS comp_status, "
-        		+ "		`street_type` AS comp_street_type, "
-        		+ "		`kpi` AS comp_kpi "
-        		+ "FROM  "
-        		+ "    `waste_location_mapping` "
-        		+ "JOIN  "
-        		+ "    `erp_pgr`.`EG_USER`  "
-        		+ "    ON `waste_location_mapping`.cby = `EG_USER`.id  "
-        		+ "LEFT JOIN "
-	            + "    `waste_type` wt " 
-	            + "    ON waste_location_mapping.type = wt.typeid "
-        		+ "WHERE  "
-        		+ "    `waste_location_mapping`.isactive = 1 "
-        		+ " AND `cby`=? "
-        		+ " AND DATE(`waste_location_mapping`.cdate) BETWEEN ? AND ? "
-        		+ "ORDER BY `cdate` DESC "
-        		+ "LIMIT 50";
-        
-        return jdbcWasteTemplate.queryForList(sql, loginId, formattedFromDate, formattedToDate);
-    }
+//	public List<Map<String, Object>> getMyticketllist(String loginId, String fromDATE, String toDATE) {
+//		
+//		// Define the input and output date formats
+//        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+//        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+//
+//        // Parse the input dates to LocalDate
+//        LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
+//        LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
+//
+//        // Format the LocalDate to the required format
+//        String formattedFromDate = fromDate.format(outputFormatter);
+//        String formattedToDate = toDate.format(outputFormatter);
+//        
+//        String sql = "SELECT  "
+//        		+ "    `wlid` AS comp_id,  "
+//        		+ "    `zone` AS comp_zone,  "
+//        		+ "    `ward` AS comp_ward,  "
+//        		+ "    `EG_USER`.`EXTRAFIELD2` AS comp_contact,  "
+//        		//+ "    `EG_USER`.`FIRST_NAME` AS comp_name,  "
+//        		+ "		CONCAT(COALESCE(EG_USER.FIRST_NAME, ''), ' ', COALESCE(EG_USER.MIDDLE_NAME, '')) AS comp_name, "
+//        		+ "		DATE_FORMAT(`cdate`, '%d-%m-%Y %r') AS comp_date, "
+//        		+ "    `latitude` AS comp_latitude,  "
+//        		+ "    `longitude` AS comp_longitude,  "
+//        		+ "    `address` AS comp_area,  "
+//        		+ "    `tonage` AS appx_tonage,  "
+//        		+ "    wt.`name` AS comp_type,  "
+//        		+ "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', `file`) AS image,  "
+//        		+ "    `status` AS comp_status, "
+//        		+ "		`street_type` AS comp_street_type, "
+//        		+ "		`kpi` AS comp_kpi "
+//        		+ "FROM  "
+//        		+ "    `waste_location_mapping` "
+//        		+ "JOIN  "
+//        		+ "    `erp_pgr`.`EG_USER`  "
+//        		+ "    ON `waste_location_mapping`.cby = `EG_USER`.id  "
+//        		+ "LEFT JOIN "
+//	            + "    `waste_type` wt " 
+//	            + "    ON waste_location_mapping.type = wt.typeid "
+//        		+ "WHERE  "
+//        		+ "    `waste_location_mapping`.isactive = 1 "
+//        		+ " AND `cby`=? "
+//        		+ " AND DATE(`waste_location_mapping`.cdate) BETWEEN ? AND ? "
+//        		+ "ORDER BY `cdate` DESC "
+//        		+ "LIMIT 50";
+//        
+//        return jdbcWasteTemplate.queryForList(sql, loginId, formattedFromDate, formattedToDate);
+//    }
 	
 //	public String getWardByLoginId(String loginid, String type) {
 //	    String sqlQuery = "SELECT `ward` FROM `gcc_penalty_hoardings`.`hoading_user_list` WHERE `userid` = ? LIMIT 1";
@@ -803,162 +803,162 @@ public class c_d_WasteService {
 	    return new HashMap<>(); // or return null based on your needs
 	}
 	
-	public List<Map<String, Object>> getApprovalPendingList(String loginId, String ward) {
-		
-		//String approve_check_ward = getWardByLoginId(loginId,"");
-		
-		Map<String, Object> approve_check=getWardByLoginId(loginId,"");
-
-		String type="";
-		String zone="00";
-		String userWard="000";
-		
-		if (approve_check != null && !approve_check.isEmpty()) {
-
-	         type = approve_check.get("type") != null 
-	                      ? approve_check.get("type").toString() 
-	                      : "";
-
-	         zone = approve_check.get("zone") != null 
-	                      ? approve_check.get("zone").toString() 
-	                      : "00";
-
-	         userWard = approve_check.get("ward") != null 
-	                          ? approve_check.get("ward").toString() 
-	                          : "000";
-
-//	        System.out.println("Type: " + type);
-//	        System.out.println("Zone: " + zone);
-//	        System.out.println("Ward: " + userWard);
-	    }
-		
-		System.out.println("Login ID: "+ loginId 
-				+ "/n Type: ae "
-				+ "/n approve_check_ward: "+userWard);
-		
-		if("swmee".equals(type)) {
-			
-			//System.out.println("if block");
-			
-			String sql = "SELECT  "
-	        		+ "    `wlid` AS comp_id,  "
-	        		+ "    `zone` AS comp_zone,  "
-	        		+ "    `ward` AS comp_ward,  "
-	        		+ "    `EG_USER`.`EXTRAFIELD2` AS comp_contact,  "
-	        		+ "		CONCAT(COALESCE(EG_USER.FIRST_NAME, ''), ' ', COALESCE(EG_USER.MIDDLE_NAME, '')) AS comp_name, "
-	        		//+ "    `EG_USER`.`FIRST_NAME` AS comp_name,  "
-	        		+ "		DATE_FORMAT(`cdate`, '%d-%m-%Y %r') AS comp_date, "
-	        		+ "    `latitude` AS comp_latitude,  "
-	        		+ "    `longitude` AS comp_longitude,  "
-	        		+ "    `address` AS comp_area,  "
-	        		+ "    `tonage` AS appx_tonage,  "
-	        		+ "    wt.`name` AS comp_type,  "
-	        		+ "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', `file`) AS image,  "
-	        		+ "    `status` AS comp_status,  "
-	        		+ "		`street_type` AS comp_street_type, "
-	        		+ "		`kpi` AS comp_kpi "
-	        		+ "FROM  "
-	        		+ "    `waste_location_mapping` "
-	        		+ "JOIN  "
-	        		+ "    `erp_pgr`.`EG_USER`  "
-	        		+ "    ON `EG_USER`.id =  `waste_location_mapping`.`cby`"
-	        		+ "LEFT JOIN "
-		            + "    `waste_type` wt " 
-		            + "    ON waste_location_mapping.type = wt.typeid "
-	        		+ "WHERE  "
-	        		+ "    `waste_location_mapping`.isactive = 1 "
-	        		//+ " AND `ward`= ? "
-	        		+ " AND `escalation_flag`=1 "
-	        		//+ " AND `request_by_type`='Vendor' "
-	        		+ " AND `status`='open' "
-	        		+ " AND `approved`='pending' "
-	        		+ "ORDER BY `cdate` DESC";
-			
-			return jdbcWasteTemplate.queryForList(sql);
-			
-		}
-		else if("zo".equals(type)) {
-			//System.out.println("else if block");
-			
-			String sql = "SELECT  "
-	        		+ "    `wlid` AS comp_id,  "
-	        		+ "    `zone` AS comp_zone,  "
-	        		+ "    `ward` AS comp_ward,  "
-	        		+ "    `EG_USER`.`EXTRAFIELD2` AS comp_contact,  "
-	        		+ "		CONCAT(COALESCE(EG_USER.FIRST_NAME, ''), ' ', COALESCE(EG_USER.MIDDLE_NAME, '')) AS comp_name, "
-	        		//+ "    `EG_USER`.`FIRST_NAME` AS comp_name,  "
-	        		+ "		DATE_FORMAT(`cdate`, '%d-%m-%Y %r') AS comp_date, "
-	        		+ "    `latitude` AS comp_latitude,  "
-	        		+ "    `longitude` AS comp_longitude,  "
-	        		+ "    `address` AS comp_area,  "
-	        		+ "    `tonage` AS appx_tonage,  "
-	        		+ "    wt.`name` AS comp_type,  "
-	        		+ "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', `file`) AS image,  "
-	        		+ "    `status` AS comp_status,  "
-	        		+ "		`street_type` AS comp_street_type, "
-	        		+ "		`kpi` AS comp_kpi "
-	        		+ "FROM  "
-	        		+ "    `waste_location_mapping` "
-	        		+ "JOIN  "
-	        		+ "    `erp_pgr`.`EG_USER`  "
-	        		+ "    ON `EG_USER`.id =  `waste_location_mapping`.`cby`"
-	        		+ "LEFT JOIN "
-		            + "    `waste_type` wt " 
-		            + "    ON waste_location_mapping.type = wt.typeid "
-	        		+ "WHERE  "
-	        		+ "    `waste_location_mapping`.isactive = 1 "
-	        		//+ " AND `ward`= ? "
-	        		+ " AND `escalation_flag`=1 "
-	        		+ " AND `zone`= ? "
-	        		//+ " AND `request_by_type`='Vendor' "
-	        		+ " AND `status`='open' "
-	        		+ " AND `approved`='pending' "
-	        		+ "ORDER BY `cdate` DESC";
-			
-			return jdbcWasteTemplate.queryForList(sql, zone);
-		}
-		else {
-			
-			//System.out.println("else block");
-			
-			String sql = "SELECT  "
-	        		+ "    `wlid` AS comp_id,  "
-	        		+ "    `zone` AS comp_zone,  "
-	        		+ "    `ward` AS comp_ward,  "
-	        		+ "    `EG_USER`.`EXTRAFIELD2` AS comp_contact,  "
-	        		+ "		CONCAT(COALESCE(EG_USER.FIRST_NAME, ''), ' ', COALESCE(EG_USER.MIDDLE_NAME, '')) AS comp_name, "
-	        		//+ "    `EG_USER`.`FIRST_NAME` AS comp_name,  "
-	        		+ "		DATE_FORMAT(`cdate`, '%d-%m-%Y %r') AS comp_date, "
-	        		+ "    `latitude` AS comp_latitude,  "
-	        		+ "    `longitude` AS comp_longitude,  "
-	        		+ "    `address` AS comp_area,  "
-	        		+ "    `tonage` AS appx_tonage,  "
-	        		+ "    wt.`name` AS comp_type,  "
-	        		+ "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', `file`) AS image,  "
-	        		+ "    `status` AS comp_status,  "
-	        		+ "		`street_type` AS comp_street_type, "
-	        		+ "		`kpi` AS comp_kpi "
-	        		+ "FROM  "
-	        		+ "    `waste_location_mapping` "
-	        		+ "JOIN  "
-	        		+ "    `erp_pgr`.`EG_USER`  "
-	        		+ "    ON `EG_USER`.id =  `waste_location_mapping`.`cby`"
-	        		+ "LEFT JOIN "
-		            + "    `waste_type` wt " 
-		            + "    ON waste_location_mapping.type = wt.typeid "
-	        		+ "WHERE  "
-	        		+ "    `waste_location_mapping`.isactive = 1 "
-	        		+ " AND `ward`= ? "
-	        		//+ " AND `request_by_type`='Vendor' "
-	        		+ " AND `status`='open' "
-	        		+ " AND `approved`='pending' "
-	        		+ "ORDER BY `cdate` DESC";
-	        
-	        return jdbcWasteTemplate.queryForList(sql, userWard);
-		}
-		
-        
-    }
+//	public List<Map<String, Object>> getApprovalPendingList(String loginId, String ward) {
+//		
+//		//String approve_check_ward = getWardByLoginId(loginId,"");
+//		
+//		Map<String, Object> approve_check=getWardByLoginId(loginId,"");
+//
+//		String type="";
+//		String zone="00";
+//		String userWard="000";
+//		
+//		if (approve_check != null && !approve_check.isEmpty()) {
+//
+//	         type = approve_check.get("type") != null 
+//	                      ? approve_check.get("type").toString() 
+//	                      : "";
+//
+//	         zone = approve_check.get("zone") != null 
+//	                      ? approve_check.get("zone").toString() 
+//	                      : "00";
+//
+//	         userWard = approve_check.get("ward") != null 
+//	                          ? approve_check.get("ward").toString() 
+//	                          : "000";
+//
+////	        System.out.println("Type: " + type);
+////	        System.out.println("Zone: " + zone);
+////	        System.out.println("Ward: " + userWard);
+//	    }
+//		
+//		System.out.println("Login ID: "+ loginId 
+//				+ "/n Type: ae "
+//				+ "/n approve_check_ward: "+userWard);
+//		
+//		if("swmee".equals(type)) {
+//			
+//			//System.out.println("if block");
+//			
+//			String sql = "SELECT  "
+//	        		+ "    `wlid` AS comp_id,  "
+//	        		+ "    `zone` AS comp_zone,  "
+//	        		+ "    `ward` AS comp_ward,  "
+//	        		+ "    `EG_USER`.`EXTRAFIELD2` AS comp_contact,  "
+//	        		+ "		CONCAT(COALESCE(EG_USER.FIRST_NAME, ''), ' ', COALESCE(EG_USER.MIDDLE_NAME, '')) AS comp_name, "
+//	        		//+ "    `EG_USER`.`FIRST_NAME` AS comp_name,  "
+//	        		+ "		DATE_FORMAT(`cdate`, '%d-%m-%Y %r') AS comp_date, "
+//	        		+ "    `latitude` AS comp_latitude,  "
+//	        		+ "    `longitude` AS comp_longitude,  "
+//	        		+ "    `address` AS comp_area,  "
+//	        		+ "    `tonage` AS appx_tonage,  "
+//	        		+ "    wt.`name` AS comp_type,  "
+//	        		+ "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', `file`) AS image,  "
+//	        		+ "    `status` AS comp_status,  "
+//	        		+ "		`street_type` AS comp_street_type, "
+//	        		+ "		`kpi` AS comp_kpi "
+//	        		+ "FROM  "
+//	        		+ "    `waste_location_mapping` "
+//	        		+ "JOIN  "
+//	        		+ "    `erp_pgr`.`EG_USER`  "
+//	        		+ "    ON `EG_USER`.id =  `waste_location_mapping`.`cby`"
+//	        		+ "LEFT JOIN "
+//		            + "    `waste_type` wt " 
+//		            + "    ON waste_location_mapping.type = wt.typeid "
+//	        		+ "WHERE  "
+//	        		+ "    `waste_location_mapping`.isactive = 1 "
+//	        		//+ " AND `ward`= ? "
+//	        		+ " AND `escalation_flag`=1 "
+//	        		//+ " AND `request_by_type`='Vendor' "
+//	        		+ " AND `status`='open' "
+//	        		+ " AND `approved`='pending' "
+//	        		+ "ORDER BY `cdate` DESC";
+//			
+//			return jdbcWasteTemplate.queryForList(sql);
+//			
+//		}
+//		else if("zo".equals(type)) {
+//			//System.out.println("else if block");
+//			
+//			String sql = "SELECT  "
+//	        		+ "    `wlid` AS comp_id,  "
+//	        		+ "    `zone` AS comp_zone,  "
+//	        		+ "    `ward` AS comp_ward,  "
+//	        		+ "    `EG_USER`.`EXTRAFIELD2` AS comp_contact,  "
+//	        		+ "		CONCAT(COALESCE(EG_USER.FIRST_NAME, ''), ' ', COALESCE(EG_USER.MIDDLE_NAME, '')) AS comp_name, "
+//	        		//+ "    `EG_USER`.`FIRST_NAME` AS comp_name,  "
+//	        		+ "		DATE_FORMAT(`cdate`, '%d-%m-%Y %r') AS comp_date, "
+//	        		+ "    `latitude` AS comp_latitude,  "
+//	        		+ "    `longitude` AS comp_longitude,  "
+//	        		+ "    `address` AS comp_area,  "
+//	        		+ "    `tonage` AS appx_tonage,  "
+//	        		+ "    wt.`name` AS comp_type,  "
+//	        		+ "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', `file`) AS image,  "
+//	        		+ "    `status` AS comp_status,  "
+//	        		+ "		`street_type` AS comp_street_type, "
+//	        		+ "		`kpi` AS comp_kpi "
+//	        		+ "FROM  "
+//	        		+ "    `waste_location_mapping` "
+//	        		+ "JOIN  "
+//	        		+ "    `erp_pgr`.`EG_USER`  "
+//	        		+ "    ON `EG_USER`.id =  `waste_location_mapping`.`cby`"
+//	        		+ "LEFT JOIN "
+//		            + "    `waste_type` wt " 
+//		            + "    ON waste_location_mapping.type = wt.typeid "
+//	        		+ "WHERE  "
+//	        		+ "    `waste_location_mapping`.isactive = 1 "
+//	        		//+ " AND `ward`= ? "
+//	        		+ " AND `escalation_flag`=1 "
+//	        		+ " AND `zone`= ? "
+//	        		//+ " AND `request_by_type`='Vendor' "
+//	        		+ " AND `status`='open' "
+//	        		+ " AND `approved`='pending' "
+//	        		+ "ORDER BY `cdate` DESC";
+//			
+//			return jdbcWasteTemplate.queryForList(sql, zone);
+//		}
+//		else {
+//			
+//			//System.out.println("else block");
+//			
+//			String sql = "SELECT  "
+//	        		+ "    `wlid` AS comp_id,  "
+//	        		+ "    `zone` AS comp_zone,  "
+//	        		+ "    `ward` AS comp_ward,  "
+//	        		+ "    `EG_USER`.`EXTRAFIELD2` AS comp_contact,  "
+//	        		+ "		CONCAT(COALESCE(EG_USER.FIRST_NAME, ''), ' ', COALESCE(EG_USER.MIDDLE_NAME, '')) AS comp_name, "
+//	        		//+ "    `EG_USER`.`FIRST_NAME` AS comp_name,  "
+//	        		+ "		DATE_FORMAT(`cdate`, '%d-%m-%Y %r') AS comp_date, "
+//	        		+ "    `latitude` AS comp_latitude,  "
+//	        		+ "    `longitude` AS comp_longitude,  "
+//	        		+ "    `address` AS comp_area,  "
+//	        		+ "    `tonage` AS appx_tonage,  "
+//	        		+ "    wt.`name` AS comp_type,  "
+//	        		+ "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', `file`) AS image,  "
+//	        		+ "    `status` AS comp_status,  "
+//	        		+ "		`street_type` AS comp_street_type, "
+//	        		+ "		`kpi` AS comp_kpi "
+//	        		+ "FROM  "
+//	        		+ "    `waste_location_mapping` "
+//	        		+ "JOIN  "
+//	        		+ "    `erp_pgr`.`EG_USER`  "
+//	        		+ "    ON `EG_USER`.id =  `waste_location_mapping`.`cby`"
+//	        		+ "LEFT JOIN "
+//		            + "    `waste_type` wt " 
+//		            + "    ON waste_location_mapping.type = wt.typeid "
+//	        		+ "WHERE  "
+//	        		+ "    `waste_location_mapping`.isactive = 1 "
+//	        		+ " AND `ward`= ? "
+//	        		//+ " AND `request_by_type`='Vendor' "
+//	        		+ " AND `status`='open' "
+//	        		+ " AND `approved`='pending' "
+//	        		+ "ORDER BY `cdate` DESC";
+//	        
+//	        return jdbcWasteTemplate.queryForList(sql, userWard);
+//		}
+//		
+//        
+//    }
 
 //scheduler method
     public Map<String, Object> updateCDWasteEscalationStatus(String status) {
@@ -1227,263 +1227,732 @@ public class c_d_WasteService {
 	
 	// New Report
 	
-	public List<Map<String, Object>> getOfficerZoneWiseCount(String fromDATE, String toDATE, String requestBy) {
-		// Define the input and output date formats
-        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        // Parse the input dates to LocalDate
-        LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
-        LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
-
-        // Format the LocalDate to the required format
-        String formattedFromDate = fromDate.format(outputFormatter);
-        String formattedToDate = toDate.format(outputFormatter);
-        
-        String sql = "SELECT "
-        		+ "    CASE  "
-        		+ "        WHEN `waste_location_mapping`.`zone` IS NULL THEN 'Total' "
-        		+ "        ELSE `waste_location_mapping`.`zone` "
-        		+ "    END AS `zone`,  "
-        		+ "    COUNT(`waste_location_mapping`.`wlid`) AS `Total_Identified_Count`, "
-        		+ "    FORMAT(SUM(`waste_location_mapping`.`tonage`)/1000, 2) AS `Total_Identified_Tonage`, "
-        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Open' THEN 1 END) AS `Pending_Count`, "
-        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Open' THEN `waste_location_mapping`.`tonage` ELSE 0 END)/1000, 2) AS `Pending_Tonage`, "
-        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Close' THEN 1 END) AS `Closed_Count`, "
-        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Close' THEN wr.`tonage` ELSE 0 END)/1000, 2) AS `Close_Tonage` "
-        		+ "FROM "
-        		+ "    `waste_location_mapping` "
-        		+ "JOIN "
-        		+ "    `erp_pgr`.`EG_USER` ON `waste_location_mapping`.cby = `EG_USER`.id "
-        		+ "LEFT JOIN "
-        		+ "    `waste_reply` wr ON `waste_location_mapping`.`wlid` = wr.`wlid` AND wr.`isactive`=1 "
-        		+ "WHERE "
-        		+ "    `waste_location_mapping`.isactive = 1 "
-        		+ "    AND DATE(`waste_location_mapping`.cdate) BETWEEN ? AND ? "
-        		+ "    AND `waste_location_mapping`.request_by_type IN ("+requestBy+") "
-        		+ "GROUP BY "
-        		+ "    `waste_location_mapping`.`zone` "
-        		+ "WITH ROLLUP";
-        
-        return jdbcWasteTemplate.queryForList(sql, formattedFromDate, formattedToDate);
-    }
-	
-	public List<Map<String, Object>> getOfficerWardWiseCount(String fromDATE, String toDATE, String zone, String requestBy) {
-		
-		// Define the input and output date formats
-        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        // Parse the input dates to LocalDate
-        LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
-        LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
-
-        // Format the LocalDate to the required format
-        String formattedFromDate = fromDate.format(outputFormatter);
-        String formattedToDate = toDate.format(outputFormatter);
-        
-        String sql = "SELECT "
-        		+ "    CASE  "
-        		+ "        WHEN `waste_location_mapping`.`ward` IS NULL THEN 'Total' "
-        		+ "        ELSE `waste_location_mapping`.`ward` "
-        		+ "    END AS `ward`,  "
-        		+ "    COUNT(`waste_location_mapping`.`wlid`) AS `Total_Identified_Count`, "
-        		+ "    FORMAT(SUM(`waste_location_mapping`.`tonage`)/1000, 2) AS `Total_Identified_Tonage`, "
-        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Open' THEN 1 END) AS `Pending_Count`, "
-        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Open' THEN `waste_location_mapping`.`tonage` ELSE 0 END)/1000, 2) AS `Pending_Tonage`, "
-        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Close' THEN 1 END) AS `Closed_Count`, "
-        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Close' THEN wr.`tonage` ELSE 0 END)/1000, 2) AS `Close_Tonage` "
-        		+ "FROM "
-        		+ "    `waste_location_mapping` "
-        		+ "JOIN "
-        		+ "    `erp_pgr`.`EG_USER` ON `waste_location_mapping`.cby = `EG_USER`.id "
-        		+ "LEFT JOIN "
-        		+ "    `waste_reply` wr ON `waste_location_mapping`.`wlid` = wr.`wlid` AND wr.`isactive`=1 "
-        		+ "WHERE "
-        		+ "    `waste_location_mapping`.isactive = 1 "
-        		+ "    AND `waste_location_mapping`.`zone`= ? "
-        		+ "    AND DATE(`waste_location_mapping`.cdate) BETWEEN ? AND ? "
-        		+ "    AND `waste_location_mapping`.request_by_type IN ("+requestBy+") "
-        		+ "GROUP BY "
-        		+ "    `waste_location_mapping`.`ward` "
-        		+ "WITH ROLLUP";
-        
-        return jdbcWasteTemplate.queryForList(sql, zone, formattedFromDate, formattedToDate);
-    }
-	
-	public List<Map<String, Object>> getVendorZoneWiseCount(String fromDATE, String toDATE, String requestBy) {
-		// Define the input and output date formats
-        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        // Parse the input dates to LocalDate
-        LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
-        LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
-
-        // Format the LocalDate to the required format
-        String formattedFromDate = fromDate.format(outputFormatter);
-        String formattedToDate = toDate.format(outputFormatter);
-        
-        String sql = "SELECT "
-        		+ "    CASE "
-        		+ "        WHEN `waste_location_mapping`.`zone` IS NULL THEN 'Total' "
-        		+ "        ELSE `waste_location_mapping`.`zone` "
-        		+ "    END AS `zone`, "
-        		+ "    COUNT(`waste_location_mapping`.`wlid`) AS `Total_Identified_Count`, "
-        		+ "    FORMAT(SUM(`waste_location_mapping`.`tonage`)/1000, 2) AS `Total_Identified_Tonage`, "
-        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN 1 END) AS `Approved_Count`, "
-        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Approved_Tonage`, "
-        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'no' THEN 1 END) AS `Rejected_Count`, "
-        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'no' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Rejected_Tonage`, "
-        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'pending' THEN 1 END) AS `Approved_Pending_Count`, "
-        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'pending' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Approved_Pending_Tonage`, "
-        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Open' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN 1 END) AS `Pending_Count`, "
-        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Open' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Pending_Tonage`, "
-        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Close' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN 1 END) AS `Closed_Count`, "
-        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Close' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN wr.`tonage` ELSE 0 END)/1000, 2) AS `Close_Tonage` "
-        		+ "FROM "
-        		+ "    `waste_location_mapping` "
-        		+ "JOIN"
-        		+ "    `erp_pgr`.`EG_USER` ON `waste_location_mapping`.cby = `EG_USER`.id "
-        		+ "LEFT JOIN "
-        		+ "    `waste_reply` wr ON `waste_location_mapping`.`wlid` = wr.`wlid` AND wr.`isactive`=1 "
-        		+ "WHERE"
-        		+ "    `waste_location_mapping`.isactive = 1 "
-        		+ "    AND DATE(`waste_location_mapping`.cdate) BETWEEN ? AND ? "
-        		+ "    AND `waste_location_mapping`.request_by_type IN ("+requestBy+") "
-        		+ "GROUP BY"
-        		+ "    `waste_location_mapping`.`zone` "
-        		+ "WITH ROLLUP";
-        
-        return jdbcWasteTemplate.queryForList(sql, formattedFromDate, formattedToDate);
-    }
-	
-	
-	public List<Map<String, Object>> getVendorWardWiseCount(String fromDATE, String toDATE, String zone, String requestBy) {
-		
-		// Define the input and output date formats
-        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        // Parse the input dates to LocalDate
-        LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
-        LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
-
-        // Format the LocalDate to the required format
-        String formattedFromDate = fromDate.format(outputFormatter);
-        String formattedToDate = toDate.format(outputFormatter);
-        
-        String sql = "SELECT "
-        		+ "    CASE "
-        		+ "        WHEN `waste_location_mapping`.`ward` IS NULL THEN 'Total' "
-        		+ "        ELSE `waste_location_mapping`.`ward` "
-        		+ "    END AS `ward`, "
-        		+ "    COUNT(`waste_location_mapping`.`wlid`) AS `Total_Identified_Count`, "
-        		+ "    FORMAT(SUM(`waste_location_mapping`.`tonage`)/1000, 2) AS `Total_Identified_Tonage`, "
-        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN 1 END) AS `Approved_Count`, "
-        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Approved_Tonage`, "
-        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'no' THEN 1 END) AS `Rejected_Count`, "
-        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'no' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Rejected_Tonage`, "
-        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'pending' THEN 1 END) AS `Approved_Pending_Count`, "
-        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'pending' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Approved_Pending_Tonage`, "
-        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Open' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN 1 END) AS `Pending_Count`, "
-        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Open' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Pending_Tonage`, "
-        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Close' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN 1 END) AS `Closed_Count`, "
-        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Close' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN wr.`tonage` ELSE 0 END)/1000, 2) AS `Close_Tonage` "
-        		+ "FROM "
-        		+ "    `waste_location_mapping` "
-        		+ "JOIN"
-        		+ "    `erp_pgr`.`EG_USER` ON `waste_location_mapping`.cby = `EG_USER`.id "
-        		+ "LEFT JOIN "
-        		+ "    `waste_reply` wr ON `waste_location_mapping`.`wlid` = wr.`wlid` AND wr.`isactive`=1 "
-        		+ "WHERE"
-        		+ "    `waste_location_mapping`.isactive = 1 "
-        		+ "    AND `waste_location_mapping`.`zone`= ? "
-        		+ "    AND DATE(`waste_location_mapping`.cdate) BETWEEN ? AND ? "
-        		+ "    AND `waste_location_mapping`.request_by_type IN ("+requestBy+") "
-        		+ "GROUP BY"
-        		+ "    `waste_location_mapping`.`ward` "
-        		+ "WITH ROLLUP";
-        
-        return jdbcWasteTemplate.queryForList(sql, zone, formattedFromDate, formattedToDate);
-    }
+//	public List<Map<String, Object>> getOfficerZoneWiseCount(String fromDATE, String toDATE, String requestBy) {
+//		// Define the input and output date formats
+//        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+//        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+//
+//        // Parse the input dates to LocalDate
+//        LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
+//        LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
+//
+//        // Format the LocalDate to the required format
+//        String formattedFromDate = fromDate.format(outputFormatter);
+//        String formattedToDate = toDate.format(outputFormatter);
+//        
+//        String sql = "SELECT "
+//        		+ "    CASE  "
+//        		+ "        WHEN `waste_location_mapping`.`zone` IS NULL THEN 'Total' "
+//        		+ "        ELSE `waste_location_mapping`.`zone` "
+//        		+ "    END AS `zone`,  "
+//        		+ "    COUNT(`waste_location_mapping`.`wlid`) AS `Total_Identified_Count`, "
+//        		+ "    FORMAT(SUM(`waste_location_mapping`.`tonage`)/1000, 2) AS `Total_Identified_Tonage`, "
+//        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Open' THEN 1 END) AS `Pending_Count`, "
+//        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Open' THEN `waste_location_mapping`.`tonage` ELSE 0 END)/1000, 2) AS `Pending_Tonage`, "
+//        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Close' THEN 1 END) AS `Closed_Count`, "
+//        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Close' THEN wr.`tonage` ELSE 0 END)/1000, 2) AS `Close_Tonage` "
+//        		+ "FROM "
+//        		+ "    `waste_location_mapping` "
+//        		+ "JOIN "
+//        		+ "    `erp_pgr`.`EG_USER` ON `waste_location_mapping`.cby = `EG_USER`.id "
+//        		+ "LEFT JOIN "
+//        		+ "    `waste_reply` wr ON `waste_location_mapping`.`wlid` = wr.`wlid` AND wr.`isactive`=1 "
+//        		+ "WHERE "
+//        		+ "    `waste_location_mapping`.isactive = 1 "
+//        		+ "    AND DATE(`waste_location_mapping`.cdate) BETWEEN ? AND ? "
+//        		+ "    AND `waste_location_mapping`.request_by_type IN ("+requestBy+") "
+//        		+ "GROUP BY "
+//        		+ "    `waste_location_mapping`.`zone` "
+//        		+ "WITH ROLLUP";
+//        
+//        return jdbcWasteTemplate.queryForList(sql, formattedFromDate, formattedToDate);
+//    }
+//	
+//	public List<Map<String, Object>> getOfficerWardWiseCount(String fromDATE, String toDATE, String zone, String requestBy) {
+//		
+//		// Define the input and output date formats
+//        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+//        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+//
+//        // Parse the input dates to LocalDate
+//        LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
+//        LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
+//
+//        // Format the LocalDate to the required format
+//        String formattedFromDate = fromDate.format(outputFormatter);
+//        String formattedToDate = toDate.format(outputFormatter);
+//        
+//        String sql = "SELECT "
+//        		+ "    CASE  "
+//        		+ "        WHEN `waste_location_mapping`.`ward` IS NULL THEN 'Total' "
+//        		+ "        ELSE `waste_location_mapping`.`ward` "
+//        		+ "    END AS `ward`,  "
+//        		+ "    COUNT(`waste_location_mapping`.`wlid`) AS `Total_Identified_Count`, "
+//        		+ "    FORMAT(SUM(`waste_location_mapping`.`tonage`)/1000, 2) AS `Total_Identified_Tonage`, "
+//        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Open' THEN 1 END) AS `Pending_Count`, "
+//        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Open' THEN `waste_location_mapping`.`tonage` ELSE 0 END)/1000, 2) AS `Pending_Tonage`, "
+//        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Close' THEN 1 END) AS `Closed_Count`, "
+//        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Close' THEN wr.`tonage` ELSE 0 END)/1000, 2) AS `Close_Tonage` "
+//        		+ "FROM "
+//        		+ "    `waste_location_mapping` "
+//        		+ "JOIN "
+//        		+ "    `erp_pgr`.`EG_USER` ON `waste_location_mapping`.cby = `EG_USER`.id "
+//        		+ "LEFT JOIN "
+//        		+ "    `waste_reply` wr ON `waste_location_mapping`.`wlid` = wr.`wlid` AND wr.`isactive`=1 "
+//        		+ "WHERE "
+//        		+ "    `waste_location_mapping`.isactive = 1 "
+//        		+ "    AND `waste_location_mapping`.`zone`= ? "
+//        		+ "    AND DATE(`waste_location_mapping`.cdate) BETWEEN ? AND ? "
+//        		+ "    AND `waste_location_mapping`.request_by_type IN ("+requestBy+") "
+//        		+ "GROUP BY "
+//        		+ "    `waste_location_mapping`.`ward` "
+//        		+ "WITH ROLLUP";
+//        
+//        return jdbcWasteTemplate.queryForList(sql, zone, formattedFromDate, formattedToDate);
+//    }
+//	
+//	public List<Map<String, Object>> getVendorZoneWiseCount(String fromDATE, String toDATE, String requestBy) {
+//		// Define the input and output date formats
+//        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+//        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+//
+//        // Parse the input dates to LocalDate
+//        LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
+//        LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
+//
+//        // Format the LocalDate to the required format
+//        String formattedFromDate = fromDate.format(outputFormatter);
+//        String formattedToDate = toDate.format(outputFormatter);
+//        
+//        String sql = "SELECT "
+//        		+ "    CASE "
+//        		+ "        WHEN `waste_location_mapping`.`zone` IS NULL THEN 'Total' "
+//        		+ "        ELSE `waste_location_mapping`.`zone` "
+//        		+ "    END AS `zone`, "
+//        		+ "    COUNT(`waste_location_mapping`.`wlid`) AS `Total_Identified_Count`, "
+//        		+ "    FORMAT(SUM(`waste_location_mapping`.`tonage`)/1000, 2) AS `Total_Identified_Tonage`, "
+//        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN 1 END) AS `Approved_Count`, "
+//        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Approved_Tonage`, "
+//        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'no' THEN 1 END) AS `Rejected_Count`, "
+//        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'no' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Rejected_Tonage`, "
+//        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'pending' THEN 1 END) AS `Approved_Pending_Count`, "
+//        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'pending' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Approved_Pending_Tonage`, "
+//        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Open' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN 1 END) AS `Pending_Count`, "
+//        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Open' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Pending_Tonage`, "
+//        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Close' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN 1 END) AS `Closed_Count`, "
+//        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Close' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN wr.`tonage` ELSE 0 END)/1000, 2) AS `Close_Tonage` "
+//        		+ "FROM "
+//        		+ "    `waste_location_mapping` "
+//        		+ "JOIN"
+//        		+ "    `erp_pgr`.`EG_USER` ON `waste_location_mapping`.cby = `EG_USER`.id "
+//        		+ "LEFT JOIN "
+//        		+ "    `waste_reply` wr ON `waste_location_mapping`.`wlid` = wr.`wlid` AND wr.`isactive`=1 "
+//        		+ "WHERE"
+//        		+ "    `waste_location_mapping`.isactive = 1 "
+//        		+ "    AND DATE(`waste_location_mapping`.cdate) BETWEEN ? AND ? "
+//        		+ "    AND `waste_location_mapping`.request_by_type IN ("+requestBy+") "
+//        		+ "GROUP BY"
+//        		+ "    `waste_location_mapping`.`zone` "
+//        		+ "WITH ROLLUP";
+//        
+//        return jdbcWasteTemplate.queryForList(sql, formattedFromDate, formattedToDate);
+//    }
+//	
+//	
+//	public List<Map<String, Object>> getVendorWardWiseCount(String fromDATE, String toDATE, String zone, String requestBy) {
+//		
+//		// Define the input and output date formats
+//        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+//        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+//
+//        // Parse the input dates to LocalDate
+//        LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
+//        LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
+//
+//        // Format the LocalDate to the required format
+//        String formattedFromDate = fromDate.format(outputFormatter);
+//        String formattedToDate = toDate.format(outputFormatter);
+//        
+//        String sql = "SELECT "
+//        		+ "    CASE "
+//        		+ "        WHEN `waste_location_mapping`.`ward` IS NULL THEN 'Total' "
+//        		+ "        ELSE `waste_location_mapping`.`ward` "
+//        		+ "    END AS `ward`, "
+//        		+ "    COUNT(`waste_location_mapping`.`wlid`) AS `Total_Identified_Count`, "
+//        		+ "    FORMAT(SUM(`waste_location_mapping`.`tonage`)/1000, 2) AS `Total_Identified_Tonage`, "
+//        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN 1 END) AS `Approved_Count`, "
+//        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Approved_Tonage`, "
+//        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'no' THEN 1 END) AS `Rejected_Count`, "
+//        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'no' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Rejected_Tonage`, "
+//        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'pending' THEN 1 END) AS `Approved_Pending_Count`, "
+//        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`final_vendor_approval` = 'pending' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Approved_Pending_Tonage`, "
+//        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Open' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN 1 END) AS `Pending_Count`, "
+//        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Open' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN waste_location_mapping.`tonage` ELSE 0 END)/1000, 2) AS `Pending_Tonage`, "
+//        		+ "    COUNT(CASE WHEN `waste_location_mapping`.`status` = 'Close' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN 1 END) AS `Closed_Count`, "
+//        		+ "    FORMAT(SUM(CASE WHEN `waste_location_mapping`.`status` = 'Close' AND `waste_location_mapping`.`final_vendor_approval` = 'yes' THEN wr.`tonage` ELSE 0 END)/1000, 2) AS `Close_Tonage` "
+//        		+ "FROM "
+//        		+ "    `waste_location_mapping` "
+//        		+ "JOIN"
+//        		+ "    `erp_pgr`.`EG_USER` ON `waste_location_mapping`.cby = `EG_USER`.id "
+//        		+ "LEFT JOIN "
+//        		+ "    `waste_reply` wr ON `waste_location_mapping`.`wlid` = wr.`wlid` AND wr.`isactive`=1 "
+//        		+ "WHERE"
+//        		+ "    `waste_location_mapping`.isactive = 1 "
+//        		+ "    AND `waste_location_mapping`.`zone`= ? "
+//        		+ "    AND DATE(`waste_location_mapping`.cdate) BETWEEN ? AND ? "
+//        		+ "    AND `waste_location_mapping`.request_by_type IN ("+requestBy+") "
+//        		+ "GROUP BY"
+//        		+ "    `waste_location_mapping`.`ward` "
+//        		+ "WITH ROLLUP";
+//        
+//        return jdbcWasteTemplate.queryForList(sql, zone, formattedFromDate, formattedToDate);
+//    }
 	///////////
 	
-	public List<Map<String, Object>> getListByStatus(String fromDATE, String toDATE, String zone, String ward, String status, String requestBy) {
-		
-		// Define the input and output date formats
-        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	
+	
+	public List<Map<String, Object>> getMyticketllist(String loginId,String fromDATE,String toDATE,String type) {
 
-        // Parse the input dates to LocalDate
-        LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
+		// Date conversion
+		DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+		DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+		
+		LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
         LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
-
-        // Format the LocalDate to the required format
-        String formattedFromDate = fromDate.format(outputFormatter);
-        String formattedToDate = toDate.format(outputFormatter);
-        String sqlwhere="";
-        if(status.equals("pending")) {
-        	status = "open";
-        	sqlwhere = " AND wlm.`final_vendor_approval`='pending'";
-        	System.out.println(sqlwhere);
-        }
-        
-        //System.out.println("Before check: " + requestBy);
-
-        if ("Vendor".equalsIgnoreCase(requestBy)) {
-            requestBy = "'Vendor','councillor','IE'";
-        }
-        else if ("Officer".equalsIgnoreCase(requestBy)) {
-            requestBy = "'Officer'";
-        }
-        else {
-        	requestBy = "'"+requestBy+"'";
-        }
-
-        //System.out.println("After check: " + requestBy);
-        
-        String sql = "SELECT "
-                + "    wlm.`wlid` AS comp_id, "  
-                + "    wlm.`zone` AS comp_zone, "
-                + "    wlm.`ward` AS comp_ward, "
-                + "    `EG_USER`.`EXTRAFIELD2` AS comp_contact, "
-                //+ "    `EG_USER`.`FIRST_NAME` AS comp_name, "
-                + "		CONCAT(COALESCE(EG_USER.FIRST_NAME, ''), ' ', COALESCE(EG_USER.MIDDLE_NAME, '')) AS comp_name, "
-                + "    DATE_FORMAT(wlm.`cdate`, '%d-%m-%Y %r') AS comp_date, "
-                + "    wlm.`latitude` AS comp_latitude, "
-                + "    wlm.`longitude` AS comp_longitude, "
-                + "    wlm.`address` AS comp_area, "
-                + "    wlm.`tonage` AS appx_tonage, "
-                + "    wt.`name` AS comp_type, "
-                + "    CASE WHEN wlm.`status` = 'Close' THEN wr.`tonage` ELSE 0 END AS `reply_tonage`, "
-                + "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', wlm.`file`) AS image,  "
-                + "    wlm.`status` AS comp_status, "
-                + "		wlm.`street_type` AS comp_street_type, "
-        		+ "		wlm.`kpi` AS comp_kpi "
-                + "FROM "
-                + "    `waste_location_mapping` wlm "
-                + "JOIN "
-                + "    `erp_pgr`.`EG_USER` "
-                + "    ON wlm.`cby` = `EG_USER`.id "
-                + "LEFT JOIN "
-                + "    `waste_reply` wr "
-                + "    ON wlm.`wlid` = wr.`wlid` AND wr.`isactive`=1 "
-                + "LEFT JOIN "
-                + "    `waste_type` wt "
-                + "    ON wlm.`type` = wt.`typeid` "
-                + "WHERE "
-                + "    wlm.`isactive` = 1 "
-                + "    AND wlm.`zone` = ? "
-                + "    AND wlm.`ward` = ? "
-                + sqlwhere
-                + "    AND wlm.`status` = ? "
-                + "    AND wlm.`request_by_type` IN ("+requestBy+") "
-                + "    AND DATE(wlm.`cdate`) BETWEEN ? AND ?";
 		
-        System.out.println(sql);
-        return jdbcWasteTemplate.queryForList(sql, zone, ward, status, formattedFromDate, formattedToDate);
+		String formattedFromDate = fromDate.format(outputFormatter);
+		String formattedToDate = toDate.format(outputFormatter);
+		
+		StringBuilder sql = new StringBuilder();
+		
+		sql.append("SELECT ")
+		.append(" wlid AS comp_id, ")
+		.append(" zone AS comp_zone, ")
+		.append(" ward AS comp_ward, ")
+		.append(" EG_USER.EXTRAFIELD2 AS comp_contact, ")
+		.append(" CONCAT(COALESCE(EG_USER.FIRST_NAME,''),' ',COALESCE(EG_USER.MIDDLE_NAME,'')) AS comp_name, ")
+		.append(" DATE_FORMAT(cdate, '%d-%m-%Y %r') AS comp_date, ")
+		.append(" latitude AS comp_latitude, ")
+		.append(" longitude AS comp_longitude, ")
+		.append(" address AS comp_area, ")
+		.append(" tonage AS appx_tonage, ")
+		.append(" wt.name AS comp_type, ")
+		.append(" CONCAT('").append(fileBaseUrl).append("/gccofficialapp/files', file) AS image, ")
+		.append(" status AS comp_status, ")
+		.append(" street_type AS comp_street_type, ")
+		.append(" kpi AS comp_kpi ")
+		.append(" FROM waste_location_mapping ")
+		.append(" JOIN erp_pgr.EG_USER ON waste_location_mapping.cby = EG_USER.id ")
+		.append(" LEFT JOIN waste_type wt ON waste_location_mapping.type = wt.typeid ")
+		.append(" WHERE waste_location_mapping.isactive = 1 ")
+		.append(" AND cby = ? ")
+		.append(" AND DATE(waste_location_mapping.cdate) BETWEEN ? AND ? ");
+		
+		List<Object> params = new ArrayList<>();
+		params.add(loginId);
+		params.add(formattedFromDate);
+		params.add(formattedToDate);
+		
+		//  Append type condition only if present
+		if (type != null && !type.trim().isEmpty()) {
+			int wasteType = Integer.parseInt(type);
+			sql.append(" AND waste_location_mapping.type = ? ");
+			params.add(wasteType);
+		}
+		
+		sql.append(" ORDER BY cdate DESC LIMIT 50");
+		
+		return jdbcWasteTemplate.queryForList(sql.toString(), params.toArray());
+	}
+
+
+
+public List<Map<String, Object>> getApprovalPendingList(String loginId, String ward, String type) {
+
+    Map<String, Object> approve_check = getWardByLoginId(loginId, "");
+
+    String dtype = "";
+    String zone = "00";
+    String userWard = "000";
+
+    if (approve_check != null && !approve_check.isEmpty()) {
+        dtype = approve_check.get("type") != null ? approve_check.get("type").toString() : "";
+        zone = approve_check.get("zone") != null ? approve_check.get("zone").toString() : "00";
+        userWard = approve_check.get("ward") != null ? approve_check.get("ward").toString() : "000";
     }
+    
+	System.out.println("Login ID: "+ loginId + " Type: "+dtype+  " approve_check_ward: "+userWard);
+
+    StringBuilder sql = new StringBuilder();
+
+    
+    
+    sql.append("SELECT ")
+       .append(" wlid AS comp_id, ")
+       .append(" zone AS comp_zone, ")
+       .append(" ward AS comp_ward, ")
+       .append(" EG_USER.EXTRAFIELD2 AS comp_contact, ")
+       .append(" CONCAT(COALESCE(EG_USER.FIRST_NAME, ''), ' ', COALESCE(EG_USER.MIDDLE_NAME, '')) AS comp_name, ")       
+       .append(" DATE_FORMAT(cdate, '%d-%m-%Y %r') AS comp_date, ")
+       .append(" latitude AS comp_latitude, ")
+       .append(" longitude AS comp_longitude, ")
+       .append(" address AS comp_area, ")
+       .append(" tonage AS appx_tonage, ")
+       .append(" wt.name AS comp_type, ")
+       .append(" CONCAT('").append(fileBaseUrl).append("/gccofficialapp/files', file) AS image, ")
+       .append(" status AS comp_status, ")
+       .append(" street_type AS comp_street_type, ")
+       .append(" kpi AS comp_kpi ")
+       .append(" FROM waste_location_mapping ")
+       .append(" JOIN erp_pgr.EG_USER ON EG_USER.id = waste_location_mapping.cby ")
+       .append(" LEFT JOIN waste_type wt ON waste_location_mapping.type = wt.typeid ")
+       .append(" WHERE waste_location_mapping.isactive = 1 ")
+       .append(" AND status = 'open' ")
+       .append(" AND approved = 'pending' ");
+
+    List<Object> params = new ArrayList<>();
+
+    //  Role-based filtering
+    if ("swmee".equals(dtype)) {
+        sql.append(" AND escalation_flag = 1 ");
+    } 
+    else if ("zo".equals(dtype)) {
+        sql.append(" AND escalation_flag = 1 ");
+        sql.append(" AND zone = ? ");
+        params.add(zone);
+    } 
+    else {
+        sql.append(" AND ward = ? ");
+        params.add(userWard);
+    }
+
+    //  type dynamic condition
+    if (type != null && !type.trim().isEmpty()) {
+        int wasteType = Integer.parseInt(type);
+        sql.append(" AND waste_location_mapping.type = ? ");
+        params.add(wasteType);
+    }
+
+    sql.append(" ORDER BY cdate DESC ");
+
+    return jdbcWasteTemplate.queryForList(sql.toString(), params.toArray());
+}
+
+
+
+public List<Map<String, Object>> getOfficerZoneWiseCount(String fromDATE,
+        String toDATE,
+        String requestBy,
+        String type) {
+
+		DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+		DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+		
+		LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
+		LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
+		
+		String formattedFromDate = fromDate.format(outputFormatter);
+		String formattedToDate = toDate.format(outputFormatter);
+		
+		StringBuilder sql = new StringBuilder();
+		List<Object> params = new ArrayList<>();
+		
+		sql.append("SELECT ")
+		.append(" CASE WHEN waste_location_mapping.zone IS NULL THEN 'Total' ")
+		.append(" ELSE waste_location_mapping.zone END AS zone, ")
+		.append(" COUNT(waste_location_mapping.wlid) AS Total_Identified_Count, ")
+		.append(" FORMAT(SUM(waste_location_mapping.tonage)/1000, 2) AS Total_Identified_Tonage, ")
+		.append(" COUNT(CASE WHEN waste_location_mapping.status = 'Open' THEN 1 END) AS Pending_Count, ")
+		.append(" FORMAT(SUM(CASE WHEN waste_location_mapping.status = 'Open' ")
+		.append(" THEN waste_location_mapping.tonage ELSE 0 END)/1000, 2) AS Pending_Tonage, ")
+		.append(" COUNT(CASE WHEN waste_location_mapping.status = 'Close' THEN 1 END) AS Closed_Count, ")
+		.append(" FORMAT(SUM(CASE WHEN waste_location_mapping.status = 'Close' ")
+		.append(" THEN wr.tonage ELSE 0 END)/1000, 2) AS Close_Tonage ")
+		.append(" FROM waste_location_mapping ")
+		.append(" JOIN erp_pgr.EG_USER ON waste_location_mapping.cby = EG_USER.id ")
+		.append(" LEFT JOIN waste_reply wr ON waste_location_mapping.wlid = wr.wlid AND wr.isactive=1 ")
+		.append(" WHERE waste_location_mapping.isactive = 1 ")
+		.append(" AND DATE(waste_location_mapping.cdate) BETWEEN ? AND ? ");
+		
+		params.add(formattedFromDate);
+		params.add(formattedToDate);
+		
+		//  requestBy (assuming already formatted like 'Officer' or 'Vendor','IE')
+		sql.append(" AND waste_location_mapping.request_by_type IN (" + requestBy + ") ");
+		
+		//  Append type only if present
+		if (type != null && !type.trim().isEmpty()) {
+		int wasteType = Integer.parseInt(type);
+		sql.append(" AND waste_location_mapping.type = ? ");
+		params.add(wasteType);
+		}
+		
+		sql.append(" GROUP BY waste_location_mapping.zone WITH ROLLUP ");
+		
+		return jdbcWasteTemplate.queryForList(sql.toString(), params.toArray());
+}
+
+
+public List<Map<String, Object>> getOfficerWardWiseCount(String fromDATE,
+        String toDATE,
+        String zone,
+        String requestBy,
+        String type) {
+
+		DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+		DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+		
+		LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
+		LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
+		
+		String formattedFromDate = fromDate.format(outputFormatter);
+		String formattedToDate = toDate.format(outputFormatter);
+		
+		StringBuilder sql = new StringBuilder();
+		List<Object> params = new ArrayList<>();
+		
+		sql.append("SELECT ")
+		.append(" CASE WHEN waste_location_mapping.ward IS NULL THEN 'Total' ")
+		.append(" ELSE waste_location_mapping.ward END AS ward, ")
+		.append(" COUNT(waste_location_mapping.wlid) AS Total_Identified_Count, ")
+		.append(" FORMAT(SUM(waste_location_mapping.tonage)/1000, 2) AS Total_Identified_Tonage, ")
+		.append(" COUNT(CASE WHEN waste_location_mapping.status = 'Open' THEN 1 END) AS Pending_Count, ")
+		.append(" FORMAT(SUM(CASE WHEN waste_location_mapping.status = 'Open' ")
+		.append(" THEN waste_location_mapping.tonage ELSE 0 END)/1000, 2) AS Pending_Tonage, ")
+		.append(" COUNT(CASE WHEN waste_location_mapping.status = 'Close' THEN 1 END) AS Closed_Count, ")
+		.append(" FORMAT(SUM(CASE WHEN waste_location_mapping.status = 'Close' ")
+		.append(" THEN wr.tonage ELSE 0 END)/1000, 2) AS Close_Tonage ")
+		.append(" FROM waste_location_mapping ")
+		.append(" JOIN erp_pgr.EG_USER ON waste_location_mapping.cby = EG_USER.id ")
+		.append(" LEFT JOIN waste_reply wr ON waste_location_mapping.wlid = wr.wlid AND wr.isactive=1 ")
+		.append(" WHERE waste_location_mapping.isactive = 1 ")
+		.append(" AND waste_location_mapping.zone = ? ")
+		.append(" AND DATE(waste_location_mapping.cdate) BETWEEN ? AND ? ");
+		
+		params.add(zone);
+		params.add(formattedFromDate);
+		params.add(formattedToDate);
+		
+		// requestBy (assumed already formatted properly like 'Officer')
+		sql.append(" AND waste_location_mapping.request_by_type IN (" + requestBy + ") ");
+		
+		//  Append type condition if present
+		if (type != null && !type.trim().isEmpty()) {
+			int wasteType = Integer.parseInt(type);
+			sql.append(" AND waste_location_mapping.type = ? ");
+			params.add(wasteType);
+		}
+		
+		sql.append(" GROUP BY waste_location_mapping.ward WITH ROLLUP ");
+		
+		return jdbcWasteTemplate.queryForList(sql.toString(), params.toArray());
+	}
+
+
+
+public List<Map<String, Object>> getVendorZoneWiseCount(String fromDATE,
+        String toDATE,
+        String requestBy,
+        String type)
+{
+
+	DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+	DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	
+	LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
+	LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
+	
+	String formattedFromDate = fromDate.format(outputFormatter);
+	String formattedToDate = toDate.format(outputFormatter);
+	
+	StringBuilder sql = new StringBuilder();
+	List<Object> params = new ArrayList<>();
+	
+	sql.append("SELECT ")
+	.append(" CASE WHEN waste_location_mapping.zone IS NULL THEN 'Total' ")
+	.append(" ELSE waste_location_mapping.zone END AS zone, ")
+	.append(" COUNT(waste_location_mapping.wlid) AS Total_Identified_Count, ")
+	.append(" FORMAT(SUM(waste_location_mapping.tonage)/1000, 2) AS Total_Identified_Tonage, ")
+	.append(" COUNT(CASE WHEN waste_location_mapping.final_vendor_approval='yes' THEN 1 END) AS Approved_Count, ")
+	.append(" FORMAT(SUM(CASE WHEN waste_location_mapping.final_vendor_approval='yes' ")
+	.append(" THEN waste_location_mapping.tonage ELSE 0 END)/1000,2) AS Approved_Tonage, ")
+	.append(" COUNT(CASE WHEN waste_location_mapping.final_vendor_approval='no' THEN 1 END) AS Rejected_Count, ")
+	.append(" FORMAT(SUM(CASE WHEN waste_location_mapping.final_vendor_approval='no' ")
+	.append(" THEN waste_location_mapping.tonage ELSE 0 END)/1000,2) AS Rejected_Tonage, ")
+	.append(" COUNT(CASE WHEN waste_location_mapping.final_vendor_approval='pending' THEN 1 END) AS Approved_Pending_Count, ")
+	.append(" FORMAT(SUM(CASE WHEN waste_location_mapping.final_vendor_approval='pending' ")
+	.append(" THEN waste_location_mapping.tonage ELSE 0 END)/1000,2) AS Approved_Pending_Tonage, ")
+	.append(" COUNT(CASE WHEN waste_location_mapping.status='Open' ")
+	.append(" AND waste_location_mapping.final_vendor_approval='yes' THEN 1 END) AS Pending_Count, ")
+	.append(" FORMAT(SUM(CASE WHEN waste_location_mapping.status='Open' ")
+	.append(" AND waste_location_mapping.final_vendor_approval='yes' ")
+	.append(" THEN waste_location_mapping.tonage ELSE 0 END)/1000,2) AS Pending_Tonage, ")
+	.append(" COUNT(CASE WHEN waste_location_mapping.status='Close' ")
+	.append(" AND waste_location_mapping.final_vendor_approval='yes' THEN 1 END) AS Closed_Count, ")
+	.append(" FORMAT(SUM(CASE WHEN waste_location_mapping.status='Close' ")
+	.append(" AND waste_location_mapping.final_vendor_approval='yes' ")
+	.append(" THEN wr.tonage ELSE 0 END)/1000,2) AS Close_Tonage ")
+	.append(" FROM waste_location_mapping ")
+	.append(" JOIN erp_pgr.EG_USER ON waste_location_mapping.cby = EG_USER.id ")
+	.append(" LEFT JOIN waste_reply wr ON waste_location_mapping.wlid = wr.wlid AND wr.isactive=1 ")
+	.append(" WHERE waste_location_mapping.isactive = 1 ")
+	.append(" AND DATE(waste_location_mapping.cdate) BETWEEN ? AND ? ");
+	
+	params.add(formattedFromDate);
+	params.add(formattedToDate);
+	
+	// requestBy (assumed already formatted like 'Vendor','IE')
+	sql.append(" AND waste_location_mapping.request_by_type IN (" + requestBy + ") ");
+	
+	//  Append type condition if present
+	if (type != null && !type.trim().isEmpty()) {
+	int wasteType = Integer.parseInt(type);
+	sql.append(" AND waste_location_mapping.type = ? ");
+	params.add(wasteType);
+	}
+	
+	sql.append(" GROUP BY waste_location_mapping.zone WITH ROLLUP ");
+	
+	return jdbcWasteTemplate.queryForList(sql.toString(), params.toArray());
+}
+
+
+
+public List<Map<String, Object>> getVendorWardWiseCount(String fromDATE,
+        String toDATE,
+        String zone,
+        String requestBy,
+        String type) {
+
+		DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+		DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+		
+		LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
+		LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
+		
+		String formattedFromDate = fromDate.format(outputFormatter);
+		String formattedToDate = toDate.format(outputFormatter);
+		
+		StringBuilder sql = new StringBuilder();
+		List<Object> params = new ArrayList<>();
+		
+		sql.append("SELECT ")
+		.append(" CASE WHEN waste_location_mapping.ward IS NULL THEN 'Total' ")
+		.append(" ELSE waste_location_mapping.ward END AS ward, ")
+		.append(" COUNT(waste_location_mapping.wlid) AS Total_Identified_Count, ")
+		.append(" FORMAT(SUM(waste_location_mapping.tonage)/1000, 2) AS Total_Identified_Tonage, ")
+		.append(" COUNT(CASE WHEN waste_location_mapping.final_vendor_approval='yes' THEN 1 END) AS Approved_Count, ")
+		.append(" FORMAT(SUM(CASE WHEN waste_location_mapping.final_vendor_approval='yes' ")
+		.append(" THEN waste_location_mapping.tonage ELSE 0 END)/1000,2) AS Approved_Tonage, ")
+		.append(" COUNT(CASE WHEN waste_location_mapping.final_vendor_approval='no' THEN 1 END) AS Rejected_Count, ")
+		.append(" FORMAT(SUM(CASE WHEN waste_location_mapping.final_vendor_approval='no' ")
+		.append(" THEN waste_location_mapping.tonage ELSE 0 END)/1000,2) AS Rejected_Tonage, ")
+		.append(" COUNT(CASE WHEN waste_location_mapping.final_vendor_approval='pending' THEN 1 END) AS Approved_Pending_Count, ")
+		.append(" FORMAT(SUM(CASE WHEN waste_location_mapping.final_vendor_approval='pending' ")
+		.append(" THEN waste_location_mapping.tonage ELSE 0 END)/1000,2) AS Approved_Pending_Tonage, ")
+		.append(" COUNT(CASE WHEN waste_location_mapping.status='Open' ")
+		.append(" AND waste_location_mapping.final_vendor_approval='yes' THEN 1 END) AS Pending_Count, ")
+		.append(" FORMAT(SUM(CASE WHEN waste_location_mapping.status='Open' ")
+		.append(" AND waste_location_mapping.final_vendor_approval='yes' ")
+		.append(" THEN waste_location_mapping.tonage ELSE 0 END)/1000,2) AS Pending_Tonage, ")
+		.append(" COUNT(CASE WHEN waste_location_mapping.status='Close' ")
+		.append(" AND waste_location_mapping.final_vendor_approval='yes' THEN 1 END) AS Closed_Count, ")
+		.append(" FORMAT(SUM(CASE WHEN waste_location_mapping.status='Close' ")
+		.append(" AND waste_location_mapping.final_vendor_approval='yes' ")
+		.append(" THEN wr.tonage ELSE 0 END)/1000,2) AS Close_Tonage ")
+		.append(" FROM waste_location_mapping ")
+		.append(" JOIN erp_pgr.EG_USER ON waste_location_mapping.cby = EG_USER.id ")
+		.append(" LEFT JOIN waste_reply wr ON waste_location_mapping.wlid = wr.wlid AND wr.isactive=1 ")
+		.append(" WHERE waste_location_mapping.isactive = 1 ")
+		.append(" AND waste_location_mapping.zone = ? ")
+		.append(" AND DATE(waste_location_mapping.cdate) BETWEEN ? AND ? ");
+		
+		params.add(zone);
+		params.add(formattedFromDate);
+		params.add(formattedToDate);
+		
+		// requestBy already formatted like 'Vendor','IE'
+		sql.append(" AND waste_location_mapping.request_by_type IN (" + requestBy + ") ");
+		
+		// ✅ Append type condition if provided
+		if (type != null && !type.trim().isEmpty()) {
+			int wasteType = Integer.parseInt(type);
+			sql.append(" AND waste_location_mapping.type = ? ");
+			params.add(wasteType);
+		}
+		
+		sql.append(" GROUP BY waste_location_mapping.ward WITH ROLLUP ");
+		
+		return jdbcWasteTemplate.queryForList(sql.toString(), params.toArray());
+	}
+
+
+
+public List<Map<String, Object>> getListByStatus(String fromDATE,
+        String toDATE,
+        String zone,
+        String ward,
+        String status,
+        String requestBy,
+        String type)
+{
+
+	DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+	DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	
+	LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
+	LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
+	
+	String formattedFromDate = fromDate.format(outputFormatter);
+	String formattedToDate = toDate.format(outputFormatter);
+	
+	StringBuilder sql = new StringBuilder();
+	List<Object> params = new ArrayList<>();
+	
+	//  Status handling
+	if ("pending".equalsIgnoreCase(status)) {
+		status = "open";
+		sql.append(" AND wlm.final_vendor_approval = 'pending' ");
+	}
+	
+	//  RequestBy handling
+	if ("Vendor".equalsIgnoreCase(requestBy)) {
+		requestBy = "'Vendor','councillor','IE'";
+	} else if ("Officer".equalsIgnoreCase(requestBy)) {
+		requestBy = "'Officer'";
+	} else {
+		requestBy = "'" + requestBy + "'";
+	}
+	
+	sql.insert(0,
+	"SELECT "
+	+ " wlm.wlid AS comp_id, "
+	+ " wlm.zone AS comp_zone, "
+	+ " wlm.ward AS comp_ward, "
+	+ " EG_USER.EXTRAFIELD2 AS comp_contact, "
+	+ " CONCAT(COALESCE(EG_USER.FIRST_NAME,''),' ',COALESCE(EG_USER.MIDDLE_NAME,'')) AS comp_name, "
+	+ " DATE_FORMAT(wlm.cdate, '%d-%m-%Y %r') AS comp_date, "
+	+ " wlm.latitude AS comp_latitude, "
+	+ " wlm.longitude AS comp_longitude, "
+	+ " wlm.address AS comp_area, "
+	+ " wlm.tonage AS appx_tonage, "
+	+ " wt.name AS comp_type, "
+	+ " CASE WHEN wlm.status='Close' THEN wr.tonage ELSE 0 END AS reply_tonage, "
+	+ " CONCAT('" + fileBaseUrl + "/gccofficialapp/files', wlm.file) AS image, "
+	+ " wlm.status AS comp_status, "
+	+ " wlm.street_type AS comp_street_type, "
+	+ " wlm.kpi AS comp_kpi "
+	+ " FROM waste_location_mapping wlm "
+	+ " JOIN erp_pgr.EG_USER ON wlm.cby = EG_USER.id "
+	+ " LEFT JOIN waste_reply wr ON wlm.wlid = wr.wlid AND wr.isactive=1 "
+	+ " LEFT JOIN waste_type wt ON wlm.type = wt.typeid "
+	+ " WHERE wlm.isactive = 1 "
+	+ " AND wlm.zone = ? "
+	+ " AND wlm.ward = ? "
+	);
+	
+	params.add(zone);
+	params.add(ward);
+	
+	sql.append(" AND wlm.status = ? ");
+	params.add(status);
+	
+	sql.append(" AND wlm.request_by_type IN (" + requestBy + ") ");
+	
+	sql.append(" AND DATE(wlm.cdate) BETWEEN ? AND ? ");
+	params.add(formattedFromDate);
+	params.add(formattedToDate);
+	
+	//  Append type condition only if present
+	if (type != null && !type.trim().isEmpty()) {
+	int wasteType = Integer.parseInt(type);
+	sql.append(" AND wlm.type = ? ");
+	params.add(wasteType);
+	}
+	
+	//sql.append(" ORDER BY wlm.cdate DESC ");
+	
+	System.out.println(sql);
+	
+	return jdbcWasteTemplate.queryForList(sql.toString(), params.toArray());
+}
+	
+	
+//	public List<Map<String, Object>> getListByStatus(String fromDATE, String toDATE, String zone, String ward, String status, String requestBy) {
+//		
+//		// Define the input and output date formats
+//        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+//        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+//
+//        // Parse the input dates to LocalDate
+//        LocalDate fromDate = LocalDate.parse(fromDATE, inputFormatter);
+//        LocalDate toDate = LocalDate.parse(toDATE, inputFormatter);
+//
+//        // Format the LocalDate to the required format
+//        String formattedFromDate = fromDate.format(outputFormatter);
+//        String formattedToDate = toDate.format(outputFormatter);
+//        String sqlwhere="";
+//        if(status.equals("pending")) {
+//        	status = "open";
+//        	sqlwhere = " AND wlm.`final_vendor_approval`='pending'";
+//        	System.out.println(sqlwhere);
+//        }
+//        
+//        //System.out.println("Before check: " + requestBy);
+//
+//        if ("Vendor".equalsIgnoreCase(requestBy)) {
+//            requestBy = "'Vendor','councillor','IE'";
+//        }
+//        else if ("Officer".equalsIgnoreCase(requestBy)) {
+//            requestBy = "'Officer'";
+//        }
+//        else {
+//        	requestBy = "'"+requestBy+"'";
+//        }
+//
+//        //System.out.println("After check: " + requestBy);
+//        
+//        String sql = "SELECT "
+//                + "    wlm.`wlid` AS comp_id, "  
+//                + "    wlm.`zone` AS comp_zone, "
+//                + "    wlm.`ward` AS comp_ward, "
+//                + "    `EG_USER`.`EXTRAFIELD2` AS comp_contact, "
+//                //+ "    `EG_USER`.`FIRST_NAME` AS comp_name, "
+//                + "		CONCAT(COALESCE(EG_USER.FIRST_NAME, ''), ' ', COALESCE(EG_USER.MIDDLE_NAME, '')) AS comp_name, "
+//                + "    DATE_FORMAT(wlm.`cdate`, '%d-%m-%Y %r') AS comp_date, "
+//                + "    wlm.`latitude` AS comp_latitude, "
+//                + "    wlm.`longitude` AS comp_longitude, "
+//                + "    wlm.`address` AS comp_area, "
+//                + "    wlm.`tonage` AS appx_tonage, "
+//                + "    wt.`name` AS comp_type, "
+//                + "    CASE WHEN wlm.`status` = 'Close' THEN wr.`tonage` ELSE 0 END AS `reply_tonage`, "
+//                + "    CONCAT('"+fileBaseUrl+"/gccofficialapp/files', wlm.`file`) AS image,  "
+//                + "    wlm.`status` AS comp_status, "
+//                + "		wlm.`street_type` AS comp_street_type, "
+//        		+ "		wlm.`kpi` AS comp_kpi "
+//                + "FROM "
+//                + "    `waste_location_mapping` wlm "
+//                + "JOIN "
+//                + "    `erp_pgr`.`EG_USER` "
+//                + "    ON wlm.`cby` = `EG_USER`.id "
+//                + "LEFT JOIN "
+//                + "    `waste_reply` wr "
+//                + "    ON wlm.`wlid` = wr.`wlid` AND wr.`isactive`=1 "
+//                + "LEFT JOIN "
+//                + "    `waste_type` wt "
+//                + "    ON wlm.`type` = wt.`typeid` "
+//                + "WHERE "
+//                + "    wlm.`isactive` = 1 "
+//                + "    AND wlm.`zone` = ? "
+//                + "    AND wlm.`ward` = ? "
+//                + sqlwhere
+//                + "    AND wlm.`status` = ? "
+//                + "    AND wlm.`request_by_type` IN ("+requestBy+") "
+//                + "    AND DATE(wlm.`cdate`) BETWEEN ? AND ?";
+//		
+//        System.out.println(sql);
+//        return jdbcWasteTemplate.queryForList(sql, zone, ward, status, formattedFromDate, formattedToDate);
+//    }
 	
 	public List<Map<String, Object>> getWardSumReport(String ward) {
 	    
