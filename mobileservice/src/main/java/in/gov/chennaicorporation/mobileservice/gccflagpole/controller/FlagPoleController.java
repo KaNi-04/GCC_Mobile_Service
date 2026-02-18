@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import in.gov.chennaicorporation.mobileservice.gccflagpole.service.FlagPoleService;
+import in.gov.chennaicorporation.mobileservice.gccflagpole.service.FlagpoleSMSService;
 
 @RequestMapping("/gccofficialapp/api/flagpole")
 @RestController("gccofficialappflagpole")
@@ -19,6 +20,9 @@ public class FlagPoleController {
 
     @Autowired
     FlagPoleService flagPoleService;
+
+    @Autowired
+    FlagpoleSMSService flagpoleSMSService;
 
     @GetMapping("/getEventDetails")
     public List<Map<String, Object>> getEventDetails() {
@@ -81,7 +85,7 @@ public class FlagPoleController {
     }
 
     @GetMapping("/getRestorationDetails")
-    public Map<String, Object> getRestorationDetails(@RequestParam("reqId") String  reqId) {
+    public Map<String, Object> getRestorationDetails(@RequestParam("reqId") String reqId) {
 
         return flagPoleService.getRestorationDetailsById(reqId);
 
@@ -104,10 +108,11 @@ public class FlagPoleController {
 
         String fineImgPath = flagPoleService.fileUpload(fineImg, "fineImages");
 
-        return flagPoleService.saveFineDetails(vName, mobNo, fineImgPath, address, zone, ward, latitude, longitude, noofflagpoles, fineAmount, remarks, userid, eventType);
+        return flagPoleService.saveFineDetails(vName, mobNo, fineImgPath, address, zone, ward, latitude, longitude,
+                noofflagpoles, fineAmount, remarks, userid, eventType);
 
     }
-    
+
     @GetMapping("/getFineList")
     public List<Map<String, Object>> getFineList(@RequestParam("userid") String userid) {
 
@@ -125,6 +130,23 @@ public class FlagPoleController {
 
         return flagPoleService.submitFIRDetails(refid, firImgPath, userid, fir_remarks);
 
+    }
+
+    // testing for message
+
+    @GetMapping("/sendRestorationMessage")
+    public String sendRestorationMessage(@RequestParam String mobileNo, @RequestParam String streetName,
+            @RequestParam String amount, @RequestParam String requestId) {
+        return flagpoleSMSService.restorationflagpoleSms(mobileNo, streetName, amount, requestId);
+    }
+
+    @GetMapping("/sendUnauthorizedMessage")
+    public String sendUnauthorizedMessage(@RequestParam String mobileNo,
+            @RequestParam String streetName,
+            @RequestParam String fineAmount,
+            @RequestParam String requestId) {
+
+        return flagpoleSMSService.unauthorizedFlagPoleSms(mobileNo, streetName, fineAmount, requestId);
     }
 
 }

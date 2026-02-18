@@ -42,6 +42,9 @@ public class FlagPoleService {
     @Autowired
     JdbcTemplate jdbcFlagPoleTemplate;
 
+    @Autowired
+    FlagpoleSMSService flagpoleSMSService;
+
     private final Environment environment;
 
     private String fileBaseUrl;
@@ -141,12 +144,12 @@ public class FlagPoleService {
     }
 
     public List<Map<String, Object>> getEventDetails() {
-        try{
+        try {
             String sql = "select * from event_type where is_active = 1 and is_delete = 0";
             List<Map<String, Object>> eventList = jdbcFlagPoleTemplate.queryForList(sql);
             return eventList;
 
-        }catch(Exception ex){
+        } catch (Exception ex) {
             ex.printStackTrace();
             return Collections.emptyList();
         }
@@ -162,7 +165,7 @@ public class FlagPoleService {
                     "from user_request_details urd " +
                     "left join street_details sd on urd.refid = sd.refid " +
                     "where urd.payment_status = 'COMPLETED' and sd.ward =? and urd.ae_status IS NOT NULL " +
-                    " AND sd.is_active =1 and sd.is_delete =0 "+
+                    " AND sd.is_active =1 and sd.is_delete =0 " +
                     "group by urd.id, urd.refid, urd.applicant_name, urd.mobile_number,urd.total_poles, urd.cdate ";
             List<Map<String, Object>> requestList = jdbcFlagPoleTemplate.queryForList(sql, new Object[] { ward });
             return requestList;
@@ -182,7 +185,8 @@ public class FlagPoleService {
 
         }
         try {
-            String applicantsql = "select urd.id, urd.refid, urd.applicant_name, urd.mobile_number, urd.total_poles,  "+
+            String applicantsql = "select urd.id, urd.refid, urd.applicant_name, urd.mobile_number, urd.total_poles,  "
+                    +
                     "date_format(urd.cdate,'%d-%m-%Y %l:%i %p') as req_rec_date, count(sd.id) as streetCount, " +
                     // " case when urd.ae_status is null and urd.ae_status !='APPROVED' THEN
                     // 'PENDING' ELSE 'APPROVED' END AS status, "+
@@ -193,7 +197,8 @@ public class FlagPoleService {
                     "group by urd.id, urd.refid, urd.applicant_name, urd.mobile_number,urd.total_poles, urd.cdate";
             Map<String, Object> requestDetails = jdbcFlagPoleTemplate.queryForMap(applicantsql, new Object[] { reqId });
 
-            String streetSql = "select sd.id as streetDetailsId, urd.id as reqid, sd.street_name, sd.zone, sd.ward, sd.no_of_poles, "+
+            String streetSql = "select sd.id as streetDetailsId, urd.id as reqid, sd.street_name, sd.zone, sd.ward, sd.no_of_poles, "
+                    +
                     "sd.height, pm.pole_material_name, fm.flag_material_name, sd.pole_space, sd.no_of_days " +
                     "from street_details sd " +
                     "left join user_request_details urd on urd.refid = sd.refid " +
@@ -234,14 +239,18 @@ public class FlagPoleService {
         }
         try {
 
-            String detailsSql = "select applicant_name,mobile_number, applicant_address, event_id, event_date, event_desc, no_of_days, "+
-                    "total_poles, deposit, total_cost, approved_by, approved_date, ae_status, rdo_status, rdo_remarks, cdate, refid, "+
+            String detailsSql = "select applicant_name,mobile_number, applicant_address, event_id, event_date, event_desc, no_of_days, "
+                    +
+                    "total_poles, deposit, total_cost, approved_by, approved_date, ae_status, rdo_status, rdo_remarks, cdate, refid, "
+                    +
                     "payment_status, refund_status, booking_status from user_request_details where id = ?";
             Map<String, Object> requestDetails = jdbcFlagPoleTemplate.queryForMap(detailsSql, new Object[] { reqId });
 
-            String historyInsertSql = "INSERT INTO user_request_details_history ( applicant_name, mobile_number, applicant_address, "+
+            String historyInsertSql = "INSERT INTO user_request_details_history ( applicant_name, mobile_number, applicant_address, "
+                    +
                     " event_id, event_date, event_desc, no_of_days, total_poles, deposit, total_cost, approved_by, " +
-                    " approved_date, ae_status, rdo_status, rdo_remarks, cdate, refid, payment_status, refund_status, booking_status) "+
+                    " approved_date, ae_status, rdo_status, rdo_remarks, cdate, refid, payment_status, refund_status, booking_status) "
+                    +
                     "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
             jdbcFlagPoleTemplate.update(historyInsertSql, requestDetails.get("applicant_name"),
                     requestDetails.get("mobile_number"), requestDetails.get("applicant_address"),
@@ -276,12 +285,13 @@ public class FlagPoleService {
         try {
             String sql = "select urd.id, urd.refid, urd.applicant_name, urd.mobile_number, urd.total_poles, " +
                     "date_format(urd.cdate,'%d-%m-%Y %l:%i %p') as req_rec_date, count(sd.id) as streetCount, " +
-                    "DATE_FORMAT(urd.event_date,'%d-%m-%Y') AS eventStartDate, DATE_FORMAT(DATE_ADD(urd.event_date, INTERVAL urd.no_of_days DAY),'%d-%m-%Y') AS eventEndDate "+
+                    "DATE_FORMAT(urd.event_date,'%d-%m-%Y') AS eventStartDate, DATE_FORMAT(DATE_ADD(urd.event_date, INTERVAL urd.no_of_days DAY),'%d-%m-%Y') AS eventEndDate "
+                    +
                     "from user_request_details urd " +
                     "left join street_details sd on urd.refid = sd.refid " +
-                    "where urd.payment_status = 'COMPLETED' and sd.ward =? and urd.rdo_status = 'APPROVED' "+ 
-                    " AND sd.is_active =1 and sd.is_delete =0 "+
-                    "and urd.ae_status IS NOT NULL and urd.id not in (select ref_id from restoration) "+
+                    "where urd.payment_status = 'COMPLETED' and sd.ward =? and urd.rdo_status = 'APPROVED' " +
+                    " AND sd.is_active =1 and sd.is_delete =0 " +
+                    "and urd.ae_status IS NOT NULL and urd.id not in (select ref_id from restoration) " +
                     "group by urd.id, urd.refid, urd.applicant_name, urd.mobile_number,urd.total_poles, urd.cdate ";
             List<Map<String, Object>> requestList = jdbcFlagPoleTemplate.queryForList(sql, new Object[] { ward });
             return requestList;
@@ -305,11 +315,13 @@ public class FlagPoleService {
                     "ifnull (urd.rdo_status,'') as rdo_status, ifnull(urd.rdo_remarks,'') as rdo_remarks " +
                     "from user_request_details urd " +
                     "left join street_details sd on urd.refid = sd.refid " +
-                    "where urd.payment_status = 'COMPLETED' and urd.id = ? and urd.rdo_status = 'APPROVED' and urd.ae_status IS NOT NULL "+
+                    "where urd.payment_status = 'COMPLETED' and urd.id = ? and urd.rdo_status = 'APPROVED' and urd.ae_status IS NOT NULL "
+                    +
                     "group by urd.id, urd.refid, urd.applicant_name, urd.mobile_number,urd.total_poles, urd.cdate ";
             Map<String, Object> requestList = jdbcFlagPoleTemplate.queryForMap(sql, reqId);
 
-            String streetSql = "select sd.id as streetDetailsId, urd.id as reqid, sd.street_name, sd.zone, sd.ward, sd.no_of_poles, "+
+            String streetSql = "select sd.id as streetDetailsId, urd.id as reqid, sd.street_name, sd.zone, sd.ward, sd.no_of_poles, "
+                    +
                     "sd.height, pm.pole_material_name, fm.flag_material_name, sd.pole_space, sd.no_of_days " +
                     "from street_details sd " +
                     "left join user_request_details urd on urd.refid = sd.refid " +
@@ -331,22 +343,56 @@ public class FlagPoleService {
         }
     }
 
-    public String submitRestorationDetails(String reqId, String amount, String restorImgPath, String remarks,
-            String userid) {
+    @Transactional
+    public String submitRestorationDetails(String reqId, String amount,
+            String restorImgPath, String remarks, String userid) {
+
         try {
-            String sql = "Insert into restoration (ref_id, amount, image_path, remarks, created_by) values(?,?,?,?,?)";
-            int rows = jdbcFlagPoleTemplate.update(sql, reqId, amount, restorImgPath, remarks, userid);
-            if (rows > 0) {
-                return "Restoration details submitted successfully";
-            } else {
+
+            /* 1. Insert into restoration table */
+            String insertSql = "INSERT INTO restoration (ref_id, amount, image_path, remarks, created_by) "
+                    + "VALUES (?,?,?,?,?)";
+
+            int rows = jdbcFlagPoleTemplate.update(
+                    insertSql, reqId, amount, restorImgPath, remarks, userid);
+
+            if (rows <= 0) {
                 return "Failed to submit restoration details";
             }
 
+            /* 2. Fetch mobile number & street name using JOIN */
+            String fetchSql = "SELECT u.mobile_number, s.street_name " +
+                    "FROM user_request_details u " +
+                    "JOIN street_details s ON u.refid = s.ref_id " +
+                    "WHERE u.refid = ?";
+
+            List<Map<String, Object>> result = jdbcFlagPoleTemplate.queryForList(fetchSql, reqId);
+
+            if (result.isEmpty()) {
+                return "Restoration saved but mobile/street details not found for Ref ID: " + reqId;
+            }
+
+            String mobileNo = result.get(0).get("mobile_number").toString();
+            String streetName = result.get(0).get("street_name").toString();
+
+            /* 3. Trigger SMS safely */
+            try {
+                flagpoleSMSService.restorationflagpoleSms(
+                        mobileNo,
+                        streetName,
+                        amount,
+                        reqId);
+            } catch (Exception smsEx) {
+                // Do NOT rollback DB if SMS fails
+                System.out.println("SMS failed but restoration saved: " + reqId);
+            }
+
+            return "Restoration details submitted successfully";
+
         } catch (Exception ex) {
             ex.printStackTrace();
-            return "Error occurred while submitting restoration details";
+            throw new RuntimeException("Error occurred while submitting restoration details");
         }
-
     }
 
     public List<Map<String, Object>> getRestorationList(String userid) {
@@ -356,14 +402,15 @@ public class FlagPoleService {
         try {
             String sql = "select urd.id, urd.refid, urd.applicant_name, urd.mobile_number, urd.total_poles, " +
                     "date_format(urd.cdate,'%d-%m-%Y %l:%i %p') as req_rec_date, count(sd.id) as streetCount, " +
-                    "DATE_FORMAT(urd.event_date,'%d-%m-%Y') AS eventStartDate, DATE_FORMAT(DATE_ADD(urd.event_date, INTERVAL urd.no_of_days DAY),'%d-%m-%Y') AS eventEndDate, "+
-                    "r.amount as restorationAmount "+
+                    "DATE_FORMAT(urd.event_date,'%d-%m-%Y') AS eventStartDate, DATE_FORMAT(DATE_ADD(urd.event_date, INTERVAL urd.no_of_days DAY),'%d-%m-%Y') AS eventEndDate, "
+                    +
+                    "r.amount as restorationAmount " +
                     "from user_request_details urd " +
                     "left join street_details sd on urd.refid = sd.refid " +
-                    "left join restoration r on urd.id = r.ref_id  "+
-                    "where urd.payment_status = 'COMPLETED' and sd.ward =? and urd.rdo_status = 'APPROVED' "+ 
-                    "and urd.ae_status IS NOT NULL and urd.id in (select ref_id from restoration) "+
-                    " AND sd.is_active =1 and sd.is_delete =0 AND r.is_active = 1 "+
+                    "left join restoration r on urd.id = r.ref_id  " +
+                    "where urd.payment_status = 'COMPLETED' and sd.ward =? and urd.rdo_status = 'APPROVED' " +
+                    "and urd.ae_status IS NOT NULL and urd.id in (select ref_id from restoration) " +
+                    " AND sd.is_active =1 and sd.is_delete =0 AND r.is_active = 1 " +
                     "group by urd.id, urd.refid, urd.applicant_name, urd.mobile_number,urd.total_poles, urd.cdate, r.amount ";
             List<Map<String, Object>> requestList = jdbcFlagPoleTemplate.queryForList(sql, new Object[] { ward });
             return requestList;
@@ -375,29 +422,32 @@ public class FlagPoleService {
 
         }
 
-
     }
 
     public Map<String, Object> getRestorationDetailsById(String reqId) {
 
         try {
             String sql = "select urd.id, urd.refid, urd.applicant_name, urd.mobile_number, urd.total_poles, " +
-                    "date_format(urd.cdate,'%d-%m-%Y %l:%i %p') as req_rec_date, urd.applicant_address, urd.event_desc, "+
+                    "date_format(urd.cdate,'%d-%m-%Y %l:%i %p') as req_rec_date, urd.applicant_address, urd.event_desc, "
+                    +
                     "count(sd.id) as streetCount, DATE_FORMAT(urd.event_date,'%d-%m-%Y') AS eventStartDate, " +
                     "DATE_FORMAT(DATE_ADD(urd.event_date, INTERVAL urd.no_of_days DAY),'%d-%m-%Y') AS eventEndDate, " +
                     "ifnull (urd.rdo_status,'') as rdo_status, ifnull(urd.rdo_remarks,'') as rdo_remarks, " +
-                    "r.amount as restorationAmount, r.payment_status as restoration_pay_status, r.remarks as restorationRemarks, "+
-                    "CONCAT('"+fileBaseUrl+"/gccofficialapp/files', r.image_path) AS restoration_image_url " +
+                    "r.amount as restorationAmount, r.payment_status as restoration_pay_status, r.remarks as restorationRemarks, "
+                    +
+                    "CONCAT('" + fileBaseUrl + "/gccofficialapp/files', r.image_path) AS restoration_image_url " +
                     "from user_request_details urd " +
                     "left join street_details sd on urd.refid = sd.refid " +
-                    "left join restoration r on urd.id = r.ref_id  "+
-                    "where urd.payment_status = 'COMPLETED' and urd.id = ? and urd.rdo_status = 'APPROVED' and "+
-                    "urd.ae_status IS NOT NULL AND r.is_active = 1 "+
-                    "group by urd.id, urd.refid, urd.applicant_name, urd.mobile_number,urd.total_poles, urd.cdate, r.amount, "+
+                    "left join restoration r on urd.id = r.ref_id  " +
+                    "where urd.payment_status = 'COMPLETED' and urd.id = ? and urd.rdo_status = 'APPROVED' and " +
+                    "urd.ae_status IS NOT NULL AND r.is_active = 1 " +
+                    "group by urd.id, urd.refid, urd.applicant_name, urd.mobile_number,urd.total_poles, urd.cdate, r.amount, "
+                    +
                     "r.payment_status, r.remarks, r.image_path ";
             Map<String, Object> requestList = jdbcFlagPoleTemplate.queryForMap(sql, reqId);
 
-            String streetSql = "select sd.id as streetDetailsId, urd.id as reqid, sd.street_name, sd.zone, sd.ward, sd.no_of_poles, "+
+            String streetSql = "select sd.id as streetDetailsId, urd.id as reqid, sd.street_name, sd.zone, sd.ward, sd.no_of_poles, "
+                    +
                     "sd.height, pm.pole_material_name, fm.flag_material_name, sd.pole_space, sd.no_of_days " +
                     "from street_details sd " +
                     "left join user_request_details urd on urd.refid = sd.refid " +
@@ -418,7 +468,6 @@ public class FlagPoleService {
 
         }
 
-
     }
 
     @Transactional
@@ -427,7 +476,8 @@ public class FlagPoleService {
             String userid, String eventType) {
         try {
 
-            String sql = "Insert into fine_collection (user_name, mob_no, image_path, street_name, zone, ward, latitude, longitude, "+
+            String sql = "Insert into fine_collection (user_name, mob_no, image_path, street_name, zone, ward, latitude, longitude, "
+                    +
                     "no_of_poles, fine_amount, total_amount, remarks, created_by, event_id) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
             KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -455,11 +505,18 @@ public class FlagPoleService {
 
             jdbcFlagPoleTemplate.update("UPDATE fine_collection SET ref_id = ? WHERE id = ?", requestId, generatedId);
 
+            flagpoleSMSService.unauthorizedFlagPoleSms(
+                    mobNo, // mobile number
+                    address, // street name
+                    fineAmount, // total_amount (same as fineAmount)
+                    requestId // generated reference ID
+            );
+
             return "Fine details saved successfully with Request ID: " + requestId;
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            return "Error occurred while saving fine details"+ex.getMessage();
+            return "Error occurred while saving fine details" + ex.getMessage();
         }
     }
 
@@ -468,12 +525,13 @@ public class FlagPoleService {
 
         try {
             String sql = "select fc.id, fc.ref_id, fc.user_name, fc.mob_no, fc.no_of_poles, " +
-                    "CONCAT('"+fileBaseUrl+"/gccofficialapp/files', fc.image_path) AS fine_image_url, " +
-                    "ifnull(CONCAT('"+fileBaseUrl+"/gccofficialapp/files', fc.fir_image_path),'N/A') AS FIR_image_url, " +
-                    "date_format(fc.cdate,'%d-%m-%Y %l:%i %p') as fine_rec_date, fc.fine_amount, fc.total_amount, "+
-                    "fc.street_name, fc.zone, fc.ward, fc.remarks, fc.payment_status "+
+                    "CONCAT('" + fileBaseUrl + "/gccofficialapp/files', fc.image_path) AS fine_image_url, " +
+                    "ifnull(CONCAT('" + fileBaseUrl
+                    + "/gccofficialapp/files', fc.fir_image_path),'N/A') AS FIR_image_url, " +
+                    "date_format(fc.cdate,'%d-%m-%Y %l:%i %p') as fine_rec_date, fc.fine_amount, fc.total_amount, " +
+                    "fc.street_name, fc.zone, fc.ward, fc.remarks, fc.payment_status " +
                     "from fine_collection fc " +
-                    "where fc.ward =? and isactive =1 and isdelete =0 "+
+                    "where fc.ward =? and isactive =1 and isdelete =0 " +
                     "group by fc.id, fc.ref_id, fc.user_name, fc.mob_no,fc.no_of_poles, fc.cdate, fc.fine_amount, fc.total_amount ";
             List<Map<String, Object>> fineList = jdbcFlagPoleTemplate.queryForList(sql, new Object[] { ward });
             return fineList;
@@ -488,10 +546,11 @@ public class FlagPoleService {
 
     public String submitFIRDetails(String refid, String firImgPath, String userid, String fir_remarks) {
         try {
-            String sql = "Update fine_collection set fir_image_path = ?, fir_by = ?, fir_date = NOW(), fir_remarks = ? "+
+            String sql = "Update fine_collection set fir_image_path = ?, fir_by = ?, fir_date = NOW(), fir_remarks = ? "
+                    +
                     "where id = ?";
             int rows = jdbcFlagPoleTemplate.update(sql, firImgPath, userid, refid, fir_remarks);
-            System.out.println("rows..."+rows);
+            System.out.println("rows..." + rows);
             if (rows > 0) {
                 return "FIR details submitted successfully";
             } else {
