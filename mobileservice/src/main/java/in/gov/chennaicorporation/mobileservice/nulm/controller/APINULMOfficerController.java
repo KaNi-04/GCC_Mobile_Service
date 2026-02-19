@@ -10,8 +10,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import in.gov.chennaicorporation.mobileservice.nulm.service.NULMOfficerActivity;
 
-
-
 @RequestMapping("/gccofficialapp/api/nulm/officer/")
 @RestController("gccofficialappOffcierNULMRest")
 public class APINULMOfficerController {
@@ -45,32 +43,37 @@ public class APINULMOfficerController {
 		return nulmOfficerActivity.updateStaffFaceRegister(reporterId, enrollId, status);
 	}
 
-//	@GetMapping(value = "/getStaffListForAttendance") // Template
-//	public List<?> getStaffListForAttendance(
-//			@RequestParam(value = "reporterId", required = false) String reporterId) {
-//		return nulmOfficerActivity.getStaffListForAttendance(reporterId);
-//	}
-	
-//	@GetMapping(value = "/getStaffListForAttendance_New") // Template
-//	public List<?> getStaffListForAttendance_New(@RequestParam(value = "reporterId", required = false) String reporterId) {
-//		return nulmOfficerActivity.getStaffListForAttendance(reporterId);
-//	}
-	
+	// @GetMapping(value = "/getStaffListForAttendance") // Template
+	// public List<?> getStaffListForAttendance(
+	// @RequestParam(value = "reporterId", required = false) String reporterId) {
+	// return nulmOfficerActivity.getStaffListForAttendance(reporterId);
+	// }
+
+	// @GetMapping(value = "/getStaffListForAttendance_New") // Template
+	// public List<?> getStaffListForAttendance_New(@RequestParam(value =
+	// "reporterId", required = false) String reporterId) {
+	// return nulmOfficerActivity.getStaffListForAttendance(reporterId);
+	// }
+
 	@GetMapping(value = "/getStaffListForAttendance_OD") // Template
-	public List<?> getStaffListForAttendance_OD(@RequestParam(value = "reporterId", required = false) String reporterId) {
+	public List<?> getStaffListForAttendance_OD(
+			@RequestParam(value = "reporterId", required = false) String reporterId) {
 		return nulmOfficerActivity.getStaffListForAttendance(reporterId);
 	}
-	
-//	@GetMapping(value = "/getStaffListForAttendance_Loc") // Template
-//	public List<?> getStaffListForAttendance_Loc(@RequestParam(value = "reporterId", required = false) String reporterId,
-//			@RequestParam(value = "latitude", required = false) String latitude,
-//			@RequestParam(value = "longitude", required = false) String longitude,
-//			@RequestParam(value = "type", required = false) String type) {
-//		return nulmOfficerActivity.checkLatLong_Loc(reporterId, latitude, longitude, type);
-//	}
-	
+
+	// @GetMapping(value = "/getStaffListForAttendance_Loc") // Template
+	// public List<?> getStaffListForAttendance_Loc(@RequestParam(value =
+	// "reporterId", required = false) String reporterId,
+	// @RequestParam(value = "latitude", required = false) String latitude,
+	// @RequestParam(value = "longitude", required = false) String longitude,
+	// @RequestParam(value = "type", required = false) String type) {
+	// return nulmOfficerActivity.checkLatLong_Loc(reporterId, latitude, longitude,
+	// type);
+	// }
+
 	@GetMapping(value = "/getStaffListForAttendance_Loc_parkId") // Template
-	public List<?> getStaffListForAttendance_Loc_parkId(@RequestParam(value = "reporterId", required = false) String reporterId,
+	public List<?> getStaffListForAttendance_Loc_parkId(
+			@RequestParam(value = "reporterId", required = false) String reporterId,
 			@RequestParam(value = "latitude", required = false) String latitude,
 			@RequestParam(value = "longitude", required = false) String longitude,
 			@RequestParam(value = "type", required = false) String type) {
@@ -82,14 +85,15 @@ public class APINULMOfficerController {
 	// @RequestParam(value = "reporterId", required = false) String reporterId) {
 	// return nulmOfficerActivity.getStaffListForAttendance(reporterId);
 	// }
-//	@GetMapping(value = "/markAttendance") // Template
-//	public List<?> markAttendance(
-//			@RequestParam(value = "reporterId", required = false) String reporterId,
-//			@RequestParam(value = "enrollId", required = false) String enrollId,
-//			@RequestParam(value = "action", required = false) String status,
-//			@RequestParam(value = "photourl", required = false) String photourl) {
-//		return nulmOfficerActivity.markAttendance(reporterId, enrollId, status, photourl);
-//	}
+	// @GetMapping(value = "/markAttendance") // Template
+	// public List<?> markAttendance(
+	// @RequestParam(value = "reporterId", required = false) String reporterId,
+	// @RequestParam(value = "enrollId", required = false) String enrollId,
+	// @RequestParam(value = "action", required = false) String status,
+	// @RequestParam(value = "photourl", required = false) String photourl) {
+	// return nulmOfficerActivity.markAttendance(reporterId, enrollId, status,
+	// photourl);
+	// }
 
 	@GetMapping(value = "/markAttendance_New") // Template
 	public List<?> markAttendance_New(
@@ -97,10 +101,11 @@ public class APINULMOfficerController {
 			@RequestParam(value = "enrollId", required = false) String enrollId,
 			@RequestParam(value = "action", required = false) String status,
 			@RequestParam(value = "photourl", required = false) String photourl,
-	        @RequestParam(value = "address", required = false) String address,
-            @RequestParam(value = "versionName", required = false) String versionName,
-            @RequestParam(value = "mobilePlatform", required = false) String mobilePlatform) {
-		return nulmOfficerActivity.markAttendance_New(reporterId, enrollId, status, photourl, address, versionName, mobilePlatform);
+			@RequestParam(value = "address", required = false) String address,
+			@RequestParam(value = "versionName", required = false) String versionName,
+			@RequestParam(value = "mobilePlatform", required = false) String mobilePlatform) {
+		return nulmOfficerActivity.markAttendance_New(reporterId, enrollId, status, photourl, address, versionName,
+				mobilePlatform);
 	}
 
 	@GetMapping(value = "/getStaffAttendanceListByDate") // Template
@@ -119,14 +124,23 @@ public class APINULMOfficerController {
 
 	}
 
-
 	@GetMapping(value = "/getStaffListForAttendanceMultipleIncharge")
 	public List<?> getStaffListForAttendanceMultipleIncharge(
-	@RequestParam(value = "reporterId", required = false) String reporterId) {
-	return nulmOfficerActivity.getStaffListForAttendanceMultipleIncharge(reporterId);
+			@RequestParam(value = "reporterId", required = false) String reporterId) {
+		return nulmOfficerActivity.getStaffListForAttendanceMultipleIncharge(reporterId);
 	}
-	
 
-	
+	@GetMapping(value = "/getParkList") // Template
+	public List<?> getParkList(
+			@RequestParam(value = "reporterId", required = false) String reporterId) {
+		return nulmOfficerActivity.getParkList(reporterId);
+	}
+
+	@GetMapping(value = "/getEmpList_Park") // Template
+	public List<?> getEmpList_Park(
+			@RequestParam(value = "reporterId", required = false) String reporterId,
+			@RequestParam(value = "parkId", required = false) String parkId) {
+		return nulmOfficerActivity.getEmpList_Park(reporterId, parkId);
+	}
 
 }
