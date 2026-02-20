@@ -20,13 +20,14 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableTransactionManagement
 public class DataSourceConfig {
 
-	// private static String host = "localhost:3306";
-	// private static String dbpassword = "root";
+	private static String host = "localhost:3306";
+	private static String dbpassword = "root";
 	// private static String dbpassword = "gccroot";
 
 	// AWS
-	private static String host = "gcc-facial-db-instance-1.cf48eqcciziq.ap-south-1.rds.amazonaws.com:3306";
-	private static String dbpassword = "gcc-facial-password";
+	// private static String host =
+	// "gcc-facial-db-instance-1.cf48eqcciziq.ap-south-1.rds.amazonaws.com:3306";
+	// private static String dbpassword = "gcc-facial-password";
 
 	////////////////////////////// (For GCC APP) ////////////////////////
 	@Configuration
