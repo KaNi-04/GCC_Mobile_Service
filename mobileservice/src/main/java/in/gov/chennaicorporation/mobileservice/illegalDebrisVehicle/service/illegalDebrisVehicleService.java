@@ -345,7 +345,7 @@ public class illegalDebrisVehicleService {
 				+ "WHERE vclm.isactive = 1 "
 				+ "  AND vclm.status !='Close' "
 				+ "  AND vclm.ward = ? "
-				+"	 AND vclm.status = 'Pending'";
+				+ "	 AND vclm.status = 'Pending'";
 
 		return jdbcTemplate.queryForList(sql, ward);
 	}
@@ -486,12 +486,12 @@ public class illegalDebrisVehicleService {
 			String vehicleNo) {
 
 		String sqlQuery = """
-							SELECT vcc.vclid, vcc.latitude, vcc.longitude, vcc.zone, vcc.ward, 
-				vcc.challan_by, vcc.violator_name, vcc.violator_phone, vclm.vehicle_no,
-				cast(vcc.fine_amount as unsigned) as fine_amount,vcc.orderid,vcc.status From vehicle_catch_challan vcc
-                left join vehicle_catch_location_mapping vclm on vcc.vclid = vclm.vclid
-                WHERE (vcc.isactive=1 AND vcc.isdelete=0) AND (vcc.status <> 'Transaction success' AND vcc.status <> 'out' AND vcc.status <> 'challan')
-		""";
+									SELECT vcc.vclid, vcc.latitude, vcc.longitude, vcc.zone, vcc.ward,
+						vcc.challan_by, vcc.violator_name, vcc.violator_phone, vclm.vehicle_no,
+						cast(vcc.fine_amount as unsigned) as fine_amount,vcc.orderid,vcc.status From vehicle_catch_challan vcc
+				              left join vehicle_catch_location_mapping vclm on vcc.vclid = vclm.vclid
+				              WHERE (vcc.isactive=1 AND vcc.isdelete=0) AND (vcc.status <> 'Transaction success' AND vcc.status <> 'out' AND vcc.status <> 'challan')
+				""";
 
 		if (orderid != null && !orderid.isEmpty() && !orderid.isBlank()) {
 			sqlQuery = sqlQuery + " AND vcc.orderid='" + orderid + "'";
@@ -864,21 +864,22 @@ public class illegalDebrisVehicleService {
 	public List<Map<String, Object>> getChallanPaidList(
 			String loginid) {
 
-		String sqlQuery = "SELECT vcc.id as challanId, vcc.vclid, vclm.vehicle_no, vclm.place_name, wt.name as waste_type, "+
-								" vt.name as vehicle_type, vclm.tonage,  cast(vcc.fine_amount as unsigned) as fine_amount, "+
-								" vcc.challan_by,  DATE_FORMAT(vcc.challan_date, '%d-%m-%Y %H:%i') AS challan_date, "+
-								" vclm.latitude, vclm.longitude, vclm.zone, vclm.ward, "+
-								" vcc.remarks, vcc.status, vcc.violator_name, "+
-								" vcc.violator_phone, vcc.orderid, "+
-								" CONCAT('" + fileBaseUrl + "/gccofficialapp/files', vclm.file) as catchImageurl, "+
-								" CONCAT('" + fileBaseUrl + "/gccofficialapp/files', ydd.image_path) as yardImageurl, "+
-                                " vcc.isactive, vcc.isdelete "+
-								" From vehicle_catch_challan vcc "+
-								" left join vehicle_catch_location_mapping vclm on vcc.vclid = vclm.vclid "+
-								" left join yard_dump_details ydd on vclm.vclid = ydd.vclid "+
-                                " left join waste_type wt on vclm.typeid = wt.typeid "+
-                                " left join vehicle_type vt on vclm.vtypeid = vt.vtypeid "+
-								" WHERE (vcc.isactive=1 AND vcc.isdelete=0) AND (vcc.status='Transaction success')";
+		String sqlQuery = "SELECT vcc.id as challanId, vcc.vclid, vclm.vehicle_no, vclm.place_name, wt.name as waste_type, "
+				+
+				" vt.name as vehicle_type, vclm.tonage,  cast(vcc.fine_amount as unsigned) as fine_amount, " +
+				" vcc.challan_by,  DATE_FORMAT(vcc.challan_date, '%d-%m-%Y %H:%i') AS challan_date, " +
+				" vclm.latitude, vclm.longitude, vclm.zone, vclm.ward, " +
+				" vcc.remarks, vcc.status, vcc.violator_name, " +
+				" vcc.violator_phone, vcc.orderid, " +
+				" CONCAT('" + fileBaseUrl + "/gccofficialapp/files', vclm.file) as catchImageurl, " +
+				" CONCAT('" + fileBaseUrl + "/gccofficialapp/files', ydd.image_path) as yardImageurl, " +
+				" vcc.isactive, vcc.isdelete " +
+				" From vehicle_catch_challan vcc " +
+				" left join vehicle_catch_location_mapping vclm on vcc.vclid = vclm.vclid " +
+				" left join yard_dump_details ydd on vclm.vclid = ydd.vclid " +
+				" left join waste_type wt on vclm.typeid = wt.typeid " +
+				" left join vehicle_type vt on vclm.vtypeid = vt.vtypeid " +
+				" WHERE (vcc.isactive=1 AND vcc.isdelete=0) AND (vcc.status='Transaction success')";
 
 		if (loginid != null && !loginid.isEmpty() && !loginid.isBlank()) {
 			sqlQuery = sqlQuery + " AND vcc.challan_by='" + loginid + "'";
@@ -965,16 +966,17 @@ public class illegalDebrisVehicleService {
 				Number generatedId = keyHolder.getKey();
 				lastInsertId = (generatedId != null) ? generatedId.intValue() : 0;
 
-				// String insertWasteInfoSql = "INSERT INTO waste_info (typeid, kg, vclid, wrid) " +
-				// 		"VALUES (?,?,?,?)";
+				// String insertWasteInfoSql = "INSERT INTO waste_info (typeid, kg, vclid, wrid)
+				// " +
+				// "VALUES (?,?,?,?)";
 
 				// for (Map<String, String> wt : wastetype) {
-				// 	jdbcTemplate.update(
-				// 			insertWasteInfoSql,
-				// 			wt.get("id"),
-				// 			wt.get("kg"),
-				// 			vclid,
-				// 			lastInsertId);
+				// jdbcTemplate.update(
+				// insertWasteInfoSql,
+				// wt.get("id"),
+				// wt.get("kg"),
+				// vclid,
+				// lastInsertId);
 				// }
 
 				updateStatus(vclid, lastInsertId, "Close"); // Update the complaint status
@@ -1022,11 +1024,11 @@ public class illegalDebrisVehicleService {
 				+ "FROM vehicle_catch_location_mapping vclm "
 				+ "LEFT JOIN waste_reply wr "
 				+ "    ON vclm.vclid = wr.vclid"
-				+ "    AND wr.isactive = 1 "
+				+ "    AND wr.is_active = 1 "
 				+ "WHERE vclm.isactive = 1 "
 				+ "  AND vclm.isdelete = 0 "
-				+ "  AND vclm.cdate >= ? "
-				+ "  AND vclm.cdate < ? "
+				+ "  AND date(vclm.cdate) >= ? "
+				+ "  AND date(vclm.cdate) < ? "
 				+ "GROUP BY vclm.zone "
 
 				+ " UNION ALL "
@@ -1039,11 +1041,11 @@ public class illegalDebrisVehicleService {
 				+ "FROM vehicle_catch_location_mapping vclm "
 				+ "LEFT JOIN waste_reply wr "
 				+ "    ON vclm.vclid = wr.vclid "
-				+ "    AND wr.isactive = 1 "
+				+ "    AND wr.is_active = 1 "
 				+ "WHERE vclm.isactive = 1 "
 				+ "  AND vclm.isdelete = 0 "
-				+ "  AND vclm.cdate >= ? "
-				+ "  AND vclm.cdate < ? ";
+				+ "  AND date(vclm.cdate) >= ? "
+				+ "  AND date(vclm.cdate) < ? ";
 
 		return jdbcTemplate.queryForList(sql, fromDate, toDate, fromDate, toDate);
 	}
@@ -1061,12 +1063,12 @@ public class illegalDebrisVehicleService {
 				+ "FROM vehicle_catch_location_mapping vclm "
 				+ "LEFT JOIN waste_reply wr  "
 				+ "    ON vclm.vclid = wr.vclid "
-				+ "    AND wr.isactive = 1 "
+				+ "    AND wr.is_active = 1 "
 				+ "WHERE vclm.isactive = 1 "
 				+ "  AND vclm.isdelete = 0 "
 				+ "  AND vclm.zone = ? "
-				+ "  AND vclm.cdate >= ? "
-				+ "  AND vclm.cdate < ? "
+				+ "  AND date(vclm.cdate) >= ? "
+				+ "  AND date(vclm.cdate) < ? "
 				+ "GROUP BY vclm.ward "
 				+ " "
 				+ "UNION ALL "
@@ -1079,12 +1081,12 @@ public class illegalDebrisVehicleService {
 				+ "FROM vehicle_catch_location_mapping vclm "
 				+ "LEFT JOIN waste_reply wr  "
 				+ "    ON vclm.vclid = wr.vclid "
-				+ "    AND wr.isactive = 1 "
+				+ "    AND wr.is_active = 1 "
 				+ "WHERE vclm.isactive = 1 "
 				+ "  AND vclm.isdelete = 0 "
 				+ "  AND vclm.zone = ? "
-				+ "  AND vclm.cdate >= ? "
-				+ "  AND vclm.cdate < ? ";
+				+ "  AND date(vclm.cdate) >= ? "
+				+ "  AND date(vclm.cdate) < ? ";
 
 		return jdbcTemplate.queryForList(sql, zone, fromDate, toDate, zone, fromDate, toDate);
 	}
@@ -1110,15 +1112,15 @@ public class illegalDebrisVehicleService {
 				+ "FROM vehicle_catch_location_mapping vclm "
 				+ "LEFT JOIN waste_reply wr "
 				+ "    ON vclm.vclid = wr.vclid "
-				+ "    AND wr.isactive = 1 "
+				+ "    AND wr.is_active = 1 "
 				+ "LEFT JOIN waste_type wt "
 				+ "    ON vclm.typeid = wt.typeid "
 				+ "WHERE vclm.isactive = 1 "
 				+ "  AND vclm.isdelete = 0 "
 				+ "  AND vclm.ward = ? "
 				+ "  AND wr.vclid IS NULL "
-				+ "  AND vclm.cdate >= ? "
-				+ "  AND vclm.cdate < ? "
+				+ "  AND date(vclm.cdate) >= ? "
+				+ "  AND date(vclm.cdate) < ? "
 				+ "ORDER BY vclm.cdate DESC";
 
 		return jdbcTemplate.queryForList(sql, ward, fromDate, toDate);
@@ -1156,7 +1158,7 @@ public class illegalDebrisVehicleService {
 				+ "FROM vehicle_catch_location_mapping vclm "
 				+ "INNER JOIN waste_reply wr "
 				+ "    ON vclm.vclid = wr.vclid "
-				+ "    AND wr.isactive = 1 "
+				+ "    AND wr.is_active = 1 "
 				+ "LEFT JOIN waste_info wi "
 				+ "    ON wi.vclid = vclm.vclid "
 				+ "    AND wi.isactive = 1 "
@@ -1166,9 +1168,9 @@ public class illegalDebrisVehicleService {
 				+ "WHERE vclm.isactive = 1 "
 				+ "  AND vclm.isdelete = 0 "
 				+ "  AND vclm.ward = ? "
-				+ "  AND vclm.cdate >= ? "
-				+ "  AND vclm.cdate < ? "
-				+ "GROUP BY vclm.vclid "
+				+ "  AND date(vclm.cdate) >= ? "
+				+ "  AND date(vclm.cdate) < ? "
+				+ "GROUP BY vclm.vclid,wr.cdate,wr.remarks,wr.file "
 				+ "ORDER BY wr.cdate DESC";
 
 		ObjectMapper mapper = new ObjectMapper();
