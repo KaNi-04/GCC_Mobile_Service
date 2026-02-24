@@ -224,4 +224,60 @@ public class ParksApiController {
         return ResponseEntity.ok(
                 parksApiService.getZoneWardReport(zone, ward, fromDate, toDate));
     }
+
+    @PostMapping("/saveStaffDeviceDetails")
+    public ResponseEntity<Map<String, Object>> saveStaffDeviceDetails(
+
+            @RequestParam(required = false) String userid,
+            @RequestParam(required = false) String enrollment_id,
+            @RequestParam(required = false) String park_id,
+            @RequestParam(required = false) String device_id,
+            @RequestParam(required = false) String latitude,
+            @RequestParam(required = false) String longitude,
+            @RequestParam(required = false) String address) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+
+            // VALIDATION START
+
+            if (park_id == null || park_id.trim().isEmpty()) {
+                response.put("status", "Failed");
+                response.put("message", "park_id is required");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            if (userid == null || userid.trim().isEmpty()) {
+                response.put("status", "Failed");
+                response.put("message", "userid is required");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            if (device_id == null || device_id.trim().isEmpty()) {
+                response.put("status", "Failed");
+                response.put("message", "device_id is required");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // CALL SERVICE
+            response = parksApiService.saveStaffDeviceDetails(
+                    userid,
+                    enrollment_id,
+                    park_id,
+                    device_id,
+                    latitude,
+                    longitude,
+                    address);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception ex) {
+
+            response.put("status", "Failed");
+            response.put("message", "Internal Server Error: " + ex.getMessage());
+
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
 }

@@ -680,4 +680,99 @@ public class ParksApiService {
         return response;
     }
 
+    @Transactional
+    public Map<String, Object> saveStaffDeviceDetails(
+            String userid,
+            String enrollment_id,
+            String parkid,
+            String deviceId,
+            String latitude,
+            String longitude,
+            String address) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+
+            // ✅ Validate park_id
+            if (parkid == null || parkid.trim().isEmpty()) {
+                response.put("status", "Failed");
+                response.put("message", "park_id is required");
+                return response;
+            }
+
+            Integer parsedParkId = Integer.parseInt(parkid.trim());
+
+            // ✅ CHECK DUPLICATE (IMPORTANT)
+            String checkSql = "SELECT COUNT(*) FROM parks_supervisor_device_data WHERE park_id = ?";
+            Integer count = jdbcNULMTemplate.queryForObject(checkSql, Integer.class, parsedParkId);
+
+            if (count != null && count > 0) {
+                response.put("status", "Failed");
+                response.put("message", "Device already saved for this park_id");
+                return response;
+            }
+
+            // ✅ INSERT QUERY
+            String sql = "INSERT INTO parks_supervisor_device_data " +
+                    "(userid, park_id, enrollment_id, device_id, latitude, longitude, address) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+            String[] enrollmentIds = (enrollment_id != null && !enrollment_id.isBlank())
+                    ? enrollment_id.split(",")
+                    : new String[] { null };
+
+            int successCount = 0;
+
+            for (String id : enrollmentIds) {
+
+                Integer parsedEnrollmentId = null;
+
+                try {
+                    if (id != null && !id.trim().isEmpty()) {
+                        parsedEnrollmentId = Integer.parseInt(id.trim());
+                    }
+                } catch (Exception ignored) {
+                }
+
+                final Integer finalEnrollmentId = parsedEnrollmentId;
+
+                int rows = jdbcNULMTemplate.update(con -> {
+                    PreparedStatement ps = con.prepareStatement(sql);
+
+                    ps.setString(1, userid);
+                    ps.setInt(2, parsedParkId);
+
+                    if (finalEnrollmentId != null) {
+                        ps.setInt(3, finalEnrollmentId);
+                    } else {
+                        ps.setNull(3, Types.INTEGER);
+                    }
+
+                    ps.setString(4, deviceId);
+                    ps.setString(5, latitude);
+                    ps.setString(6, longitude);
+                    ps.setString(7, address);
+
+                    return ps;
+                });
+
+                if (rows > 0) {
+                    successCount++;
+                }
+            }
+
+            response.put("status", "Success");
+            response.put("message", "Saved successfully for " + successCount + " records");
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+
+            response.put("status", "Failed");
+            response.put("message", "Error while saving: " + ex.getMessage());
+        }
+
+        return response;
+    }
+
 }
