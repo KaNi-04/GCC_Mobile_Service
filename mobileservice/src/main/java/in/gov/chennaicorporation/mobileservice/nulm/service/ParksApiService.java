@@ -68,9 +68,64 @@ public class ParksApiService {
         this.fileBaseUrl = environment.getProperty("fileBaseUrl");
     }
 
-    public List<Map<String, Object>> getParkDetails(String division) {
-        String sql = "select * from park_details where division = ?";
-        List<Map<String, Object>> result = jdbcNULMTemplate.queryForList(sql, division);
+    // public List<Map<String, Object>> getParkDetails(String division) {
+    // String sql = "select * from park_details where division = ?";
+    // List<Map<String, Object>> result = jdbcNULMTemplate.queryForList(sql,
+    // division);
+    // Map<String, Object> response = new HashMap<>();
+    // response.put("status", "Success");
+    // response.put("message", "Park Details");
+    // response.put("Data", result);
+
+    // return Collections.singletonList(response);
+    // }
+
+    public List<Map<String, Object>> getParkDetails(String division, String latitude, String longitude) {
+
+        List<Map<String, Object>> result;
+
+        // CASE 1: Lat & Long (radius search)
+        if (latitude != null && !latitude.isEmpty() &&
+                longitude != null && !longitude.isEmpty()) {
+
+            String sql = "SELECT p.*, " +
+                    "(6371000 * ACOS( " +
+                    "LEAST(1, GREATEST(-1, " +
+                    "COS(RADIANS(?)) * COS(RADIANS(CAST(p.latitude AS DECIMAL(10,6)))) * " +
+                    "COS(RADIANS(CAST(p.longitude AS DECIMAL(10,6))) - RADIANS(?)) + " +
+                    "SIN(RADIANS(?)) * SIN(RADIANS(CAST(p.latitude AS DECIMAL(10,6)))) " +
+                    "))" +
+                    ")) AS distance_in_meters " +
+                    "FROM park_details p " +
+                    "WHERE p.is_active = 1 AND p.is_delete = 0 " +
+                    "HAVING distance_in_meters <= 1500 " + // UPDATED HERE
+                    "ORDER BY distance_in_meters ASC";
+
+            result = jdbcNULMTemplate.queryForList(sql,
+                    Double.parseDouble(latitude),
+                    Double.parseDouble(longitude),
+                    Double.parseDouble(latitude));
+
+        }
+        // CASE 2: Division filter
+        else if (division != null && !division.isEmpty()) {
+
+            String sql = "SELECT * FROM park_details " +
+                    "WHERE division = ? AND is_active = 1 AND is_delete = 0";
+
+            result = jdbcNULMTemplate.queryForList(sql, division);
+
+        }
+        // CASE 3: All parks
+        else {
+
+            String sql = "SELECT * FROM park_details " +
+                    "WHERE is_active = 1 AND is_delete = 0";
+
+            result = jdbcNULMTemplate.queryForList(sql);
+        }
+
+        // OLD STYLE RESPONSE
         Map<String, Object> response = new HashMap<>();
         response.put("status", "Success");
         response.put("message", "Park Details");
@@ -126,7 +181,7 @@ public class ParksApiService {
             }
 
             if (file == null || file.isEmpty()) {
-                throw new RuntimeException("Please upload image"); // ✅ custom message
+                throw new RuntimeException("Please upload image"); // custom message
             }
 
             // Datetime string
@@ -177,8 +232,9 @@ public class ParksApiService {
         try {
 
             String sql = "INSERT INTO officer_feedback_parks " +
-                    "(userid, enrollment_id, park_id, photo_url, lat, `long`, address, verified, verified_status) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    "(userid, enrollment_id, park_id, photo_url, lat, `long`, address, verified, verified_status, cby) "
+                    +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             String[] enrollmentIds = (enrollmentId != null && !enrollmentId.isBlank())
                     ? enrollmentId.split(",")
@@ -189,22 +245,27 @@ public class ParksApiService {
             for (String id : enrollmentIds) {
 
                 Integer parsedId = null;
-                String status = ""; // default empty
 
-                // ✅ validation logic
                 try {
                     if (id != null && !id.trim().isEmpty()) {
                         parsedId = Integer.parseInt(id.trim());
-                    } else {
-                        status = "WRONG";
                     }
                 } catch (Exception ex) {
-                    status = "WRONG";
+                    parsedId = null;
                 }
 
-                // ✅ make final for lambda
                 final Integer finalParsedId = parsedId;
-                final String finalStatus = status;
+
+                String verifiedValue = "NO";
+                String verifiedStatusValue = null;
+
+                if (verifiedStatus != null && !verifiedStatus.isBlank()) {
+                    verifiedValue = "YES";
+                    verifiedStatusValue = verifiedStatus;
+                }
+
+                final String finalVerified = verifiedValue;
+                final String finalVerifiedStatus = verifiedStatusValue;
 
                 int rows = jdbcNULMTemplate.update(con -> {
                     PreparedStatement ps = con.prepareStatement(sql);
@@ -216,13 +277,23 @@ public class ParksApiService {
                     } else {
                         ps.setNull(2, Types.INTEGER);
                     }
+
+                    // ps.setString(3, zone);
+                    // ps.setString(4, ward);
                     ps.setString(3, parkid);
                     ps.setString(4, photoUrl);
                     ps.setString(5, latitude);
                     ps.setString(6, longitude);
                     ps.setString(7, address);
-                    ps.setString(8, "NO"); // always NO
-                    ps.setString(9, finalStatus); // "" or WRONG
+                    ps.setString(8, finalVerified);
+
+                    if (finalVerifiedStatus != null) {
+                        ps.setString(9, finalVerifiedStatus);
+                    } else {
+                        ps.setNull(9, Types.VARCHAR); // FIXED
+                    }
+
+                    ps.setString(10, userid); // FIXED (cby)
 
                     return ps;
                 });
@@ -381,7 +452,7 @@ public class ParksApiService {
 
         for (Map<String, Object> row : result) {
 
-            // ✅ Replace nulls in main row
+            // Replace nulls in main row
             row.replaceAll((key, value) -> replaceNullWithEmpty(value));
 
             Object optionsRaw = row.get("options");
@@ -422,192 +493,6 @@ public class ParksApiService {
         return Collections.singletonList(response);
     }
 
-    // @Transactional
-    // public Map<String, Object> saveParksInspection(
-    // Integer userId,
-    // Integer parkId,
-    // String responsesJson,
-    // String latitude,
-    // String longitude,
-    // String location,
-    // String ai_verified_count,
-    // String ai_not_verified_count,
-    // String photoUrl) {
-
-    // Map<String, Object> response = new HashMap<>();
-
-    // try {
-
-    // if (userId == null || parkId == null || responsesJson == null ||
-    // responsesJson.isEmpty()) {
-    // throw new RuntimeException("Invalid input data");
-    // }
-
-    // ObjectMapper mapper = new ObjectMapper();
-
-    // List<Map<String, Object>> responses = mapper.readValue(responsesJson,
-    // List.class);
-
-    // String sql = "INSERT INTO parks_inspection_details "
-    // + "(userid, park_id, question_id, answer_id, uploaded_image_url, latitude,
-    // longitude, location, ai_verified_count, ai_not_verified_count,cdate,
-    // isactive, isdelete) "
-    // + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,NOW(), 1, 0)";
-
-    // for (Map<String, Object> item : responses) {
-
-    // Integer questionId = (Integer) item.get("question_id");
-    // Integer answerId = (Integer) item.get("answer_id");
-
-    // // String remarks = (String) item.getOrDefault("remarks", "");
-
-    // if (questionId == null)
-    // continue;
-
-    // jdbcNULMTemplate.update(sql,
-    // userId,
-    // parkId,
-    // questionId,
-    // answerId,
-    // photoUrl,
-    // latitude,
-    // longitude,
-    // location,
-    // ai_verified_count,
-    // ai_not_verified_count);
-    // }
-
-    // response.put("status", "Success");
-    // response.put("message", "Inspection saved successfully");
-    // // response.put("photoUrl", photoUrl);
-
-    // } catch (Exception e) {
-    // response.put("status", "Error");
-    // response.put("message", e.getMessage());
-    // }
-
-    // return response;
-    // }
-
-    // @Transactional
-    // public Map<String, Object> saveParksInspection(
-    // Integer userId,
-    // Integer parkId,
-    // String responsesJson,
-    // String verificationJson,
-    // String latitude,
-    // String longitude,
-    // String location,
-    // String ai_verified_count,
-    // String ai_not_verified_count,
-    // String photoUrl) {
-
-    // Map<String, Object> response = new HashMap<>();
-
-    // try {
-
-    // // ✅ Only responses mandatory
-    // if (responsesJson == null || responsesJson.isEmpty()) {
-    // throw new RuntimeException("Responses (questions & answers) are required");
-    // }
-
-    // ObjectMapper mapper = new ObjectMapper();
-
-    // // ✅ Parse responses
-    // List<Map<String, Object>> responses = mapper.readValue(responsesJson,
-    // List.class);
-
-    // // ✅ FINAL variables fix
-    // final String verifiedImageUrl;
-    // final String enrollmentId;
-
-    // if (verificationJson != null && !verificationJson.isEmpty()) {
-    // Map<String, Object> verificationMap = mapper.readValue(verificationJson,
-    // Map.class);
-
-    // verifiedImageUrl = verificationMap.get("verified_image_url") != null
-    // ? verificationMap.get("verified_image_url").toString()
-    // : null;
-
-    // enrollmentId = verificationMap.get("enrollment_id") != null
-    // ? verificationMap.get("enrollment_id").toString()
-    // : null;
-    // } else {
-    // verifiedImageUrl = null;
-    // enrollmentId = null;
-    // }
-
-    // // ✅ INSERT parent
-    // String insertDetailsSql = "INSERT INTO parks_inspection_details "
-    // + "(userid, park_id, uploaded_image_url, latitude, longitude, location, "
-    // + "ai_verified_count, ai_not_verified_count, verified_image_url,
-    // enrollment_id, "
-    // + "cdate, isactive, isdelete) "
-    // + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 1, 0)";
-
-    // KeyHolder keyHolder = new GeneratedKeyHolder();
-
-    // jdbcNULMTemplate.update(connection -> {
-    // PreparedStatement ps = connection.prepareStatement(insertDetailsSql,
-    // Statement.RETURN_GENERATED_KEYS);
-
-    // ps.setObject(1, userId);
-    // ps.setObject(2, parkId);
-    // ps.setString(3, photoUrl);
-    // ps.setString(4, latitude);
-    // ps.setString(5, longitude);
-    // ps.setString(6, location);
-    // ps.setString(7, ai_verified_count);
-    // ps.setString(8, ai_not_verified_count);
-    // ps.setString(9, verifiedImageUrl);
-    // ps.setString(10, enrollmentId);
-
-    // return ps;
-    // }, keyHolder);
-
-    // int pid = keyHolder.getKey().intValue();
-
-    // // ✅ INSERT child
-    // String insertFeedbackSql = "INSERT INTO parks_inspection_feedback "
-    // + "(pid, question_id, answer_id, cdate, isactive, isdelete) "
-    // + "VALUES (?, ?, ?, NOW(), 1, 0)";
-
-    // for (Map<String, Object> item : responses) {
-
-    // Integer questionId = item.get("question_id") != null
-    // ? Integer.parseInt(item.get("question_id").toString())
-    // : null;
-
-    // Integer answerId = item.get("answer_id") != null
-    // ? Integer.parseInt(item.get("answer_id").toString())
-    // : null;
-
-    // // String remarks = item.get("remarks") != null
-    // // ? item.get("remarks").toString()
-    // // : null;
-
-    // if (questionId == null)
-    // continue;
-
-    // jdbcNULMTemplate.update(
-    // insertFeedbackSql,
-    // pid,
-    // questionId,
-    // answerId);
-    // }
-
-    // response.put("status", "Success");
-    // response.put("message", "Inspection & feedback saved successfully");
-    // response.put("inspection_id", pid);
-
-    // } catch (Exception e) {
-    // response.put("status", "Error");
-    // response.put("message", e.getMessage());
-    // }
-
-    // return response;
-    // }
-
     @Transactional
     public Map<String, Object> saveParksInspection(
             Integer userId,
@@ -631,10 +516,10 @@ public class ParksApiService {
 
             ObjectMapper mapper = new ObjectMapper();
 
-            // ✅ Parse responses
+            // Parse responses
             List<Map<String, Object>> responses = mapper.readValue(responsesJson, List.class);
 
-            // ✅ SAFE parsing for verificationData
+            // SAFE parsing for verificationData
             List<Map<String, Object>> verificationList = new ArrayList<>();
 
             if (verificationJson != null && !verificationJson.trim().isEmpty()
@@ -643,12 +528,12 @@ public class ParksApiService {
                 try {
                     verificationList = mapper.readValue(verificationJson, List.class);
                 } catch (Exception ex) {
-                    // ❗ If invalid JSON → treat as empty
+                    // If invalid JSON → treat as empty
                     verificationList = new ArrayList<>();
                 }
             }
 
-            // ✅ Ensure at least ONE insert
+            // Ensure at least ONE insert
             if (verificationList == null || verificationList.isEmpty()) {
                 verificationList = new ArrayList<>();
                 verificationList.add(new HashMap<>()); // empty object
@@ -666,7 +551,7 @@ public class ParksApiService {
 
             List<Integer> insertedIds = new ArrayList<>();
 
-            // 🔁 LOOP (at least once always)
+            // LOOP (at least once always)
             for (Map<String, Object> verification : verificationList) {
 
                 final String verifiedImageUrl = verification.get("verified_image_url") != null
@@ -679,7 +564,7 @@ public class ParksApiService {
 
                 KeyHolder keyHolder = new GeneratedKeyHolder();
 
-                // ✅ Insert parent
+                // Insert parent
                 jdbcNULMTemplate.update(connection -> {
                     PreparedStatement ps = connection.prepareStatement(insertDetailsSql,
                             Statement.RETURN_GENERATED_KEYS);
@@ -701,7 +586,7 @@ public class ParksApiService {
                 int pid = keyHolder.getKey().intValue();
                 insertedIds.add(pid);
 
-                // ✅ Insert feedback
+                // Insert feedback
                 for (Map<String, Object> item : responses) {
 
                     Integer questionId = item.get("question_id") != null
@@ -730,6 +615,66 @@ public class ParksApiService {
         } catch (Exception e) {
             response.put("status", "Error");
             response.put("message", e.getMessage());
+        }
+
+        return response;
+    }
+
+    public Map<String, Object> getZoneWardReport(String zone, String ward,
+            String fromDate, String toDate) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+
+            fromDate = (fromDate == null || fromDate.trim().isEmpty()) ? null : fromDate;
+            toDate = (toDate == null || toDate.trim().isEmpty()) ? null : toDate;
+
+            String sql = "SELECT " +
+                    " p.zone, " +
+
+                    " COUNT(DISTINCT p.park_id) AS park_count, " +
+
+                    " COUNT(DISTINCT ofp.park_id) AS inspected_park_count, " +
+
+                    " COALESCE(SUM(CASE " +
+                    "     WHEN LOWER(ofp.verified_status) NOT LIKE '%wrong%' " +
+                    "          AND ofp.verified_status IS NOT NULL " +
+                    "     THEN 1 ELSE 0 END), 0) AS matched_employee_count, " +
+
+                    " COALESCE(SUM(CASE " +
+                    "     WHEN LOWER(ofp.verified_status) LIKE '%wrong%' " +
+                    "     THEN 1 ELSE 0 END), 0) AS not_matched_employee_count " +
+
+                    " FROM park_details p " +
+
+                    " LEFT JOIN officer_feedback_parks ofp " +
+                    "   ON p.park_id = ofp.park_id " +
+                    "   AND ofp.is_active = 1 " +
+                    "   AND ofp.is_delete = 0 " +
+                    "   AND ( ? IS NULL OR ofp.cdate >= CONCAT(?, ' 00:00:00') ) " +
+                    "   AND ( ? IS NULL OR ofp.cdate <= CONCAT(?, ' 23:59:59') ) " +
+
+                    " GROUP BY p.zone " +
+                    " ORDER BY p.zone";
+
+            // ONLY 4 params
+            Object[] params = new Object[] {
+                    fromDate, fromDate,
+                    toDate, toDate
+            };
+
+            List<Map<String, Object>> data = jdbcNULMTemplate.queryForList(sql, params);
+
+            response.put("status", "Success");
+            response.put("message", data.isEmpty() ? "No records found" : "Zone-wise report fetched successfully");
+            response.put("data", data);
+
+        } catch (Exception e) {
+
+            response.put("status", "Failed");
+            response.put("message", "Error fetching report");
+            response.put("error", e.getMessage());
         }
 
         return response;

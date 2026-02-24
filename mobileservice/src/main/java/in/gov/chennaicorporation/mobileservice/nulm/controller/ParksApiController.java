@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,9 +28,19 @@ public class ParksApiController {
     @Autowired
     private ParksApiService parksApiService;
 
-    @GetMapping(value = "/getParkDetails")
-    public List<?> getParkDetails(@RequestParam(value = "division", required = false) String division) {
-        return parksApiService.getParkDetails(division);
+    // @GetMapping(value = "/getParkDetails")
+    // public List<?> getParkDetails(@RequestParam(value = "division", required =
+    // false) String division) {
+    // return parksApiService.getParkDetails(division);
+    // }
+
+    @GetMapping("/getParkDetails")
+    public List<Map<String, Object>> getParkDetails(
+            @RequestParam(required = false) String division,
+            @RequestParam(required = false) String latitude,
+            @RequestParam(required = false) String longitude) {
+
+        return parksApiService.getParkDetails(division, latitude, longitude);
     }
 
     @GetMapping(value = "/getStaffListForAttendance")
@@ -51,10 +62,11 @@ public class ParksApiController {
 
     @PostMapping("/saveStaffVerificationDetails")
     public ResponseEntity<Map<String, Object>> saveStaffVerificationDetails(
+
             @RequestParam(required = false) String userid,
             @RequestParam(required = false) String enrollmentId,
-            @RequestParam(required = false) String parkid,
-            @RequestParam(required = false) MultipartFile photoUrl,
+            @RequestParam String park_id,
+            @RequestParam MultipartFile photoUrl,
             @RequestParam(required = false) String latitude,
             @RequestParam(required = false) String longitude,
             @RequestParam(required = false) String address,
@@ -64,17 +76,23 @@ public class ParksApiController {
 
         try {
 
-            // ✅ userid validation
+            // userid validation
             if (userid == null || userid.isBlank()) {
                 response.put("status", "Failed");
                 response.put("message", "userid is mandatory");
                 return ResponseEntity.badRequest().body(response); // 400
             }
 
-            // ✅ photo validation
+            // photo validation
             if (photoUrl == null || photoUrl.isEmpty()) {
                 response.put("status", "Failed");
                 response.put("message", "Please upload image");
+                return ResponseEntity.badRequest().body(response); // 400
+            }
+
+            if (park_id == null || park_id.isEmpty()) {
+                response.put("status", "Failed");
+                response.put("message", "Park id empty");
                 return ResponseEntity.badRequest().body(response); // 400
             }
 
@@ -83,7 +101,7 @@ public class ParksApiController {
             Map<String, Object> serviceResponse = parksApiService.saveStaffVerificationDetails(
                     userid,
                     enrollmentId,
-                    parkid,
+                    park_id,
                     photoUrlPath,
                     latitude,
                     longitude,
@@ -166,7 +184,7 @@ public class ParksApiController {
 
         try {
 
-            // ✅ image mandatory check
+            // image mandatory check
             if (photoUrl == null || photoUrl.isEmpty()) {
                 return ResponseEntity.ok(Map.of(
                         "status", "Error",
@@ -194,5 +212,16 @@ public class ParksApiController {
                     "status", "Error",
                     "message", "Failed: " + e.getMessage()));
         }
+    }
+
+    @GetMapping("/zoneWardReport")
+    public ResponseEntity<Map<String, Object>> getZoneWardReport(
+            @RequestParam(required = false) String zone,
+            @RequestParam(required = false) String ward,
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate) {
+
+        return ResponseEntity.ok(
+                parksApiService.getZoneWardReport(zone, ward, fromDate, toDate));
     }
 }
