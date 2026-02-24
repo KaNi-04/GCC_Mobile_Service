@@ -8,9 +8,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,9 +28,19 @@ public class ParksApiController {
     @Autowired
     private ParksApiService parksApiService;
 
-    @GetMapping(value = "/getParkDetails")
-    public List<?> getParkDetails(@RequestParam(value = "division", required = false) String division) {
-        return parksApiService.getParkDetails(division);
+    // @GetMapping(value = "/getParkDetails")
+    // public List<?> getParkDetails(@RequestParam(value = "division", required =
+    // false) String division) {
+    // return parksApiService.getParkDetails(division);
+    // }
+
+    @GetMapping("/getParkDetails")
+    public List<Map<String, Object>> getParkDetails(
+            @RequestParam(required = false) String division,
+            @RequestParam(required = false) String latitude,
+            @RequestParam(required = false) String longitude) {
+
+        return parksApiService.getParkDetails(division, latitude, longitude);
     }
 
     @GetMapping(value = "/getStaffListForAttendance")
@@ -49,10 +62,11 @@ public class ParksApiController {
 
     @PostMapping("/saveStaffVerificationDetails")
     public ResponseEntity<Map<String, Object>> saveStaffVerificationDetails(
+
             @RequestParam(required = false) String userid,
             @RequestParam(required = false) String enrollmentId,
-            @RequestParam(required = false) String parkid,
-            @RequestParam(required = false) MultipartFile photoUrl,
+            @RequestParam String park_id,
+            @RequestParam MultipartFile photoUrl,
             @RequestParam(required = false) String latitude,
             @RequestParam(required = false) String longitude,
             @RequestParam(required = false) String address,
@@ -62,17 +76,23 @@ public class ParksApiController {
 
         try {
 
-            // ✅ userid validation
+            // userid validation
             if (userid == null || userid.isBlank()) {
                 response.put("status", "Failed");
                 response.put("message", "userid is mandatory");
                 return ResponseEntity.badRequest().body(response); // 400
             }
 
-            // ✅ photo validation
+            // photo validation
             if (photoUrl == null || photoUrl.isEmpty()) {
                 response.put("status", "Failed");
                 response.put("message", "Please upload image");
+                return ResponseEntity.badRequest().body(response); // 400
+            }
+
+            if (park_id == null || park_id.isEmpty()) {
+                response.put("status", "Failed");
+                response.put("message", "Park id empty");
                 return ResponseEntity.badRequest().body(response); // 400
             }
 
@@ -81,7 +101,7 @@ public class ParksApiController {
             Map<String, Object> serviceResponse = parksApiService.saveStaffVerificationDetails(
                     userid,
                     enrollmentId,
-                    parkid,
+                    park_id,
                     photoUrlPath,
                     latitude,
                     longitude,
@@ -99,41 +119,109 @@ public class ParksApiController {
         }
     }
 
-    // @PostMapping("/saveStaffVerificationDetails")
-    // public Map<String, Object> saveStaffVerificationDetails(
-    // @RequestParam String userid,
-    // @RequestParam String enrollmentId,
-    // @RequestParam MultipartFile photoUrl,
+    @GetMapping(value = "/getParksInspectionQuestionsList")
+    public List<?> getParksInspectionQuestionsList() {
+        return parksApiService.getParksInspectionQuestionsList();
+    }
+
+    // @PostMapping(value = "/saveParksInspection", consumes =
+    // MediaType.MULTIPART_FORM_DATA_VALUE)
+    // public ResponseEntity<?> saveParksInspection(
+    // @RequestParam Integer userid,
+    // @RequestParam Integer park_id,
+    // @RequestParam String responses,
     // @RequestParam String latitude,
     // @RequestParam String longitude,
-    // @RequestParam String address,
-    // @RequestParam(required = false) String verifiedStatus) {
+    // @RequestParam String location,
+    // @RequestParam String ai_verified_count,
+    // @RequestParam String ai_not_verified_count,
+    // @RequestParam(required = false) MultipartFile photoUrl) {
 
-    // if (userid == null || userid.isBlank() ||
-    // enrollmentId == null || enrollmentId.isBlank()) {
+    // String photoUrlPath = "";
 
-    // Map<String, Object> response = new HashMap<>();
-    // response.put("status", "Failed");
-    // response.put("message", "userid and enrollmentId are mandatory");
-    // return response;
+    // try {
+    // if (photoUrl != null && !photoUrl.isEmpty()) {
+    // photoUrlPath = parksApiService.fileUpload(photoUrl, "photoUrl");
+    // }
+    // } catch (Exception e) {
+    // return ResponseEntity.ok(Map.of(
+    // "status", "Error",
+    // "message", "File upload failed: " + e.getMessage()));
     // }
 
-    // String photoUrlPath = parksApiService.fileUpload(photoUrl, "photoUrl");
-
-    // return parksApiService.saveStaffVerificationDetails(
+    // return ResponseEntity.ok(
+    // parksApiService.saveParksInspection(
     // userid,
-    // enrollmentId,
-    // photoUrlPath,
+    // park_id,
+    // responses,
     // latitude,
     // longitude,
-    // address,
-    // verifiedStatus);
+    // location,
+    // ai_verified_count,
+    // ai_not_verified_count,
+    // photoUrlPath));
     // }
 
-    // @GetMapping(value = "/getStaffListCount_Loc_Park")
-    // public List<?> getStaffListForAttendance_Loc_Park(@RequestParam(value =
-    // "parkid", required = false) String parkid) {
-    // return parksApiService.getStaffListForAttendance_Loc_Park(parkid);
-    // }
+    @PostMapping(value = "/saveParksInspection", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> saveParksInspection(
 
+            @RequestParam(required = false) Integer userid,
+            @RequestParam(required = false) Integer park_id,
+
+            @RequestParam String responses, // ✅ REQUIRED
+
+            @RequestParam(required = false) String verificationData,
+            @RequestParam(required = false) String latitude,
+            @RequestParam(required = false) String longitude,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String ai_verified_count,
+            @RequestParam(required = false) String ai_not_verified_count,
+
+            @RequestParam MultipartFile photoUrl // ✅ REQUIRED
+    ) {
+
+        String photoUrlPath = "";
+
+        try {
+
+            // image mandatory check
+            if (photoUrl == null || photoUrl.isEmpty()) {
+                return ResponseEntity.ok(Map.of(
+                        "status", "Error",
+                        "message", "Image is required"));
+            }
+
+            photoUrlPath = parksApiService.fileUpload(photoUrl, "photoUrl");
+
+            Map<String, Object> result = parksApiService.saveParksInspection(
+                    userid,
+                    park_id,
+                    responses,
+                    verificationData,
+                    latitude,
+                    longitude,
+                    location,
+                    ai_verified_count,
+                    ai_not_verified_count,
+                    photoUrlPath);
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of(
+                    "status", "Error",
+                    "message", "Failed: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/zoneWardReport")
+    public ResponseEntity<Map<String, Object>> getZoneWardReport(
+            @RequestParam(required = false) String zone,
+            @RequestParam(required = false) String ward,
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate) {
+
+        return ResponseEntity.ok(
+                parksApiService.getZoneWardReport(zone, ward, fromDate, toDate));
+    }
 }

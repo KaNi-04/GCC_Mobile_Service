@@ -451,6 +451,7 @@ public class PmcService {
                 + "                'option_id', qov.aid, "
                 + "                'english_name', qov.english_name,"
                 + "				   'tamil_name',qov.tamil_name, "
+                + "				   'opt_mandatory',qov.opt_mandatory, "
                 + "                'value', qov.aid, "
                 + "				   'remarksfield', (qov.remarks_required = 1), "
                 + "				   'textfield', (qov.text_required = 1), "
