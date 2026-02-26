@@ -683,7 +683,7 @@ public class ParksApiService {
     @Transactional
     public Map<String, Object> saveStaffDeviceDetails(
             String userid,
-            String enrollment_id,
+            String supervisor_id,
             String parkid,
             String deviceId,
             String latitude,
@@ -694,7 +694,7 @@ public class ParksApiService {
 
         try {
 
-            // ✅ Validate park_id
+            // Validate park_id
             if (parkid == null || parkid.trim().isEmpty()) {
                 response.put("status", "Failed");
                 response.put("message", "park_id is required");
@@ -703,7 +703,7 @@ public class ParksApiService {
 
             Integer parsedParkId = Integer.parseInt(parkid.trim());
 
-            // ✅ CHECK DUPLICATE (IMPORTANT)
+            // CHECK DUPLICATE (IMPORTANT)
             String checkSql = "SELECT COUNT(*) FROM parks_supervisor_device_data WHERE park_id = ?";
             Integer count = jdbcNULMTemplate.queryForObject(checkSql, Integer.class, parsedParkId);
 
@@ -713,29 +713,29 @@ public class ParksApiService {
                 return response;
             }
 
-            // ✅ INSERT QUERY
+            // INSERT QUERY
             String sql = "INSERT INTO parks_supervisor_device_data " +
-                    "(userid, park_id, enrollment_id, device_id, latitude, longitude, address) " +
+                    "(userid, park_id, supervisor_id, device_id, latitude, longitude, address) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-            String[] enrollmentIds = (enrollment_id != null && !enrollment_id.isBlank())
-                    ? enrollment_id.split(",")
+            String[] supervisorIds = (supervisor_id != null && !supervisor_id.isBlank())
+                    ? supervisor_id.split(",")
                     : new String[] { null };
 
             int successCount = 0;
 
-            for (String id : enrollmentIds) {
+            for (String id : supervisorIds) {
 
-                Integer parsedEnrollmentId = null;
+                Integer parsedSupervisorId = null;
 
                 try {
                     if (id != null && !id.trim().isEmpty()) {
-                        parsedEnrollmentId = Integer.parseInt(id.trim());
+                        parsedSupervisorId = Integer.parseInt(id.trim());
                     }
                 } catch (Exception ignored) {
                 }
 
-                final Integer finalEnrollmentId = parsedEnrollmentId;
+                final Integer finalSupervisorId = parsedSupervisorId;
 
                 int rows = jdbcNULMTemplate.update(con -> {
                     PreparedStatement ps = con.prepareStatement(sql);
@@ -743,8 +743,8 @@ public class ParksApiService {
                     ps.setString(1, userid);
                     ps.setInt(2, parsedParkId);
 
-                    if (finalEnrollmentId != null) {
-                        ps.setInt(3, finalEnrollmentId);
+                    if (finalSupervisorId != null) {
+                        ps.setInt(3, finalSupervisorId);
                     } else {
                         ps.setNull(3, Types.INTEGER);
                     }

@@ -229,7 +229,7 @@ public class ParksApiController {
     public ResponseEntity<Map<String, Object>> saveStaffDeviceDetails(
 
             @RequestParam(required = false) String userid,
-            @RequestParam(required = false) String enrollment_id,
+            @RequestParam(required = false) String supervisor_id,
             @RequestParam(required = false) String park_id,
             @RequestParam(required = false) String device_id,
             @RequestParam(required = false) String latitude,
@@ -263,7 +263,7 @@ public class ParksApiController {
             // CALL SERVICE
             response = parksApiService.saveStaffDeviceDetails(
                     userid,
-                    enrollment_id,
+                    supervisor_id,
                     park_id,
                     device_id,
                     latitude,
