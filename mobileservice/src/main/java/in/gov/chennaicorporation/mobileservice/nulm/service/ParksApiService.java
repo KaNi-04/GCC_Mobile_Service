@@ -318,6 +318,94 @@ public class ParksApiService {
         }
     }
 
+    // public List<Map<String, Object>> getStaffListForAttendance(String parkid,
+    // String date) {
+
+    // Map<String, Object> response = new HashMap<>();
+    // String formattedDate;
+
+    // try {
+    // DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+    // DateTimeFormatter outputFormatter =
+    // DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    // LocalDate parsedDate = LocalDate.parse(date, inputFormatter);
+    // formattedDate = parsedDate.format(outputFormatter);
+
+    // } catch (Exception e) {
+    // response.put("status", "Failed");
+    // response.put("message", "Invalid date format. Use dd-MM-yyyy");
+    // response.put("Data", Collections.emptyList());
+    // return Collections.singletonList(response);
+    // }
+
+    // String sqlQuery = "SELECT e.*, " +
+    // " IFNULL(DATE_FORMAT(a.indatetime, '%d-%m-%Y %l:%i %p'), '') AS indatetime, "
+    // +
+    // " IFNULL(DATE_FORMAT(a.outdatetime, '%d-%m-%Y %l:%i %p'), '') AS outdatetime,
+    // " +
+    // " a.inby, " +
+    // " a.outby, " +
+    // " a.inphoto, " +
+    // " a.outphoto, " +
+
+    // // VERIFIED LOGIC
+    // " CASE WHEN ofp.fid AS verified, " +
+    // " IFNULL(ofp.verified_status, '') AS verified_status, " +
+    // " IFNULL(DATE_FORMAT(ofp.cdate, '%d-%m-%Y %l:%i %p'), '') AS verified_date, "
+    // +
+    // " CONCAT('" + fileBaseUrl
+    // + "/gccofficialapp/files', IFNULL(ofp.photo_url,'')) AS verified_image_url "
+    // +
+
+    // "FROM enrollment_table e " +
+
+    // // Attendance JOIN
+    // "LEFT JOIN attendance a ON e.enrollment_id = a.enrollment_id " +
+    // " AND DATE(a.indatetime) = ? " +
+    // " AND a.indatetime = ( " +
+    // " SELECT MAX(a2.indatetime) " +
+    // " FROM attendance a2 " +
+    // " WHERE a2.enrollment_id = e.enrollment_id " +
+    // " AND DATE(a2.indatetime) = ? " +
+    // " ) " +
+
+    // // Latest verification record
+    // "LEFT JOIN officer_feedback_parks ofp ON ofp.fid = ( " +
+    // " SELECT MAX(ofp2.fid) " +
+    // " FROM officer_feedback_parks ofp2 " +
+    // " WHERE ofp2.enrollment_id = e.enrollment_id " +
+    // " AND ofp2.is_active = 1 " +
+    // " AND ofp2.is_delete = 0 " +
+    // " ) " +
+
+    // "WHERE e.isactive = 1 " +
+    // " AND e.appointed = 1 " +
+    // " AND e.facial_attendance = 1 " +
+    // " AND e.emp_type = 'Park' " +
+    // " AND e.park_id IS NOT NULL " +
+    // " AND FIND_IN_SET(?, e.park_id) > 0";
+
+    // System.out.println("Executing Query: " + sqlQuery);
+    // System.out.println("Params → date: " + formattedDate + ", parkid: " +
+    // parkid);
+
+    // List<Map<String, Object>> result = jdbcNULMTemplate.queryForList(sqlQuery,
+    // formattedDate,
+    // formattedDate,
+    // parkid);
+
+    // // ADD THIS LINE
+    // int totalCount = result.size();
+
+    // response.put("status", "Success");
+    // response.put("message", "Request List");
+    // response.put("total_count", totalCount);
+    // response.put("Data", result);
+
+    // return Collections.singletonList(response);
+    // }
+
     public List<Map<String, Object>> getStaffListForAttendance(String parkid, String date) {
 
         Map<String, Object> response = new HashMap<>();
@@ -338,59 +426,71 @@ public class ParksApiService {
         }
 
         String sqlQuery = "SELECT e.*, " +
-                "       IFNULL(DATE_FORMAT(a.indatetime, '%d-%m-%Y %l:%i %p'), '') AS indatetime, " +
-                "       IFNULL(DATE_FORMAT(a.outdatetime, '%d-%m-%Y %l:%i %p'), '') AS outdatetime, " +
-                "       a.inby, " +
-                "       a.outby, " +
-                "       a.inphoto, " +
-                "       a.outphoto, " +
+                "IFNULL(DATE_FORMAT(a.indatetime, '%d-%m-%Y %l:%i %p'), '') AS indatetime, " +
+                "IFNULL(DATE_FORMAT(a.outdatetime, '%d-%m-%Y %l:%i %p'), '') AS outdatetime, " +
+                "a.inby, a.outby, a.inphoto, a.outphoto, " +
 
                 // VERIFIED LOGIC
-                "       CASE WHEN ofp.fid IS NOT NULL THEN 'YES' ELSE 'NO' END AS verified, " +
-                "       IFNULL(ofp.verified_status, '') AS verified_status, " +
-                "       CONCAT('" + fileBaseUrl + "/gccofficialapp/files', ofp.photo_url) AS verified_image_url " +
+                "CASE WHEN ofp.fid IS NOT NULL THEN 'YES' ELSE 'NO' END AS verified, " +
+
+                "CASE WHEN ofp.fid IS NOT NULL THEN IFNULL(ofp.verified_status, '') ELSE '' END AS verified_status, " +
+
+                "CASE WHEN ofp.fid IS NOT NULL THEN DATE_FORMAT(ofp.cdate, '%d-%m-%Y %l:%i %p') ELSE '' END AS verified_date, "
+                +
+
+                // FIXED IMAGE LOGIC
+                "CASE WHEN ofp.photo_url IS NOT NULL " +
+                "THEN CONCAT('" + fileBaseUrl + "/gccofficialapp/files', ofp.photo_url) " +
+                "ELSE '' END AS verified_image_url " +
 
                 "FROM enrollment_table e " +
 
-                // Attendance JOIN
                 "LEFT JOIN attendance a ON e.enrollment_id = a.enrollment_id " +
-                "   AND DATE(a.indatetime) = ? " +
-                "   AND a.indatetime = ( " +
-                "       SELECT MAX(a2.indatetime) " +
-                "       FROM attendance a2 " +
-                "       WHERE a2.enrollment_id = e.enrollment_id " +
-                "       AND DATE(a2.indatetime) = ? " +
-                "   ) " +
+                "AND DATE(a.indatetime) = ? " +
+                "AND a.indatetime = ( " +
+                "   SELECT MAX(a2.indatetime) " +
+                "   FROM attendance a2 " +
+                "   WHERE a2.enrollment_id = e.enrollment_id " +
+                "   AND DATE(a2.indatetime) = ? " +
+                ") " +
 
-                // Latest verification record
+                // DATE BASED VERIFICATION
                 "LEFT JOIN officer_feedback_parks ofp ON ofp.fid = ( " +
-                "       SELECT MAX(ofp2.fid) " +
-                "       FROM officer_feedback_parks ofp2 " +
-                "       WHERE ofp2.enrollment_id = e.enrollment_id " +
-                "       AND ofp2.is_active = 1 " +
-                "       AND ofp2.is_delete = 0 " +
-                "   ) " +
+                "   SELECT MAX(ofp2.fid) " +
+                "   FROM officer_feedback_parks ofp2 " +
+                "   WHERE ofp2.enrollment_id = e.enrollment_id " +
+                "   AND ofp2.is_active = 1 " +
+                "   AND ofp2.is_delete = 0 " +
+                "   AND DATE(ofp2.cdate) = ? " +
+                ") " +
 
                 "WHERE e.isactive = 1 " +
-                "  AND e.appointed = 1 " +
-                "  AND e.facial_attendance = 1 " +
-                "  AND e.emp_type = 'Park' " +
-                "  AND FIND_IN_SET(?, e.park_id) > 0";
+                "AND e.appointed = 1 " +
+                "AND e.facial_attendance = 1 " +
+                "AND e.emp_type = 'Park' " +
+                "AND e.park_id IS NOT NULL " +
+                "AND FIND_IN_SET(?, e.park_id) > 0";
 
-        System.out.println("Executing Query: " + sqlQuery);
-        System.out.println("Params → date: " + formattedDate + ", parkid: " + parkid);
+        List<Map<String, Object>> result;
 
-        List<Map<String, Object>> result = jdbcNULMTemplate.queryForList(sqlQuery,
-                formattedDate,
-                formattedDate,
-                parkid);
+        try {
+            result = jdbcNULMTemplate.queryForList(sqlQuery,
+                    formattedDate,
+                    formattedDate,
+                    formattedDate,
+                    parkid);
 
-        // ADD THIS LINE
-        int totalCount = result.size();
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("status", "Failed");
+            response.put("message", "Database error");
+            response.put("Data", Collections.emptyList());
+            return Collections.singletonList(response);
+        }
 
         response.put("status", "Success");
         response.put("message", "Request List");
-        response.put("total_count", totalCount);
+        response.put("total_count", result.size());
         response.put("Data", result);
 
         return Collections.singletonList(response);
