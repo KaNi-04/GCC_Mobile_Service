@@ -31,11 +31,13 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 @Service
 public class StreetVendorService {
@@ -137,6 +139,42 @@ public class StreetVendorService {
             return "Failed to save file " + file.getOriginalFilename();
         }
     }
+    
+    
+    
+    public String getLiWardByLoginId(String loginid, String type) {
+	    String sqlQuery = "SELECT `ward` FROM `officer_login_mapping` WHERE `userid` = ? AND `type` = ? AND isactive=1 LIMIT 1";
+	    
+	    // Query the database using queryForList
+	    List<Map<String, Object>> results = jdbcStreetVendorTemplate.queryForList(sqlQuery, loginid, type);
+	    
+	    // Check if results is not empty and extract the ward value
+	    if (!results.isEmpty()) {
+	        // Extract the ward value from the first result
+	        return (String) results.get(0).get("ward");
+	    }
+	    
+	    // Handle the case where no result is found
+	    return "000";  
+	}
+    
+    public String getEEZoneByLoginId(String loginid, String type) {
+	    String sqlQuery = "SELECT `zone` FROM `officer_login_mapping` WHERE `userid` = ? AND `type` = ? AND isactive=1 LIMIT 1";
+	    
+	    // Query the database using queryForList
+	    List<Map<String, Object>> results = jdbcStreetVendorTemplate.queryForList(sqlQuery, loginid, type);
+	    
+	    // Check if results is not empty and extract the ward value
+	    if (!results.isEmpty()) {
+	        // Extract the ward value from the first result
+	        return (String) results.get(0).get("zone");
+	    }
+	    
+	    // Handle the case where no result is found
+	    return "000";  
+	}
+    
+    
 
     public String getWardByLoginId(String loginid, String type) {
 	    String sqlQuery = "SELECT `ward` FROM `gcc_penalty_hoardings`.`hoading_user_list` WHERE `userid` = ? AND `type` = ? LIMIT 1";
@@ -253,7 +291,17 @@ public class StreetVendorService {
     @Transactional
     public List<Map<String, Object>> getAllVendorDetails_l1(String loginid) {
     	
-    	String ward = getWardByLoginId(loginid,"li");
+    	String wardString = getLiWardByLoginId(loginid,"li");
+    	   	
+        //System.out.println("wardString=="+wardString);
+        
+        List<String> wardList = Arrays.stream(wardString.split(","))
+                .map(String::trim)
+                .collect(Collectors.toList());
+
+        String placeholders = wardList.stream()
+                .map(w -> "?")
+                .collect(Collectors.joining(","));
     	
         StringBuilder query = new StringBuilder(
                                     "   SELECT vd.id, vd.name, vd.f_h_name, vd.gender, vd.zone, vd.ward," +
@@ -278,10 +326,10 @@ public class StreetVendorService {
                                     "   LEFT JOIN vending_category_master vcm ON vd.vending_category=vcm.id " +
                                     "   LEFT JOIN `education_master` em ON vd.education_status=em.id " +
                                     "   LEFT JOIN `marital_status_master` msm ON vd.marital_status=msm.id " +
-                                    " WHERE vd.ward IN (?) "
+                                    " WHERE vd.ward IN (" + placeholders + ") "
                                     + "AND vd.id NOT IN (SELECT vdid FROM vendor_approval_level_1)");
 
-        return jdbcStreetVendorTemplate.queryForList(query.toString(),ward);
+        return jdbcStreetVendorTemplate.queryForList(query.toString(),wardList.toArray());
     }
 
 
@@ -356,7 +404,18 @@ public class StreetVendorService {
     @Transactional
     public List<Map<String, Object>> getAllVendorDetails_l2(String loginid) {
 
-        String ward = getWardByLoginId(loginid, "aro");
+        String wardString  = getLiWardByLoginId(loginid, "aro");
+        //System.out.println("wardString=="+wardString);
+        
+        List<String> wardList = Arrays.stream(wardString.split(","))
+                .map(String::trim)
+                .collect(Collectors.toList());
+
+        String placeholders = wardList.stream()
+                .map(w -> "?")
+                .collect(Collectors.joining(","));
+        
+        
 
         StringBuilder query = new StringBuilder(
             "SELECT " +
@@ -387,14 +446,13 @@ public class StreetVendorService {
             "LEFT JOIN education_master em ON vd.education_status = em.id " +
             "LEFT JOIN marital_status_master msm ON vd.marital_status = msm.id " +
             "LEFT JOIN vendor_approval_level_1 l1 ON vd.id = l1.vdid " +
-            "WHERE vd.ward IN (?) " +
+            "WHERE vd.ward IN (" + placeholders + ") " +
             "AND vd.id IN (SELECT vdid FROM vendor_approval_level_1) " +
             "AND vd.id NOT IN (SELECT vdid FROM vendor_approval_level_2) " +
             ""
-            //"AND vd.id NOT IN (SELECT vdid FROM vendor_approval_level_2)"
         );
 
-        List<Map<String, Object>> flatList = jdbcStreetVendorTemplate.queryForList(query.toString(), ward);
+        List<Map<String, Object>> flatList = jdbcStreetVendorTemplate.queryForList(query.toString(), wardList.toArray());
         List<Map<String, Object>> finalList = new ArrayList<>();
 
         for (Map<String, Object> row : flatList) {
@@ -485,7 +543,9 @@ public class StreetVendorService {
     @Transactional
     public List<Map<String, Object>> getAllVendorDetails_l3(String loginid) {
 
-        String ward = getWardByLoginId(loginid, "exeeng");
+        String zone = getEEZoneByLoginId(loginid, "exeeng");
+        
+        //System.out.println("zone="+zone);
 
         StringBuilder query = new StringBuilder(
             "SELECT " +
@@ -521,14 +581,14 @@ public class StreetVendorService {
             "LEFT JOIN marital_status_master msm ON vd.marital_status = msm.id " +
             "LEFT JOIN vendor_approval_level_1 l1 ON vd.id = l1.vdid " +
             "LEFT JOIN vendor_approval_level_2 l2 ON vd.id = l2.vdid " +
-            "WHERE vd.ward IN (?) " +
+            "WHERE vd.zone IN (?) " +
             "AND vd.id IN (SELECT vdid FROM vendor_approval_level_2) " +
             "AND vd.id NOT IN (SELECT vdid FROM vendor_approval_level_3) " +
             ""
             //"AND vd.id NOT IN (SELECT vdid FROM vendor_approval_level_2)"
         );
 
-        List<Map<String, Object>> flatList = jdbcStreetVendorTemplate.queryForList(query.toString(), ward);
+        List<Map<String, Object>> flatList = jdbcStreetVendorTemplate.queryForList(query.toString(), zone);
         List<Map<String, Object>> finalList = new ArrayList<>();
 
         for (Map<String, Object> row : flatList) {
