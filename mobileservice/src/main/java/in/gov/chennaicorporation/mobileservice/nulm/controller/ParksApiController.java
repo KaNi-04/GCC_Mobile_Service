@@ -280,4 +280,53 @@ public class ParksApiController {
             return ResponseEntity.internalServerError().body(response);
         }
     }
+
+    @GetMapping("/checkSupervisorDevice")
+    public ResponseEntity<Map<String, Object>> checkSupervisorDevice(
+            @RequestParam(required = false) String park_id,
+            @RequestParam(required = false) Integer supervisor_id,
+            @RequestParam(required = false) String device_id) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+
+            // supervisor validation
+            if (supervisor_id == null) {
+                response.put("status", "Failed");
+                response.put("message", "supervisor_id is required");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // device validation
+            if (device_id == null || device_id.trim().isEmpty()) {
+                response.put("status", "Failed");
+                response.put("message", "device_id is required");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // optional park_id parsing
+            Integer parsedParkId = null;
+            if (park_id != null && !park_id.trim().isEmpty()) {
+                try {
+                    parsedParkId = Integer.parseInt(park_id);
+                } catch (NumberFormatException e) {
+                    response.put("status", "Failed");
+                    response.put("message", "park_id must be a valid number");
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
+
+            response = parksApiService.checkSupervisorDevice(parsedParkId, supervisor_id, device_id);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception ex) {
+
+            response.put("status", "Failed");
+            response.put("message", "Internal Server Error");
+
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
 }

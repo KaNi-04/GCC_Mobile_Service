@@ -720,6 +720,67 @@ public class ParksApiService {
         return response;
     }
 
+    // public Map<String, Object> getZoneWardReport(String zone, String ward,
+    // String fromDate, String toDate) {
+
+    // Map<String, Object> response = new HashMap<>();
+
+    // try {
+
+    // fromDate = (fromDate == null || fromDate.trim().isEmpty()) ? null : fromDate;
+    // toDate = (toDate == null || toDate.trim().isEmpty()) ? null : toDate;
+
+    // String sql = "SELECT " +
+    // " p.zone, " +
+
+    // " COUNT(DISTINCT p.park_id) AS park_count, " +
+
+    // " COUNT(DISTINCT ofp.park_id) AS inspected_park_count, " +
+
+    // " COALESCE(SUM(CASE " +
+    // " WHEN LOWER(ofp.verified_status) = 'same' " +
+    // " AND ofp.verified_status IS NOT NULL " +
+    // " THEN 1 ELSE 0 END), 0) AS matched_employee_count, " +
+
+    // " COALESCE(SUM(CASE " +
+    // " WHEN LOWER(ofp.verified_status) = 'wrong' " +
+    // " THEN 1 ELSE 0 END), 0) AS not_matched_employee_count " +
+
+    // " FROM park_details p " +
+
+    // " LEFT JOIN officer_feedback_parks ofp " +
+    // " ON p.park_id = ofp.park_id " +
+    // " AND ofp.is_active = 1 " +
+    // " AND ofp.is_delete = 0 " +
+    // " AND ( ? IS NULL OR ofp.cdate >= CONCAT(?, ' 00:00:00') ) " +
+    // " AND ( ? IS NULL OR ofp.cdate <= CONCAT(?, ' 23:59:59') ) " +
+
+    // " GROUP BY p.zone " +
+    // " ORDER BY p.zone";
+
+    // // ONLY 4 params
+    // Object[] params = new Object[] {
+    // fromDate, fromDate,
+    // toDate, toDate
+    // };
+
+    // List<Map<String, Object>> data = jdbcNULMTemplate.queryForList(sql, params);
+
+    // response.put("status", "Success");
+    // response.put("message", data.isEmpty() ? "No records found" :
+    // "Zone-wisereport fetched successfully");
+    // response.put("data", data);
+
+    // } catch (Exception e) {
+
+    // response.put("status", "Failed");
+    // response.put("message", "Error fetching report");
+    // response.put("error", e.getMessage());
+    // }
+
+    // return response;
+    // }
+
     public Map<String, Object> getZoneWardReport(String zone, String ward,
             String fromDate, String toDate) {
 
@@ -727,51 +788,83 @@ public class ParksApiService {
 
         try {
 
-            fromDate = (fromDate == null || fromDate.trim().isEmpty()) ? null : fromDate;
-            toDate = (toDate == null || toDate.trim().isEmpty()) ? null : toDate;
+            StringBuilder sql = new StringBuilder();
 
-            String sql = "SELECT " +
-                    " p.zone, " +
+            sql.append("SELECT p.zone ");
 
-                    " COUNT(DISTINCT p.park_id) AS park_count, " +
+            if (zone != null && !zone.trim().isEmpty()) {
+                sql.append(", p.division AS ward ");
+            }
 
-                    " COUNT(DISTINCT ofp.park_id) AS inspected_park_count, " +
+            sql.append(", COUNT(DISTINCT p.park_id) AS park_count ");
+            sql.append(", COUNT(DISTINCT ofp.park_id) AS inspected_park_count ");
 
-                    " COALESCE(SUM(CASE " +
-                    "     WHEN LOWER(ofp.verified_status) NOT LIKE '%wrong%' " +
-                    "          AND ofp.verified_status IS NOT NULL " +
-                    "     THEN 1 ELSE 0 END), 0) AS matched_employee_count, " +
+            sql.append(", COUNT(DISTINCT CASE ");
+            sql.append(" WHEN LOWER(ofp.verified_status) = 'same' ");
+            sql.append(" THEN p.park_id END) AS matched_employee_count ");
 
-                    " COALESCE(SUM(CASE " +
-                    "     WHEN LOWER(ofp.verified_status) LIKE '%wrong%' " +
-                    "     THEN 1 ELSE 0 END), 0) AS not_matched_employee_count " +
+            sql.append(", COUNT(DISTINCT CASE ");
+            sql.append(" WHEN LOWER(ofp.verified_status) = 'wrong' ");
+            sql.append(" THEN p.park_id END) AS not_matched_employee_count ");
 
-                    " FROM park_details p " +
+            // ✅ JOIN (same as DB)
+            sql.append(" FROM park_details p ");
 
-                    " LEFT JOIN officer_feedback_parks ofp " +
-                    "   ON p.park_id = ofp.park_id " +
-                    "   AND ofp.is_active = 1 " +
-                    "   AND ofp.is_delete = 0 " +
-                    "   AND ( ? IS NULL OR ofp.cdate >= CONCAT(?, ' 00:00:00') ) " +
-                    "   AND ( ? IS NULL OR ofp.cdate <= CONCAT(?, ' 23:59:59') ) " +
+            sql.append(" LEFT JOIN ( ");
+            sql.append("   SELECT t1.* FROM officer_feedback_parks t1 ");
+            sql.append("   INNER JOIN ( ");
+            sql.append("       SELECT park_id, MAX(cdate) AS max_date ");
+            sql.append("       FROM officer_feedback_parks ");
+            sql.append("       WHERE is_active = 1 AND is_delete = 0 ");
+            sql.append("       GROUP BY park_id ");
+            sql.append("   ) t2 ON t1.park_id = t2.park_id AND t1.cdate = t2.max_date ");
+            sql.append(" ) ofp ON p.park_id = ofp.park_id ");
 
-                    " GROUP BY p.zone " +
-                    " ORDER BY p.zone";
+            sql.append(" WHERE 1=1 ");
 
-            // ONLY 4 params
-            Object[] params = new Object[] {
-                    fromDate, fromDate,
-                    toDate, toDate
-            };
+            List<Object> params = new ArrayList<>();
 
-            List<Map<String, Object>> data = jdbcNULMTemplate.queryForList(sql, params);
+            // ✅ APPLY DATE FILTER ONLY IF PRESENT (IMPORTANT FIX)
+            if (fromDate != null && !fromDate.trim().isEmpty()) {
+                sql.append(" AND (ofp.cdate >= ? OR ofp.cdate IS NULL) ");
+                params.add(fromDate + " 00:00:00");
+            }
+
+            if (toDate != null && !toDate.trim().isEmpty()) {
+                sql.append(" AND (ofp.cdate <= ? OR ofp.cdate IS NULL) ");
+                params.add(toDate + " 23:59:59");
+            }
+
+            // ✅ Zone
+            if (zone != null && !zone.trim().isEmpty()) {
+                sql.append(" AND p.zone = ? ");
+                params.add(zone);
+            }
+
+            // ✅ Ward
+            if (ward != null && !ward.trim().isEmpty()) {
+                sql.append(" AND p.division = ? ");
+                params.add(ward);
+            }
+
+            // ✅ GROUP BY
+            if (zone != null && !zone.trim().isEmpty()) {
+                sql.append(" GROUP BY p.zone, p.division ORDER BY p.zone, p.division ");
+            } else {
+                sql.append(" GROUP BY p.zone ORDER BY p.zone ");
+            }
+
+            // 🔍 DEBUG (VERY IMPORTANT)
+            System.out.println("SQL: " + sql);
+            System.out.println("PARAMS: " + params);
+
+            List<Map<String, Object>> data = jdbcNULMTemplate.queryForList(sql.toString(), params.toArray());
 
             response.put("status", "Success");
-            response.put("message", data.isEmpty() ? "No records found" : "Zone-wise report fetched successfully");
+            response.put("message", data.isEmpty() ? "No records found" : "Report fetched successfully");
             response.put("data", data);
 
         } catch (Exception e) {
-
             response.put("status", "Failed");
             response.put("message", "Error fetching report");
             response.put("error", e.getMessage());
@@ -875,4 +968,107 @@ public class ParksApiService {
         return response;
     }
 
+    // parks device details updation
+
+    public Map<String, Object> checkSupervisorDevice(Integer parkId, int supervisorId, String deviceId) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+
+            List<Map<String, Object>> supervisorList;
+
+            // ✅ 1. Check supervisor exists
+            if (parkId != null) {
+                String sql = "SELECT * FROM parks_supervisor_device_data WHERE park_id = ? AND supervisor_id = ? AND is_delete = 0";
+                supervisorList = jdbcNULMTemplate.queryForList(sql, parkId, supervisorId);
+            } else {
+                String sql = "SELECT * FROM parks_supervisor_device_data WHERE supervisor_id = ? AND is_delete = 0";
+                supervisorList = jdbcNULMTemplate.queryForList(sql, supervisorId);
+            }
+
+            if (supervisorList.isEmpty()) {
+                response.put("status", "Success");
+                response.put("message", false);
+                response.put("msg", "Supervisor details not found");
+                return response;
+            }
+
+            // ✅ 2. Check same supervisor + same device
+            List<Map<String, Object>> deviceList;
+
+            if (parkId != null) {
+                String sql = "SELECT * FROM parks_supervisor_device_data WHERE park_id = ? AND supervisor_id = ? AND device_id = ? AND is_delete = 0";
+                deviceList = jdbcNULMTemplate.queryForList(sql, parkId, supervisorId, deviceId);
+            } else {
+                String sql = "SELECT * FROM parks_supervisor_device_data WHERE supervisor_id = ? AND device_id = ? AND is_delete = 0";
+                deviceList = jdbcNULMTemplate.queryForList(sql, supervisorId, deviceId);
+            }
+
+            if (!deviceList.isEmpty()) {
+                response.put("status", "Success");
+                response.put("message", true);
+                response.put("msg", "Already registered for this supervisor and device");
+                return response;
+            }
+
+            // 🔥 3. NEW: Check device already exists globally (any supervisor)
+            String globalCheckSql = "SELECT supervisor_id FROM parks_supervisor_device_data WHERE device_id = ? AND is_delete = 0";
+            List<Map<String, Object>> globalDeviceList = jdbcNULMTemplate.queryForList(globalCheckSql, deviceId);
+
+            if (!globalDeviceList.isEmpty()) {
+
+                Map<String, Object> existing = globalDeviceList.get(0);
+
+                response.put("status", "Failed");
+                response.put("message", false);
+                response.put("msg", "Device already mapped to supervisor ID: " + existing.get("supervisor_id"));
+
+                return response;
+            }
+
+            // ✅ 4. Move old record → history
+            Map<String, Object> existingRecord = supervisorList.get(0);
+
+            String insertHistorySql = "INSERT INTO parks_supervisor_device_history " +
+                    "(userid, park_id, supervisor_id, device_id, latitude, longitude, address, cdate, updated_date, is_active, is_delete) "
+                    +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)";
+
+            jdbcNULMTemplate.update(insertHistorySql,
+                    existingRecord.get("userid"),
+                    existingRecord.get("park_id"),
+                    existingRecord.get("supervisor_id"),
+                    existingRecord.get("device_id"),
+                    existingRecord.get("latitude"),
+                    existingRecord.get("longitude"),
+                    existingRecord.get("address"),
+                    existingRecord.get("cdate"),
+                    existingRecord.get("is_active"),
+                    existingRecord.get("is_delete"));
+
+            // ✅ 5. Update device_id
+            String updateSql;
+
+            if (parkId != null) {
+                updateSql = "UPDATE parks_supervisor_device_data SET device_id = ?, cdate = NOW() WHERE park_id = ? AND supervisor_id = ?";
+                jdbcNULMTemplate.update(updateSql, deviceId, parkId, supervisorId);
+            } else {
+                updateSql = "UPDATE parks_supervisor_device_data SET device_id = ?, cdate = NOW() WHERE supervisor_id = ?";
+                jdbcNULMTemplate.update(updateSql, deviceId, supervisorId);
+            }
+
+            response.put("status", "Success");
+            response.put("message", true);
+            response.put("msg", "Device updated successfully");
+
+        } catch (Exception e) {
+
+            response.put("status", "Error");
+            response.put("message", false);
+            response.put("msg", e.getMessage());
+        }
+
+        return response;
+    }
 }
