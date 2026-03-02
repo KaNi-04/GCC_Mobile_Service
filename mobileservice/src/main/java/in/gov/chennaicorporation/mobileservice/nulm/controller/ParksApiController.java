@@ -2,6 +2,7 @@ package in.gov.chennaicorporation.mobileservice.nulm.controller;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -214,6 +215,17 @@ public class ParksApiController {
         }
     }
 
+    // @GetMapping("/zoneWardReport")
+    // public ResponseEntity<Map<String, Object>> getZoneWardReport(
+    // @RequestParam(required = false) String zone,
+    // @RequestParam(required = false) String ward,
+    // @RequestParam(required = false) String fromDate,
+    // @RequestParam(required = false) String toDate) {
+
+    // return ResponseEntity.ok(
+    // parksApiService.getZoneWardReport(zone, ward, fromDate, toDate));
+    // }
+
     @GetMapping("/zoneWardReport")
     public ResponseEntity<Map<String, Object>> getZoneWardReport(
             @RequestParam(required = false) String zone,
@@ -221,8 +233,47 @@ public class ParksApiController {
             @RequestParam(required = false) String fromDate,
             @RequestParam(required = false) String toDate) {
 
-        return ResponseEntity.ok(
-                parksApiService.getZoneWardReport(zone, ward, fromDate, toDate));
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+
+            // 1. Validate dates present
+            if (fromDate == null || fromDate.isEmpty() ||
+                    toDate == null || toDate.isEmpty()) {
+
+                response.put("status", "Error");
+                response.put("message", "fromDate and toDate are required");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 2. Parse dates
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDate from = LocalDate.parse(fromDate, formatter);
+            LocalDate to = LocalDate.parse(toDate, formatter);
+
+            // 3. Validate date range
+            if (from.isAfter(to)) {
+                response.put("status", "Error");
+                response.put("message", "fromDate should not be greater than toDate");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 4. Call service
+            return ResponseEntity.ok(
+                    parksApiService.getZoneWardReport(zone, ward, fromDate, toDate));
+
+        } catch (DateTimeParseException e) {
+
+            response.put("status", "Error");
+            response.put("message", "Invalid date format. Use yyyy-MM-dd");
+            return ResponseEntity.badRequest().body(response);
+
+        } catch (Exception e) {
+
+            response.put("status", "Error");
+            response.put("message", "Something went wrong: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
     }
 
     @PostMapping("/saveStaffDeviceDetails")
