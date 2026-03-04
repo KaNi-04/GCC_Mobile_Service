@@ -25,8 +25,8 @@ public class DataSourceConfig {
 	// private static String dbpassword = "gccroot";
 
 	// AWS
-	// private static String host
-	// ="gcc-facial-db-instance-1.cf48eqcciziq.ap-south-1.rds.amazonaws.com:3306";
+	// private static String host =
+	// "gcc-facial-db-instance-1.cf48eqcciziq.ap-south-1.rds.amazonaws.com:3306";
 	// private static String dbpassword = "gcc-facial-password";
 
 	////////////////////////////// (For GCC APP) ////////////////////////
