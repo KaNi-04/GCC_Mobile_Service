@@ -1248,14 +1248,14 @@ public class ieComplaintService {
 
 			// ===============================
 			// 2️⃣ 6 HOURS ESCALATION
-			// complaint_id → 3,4,5,8,9,10
+			// complaint_id → 3,4,5,6,8,9,10
 			// ===============================
 			String sql6Hours = "UPDATE complaint_details " +
 					"SET esclation_flag = ? " +
 					"WHERE esclation_flag = 0 " +
 					"AND status = 'pending' " +
 					"AND is_active=1 " +
-					"AND complaint_id IN (3,4,5,8,9,10) " +
+					"AND complaint_id IN (3,4,5,6,8,9,10) " +
 					"AND cdate < NOW() - INTERVAL 6 HOUR";
 
 			int updated6 = jdbcTemplate.update(sql6Hours, escalationFlag);
