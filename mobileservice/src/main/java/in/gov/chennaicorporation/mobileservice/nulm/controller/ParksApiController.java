@@ -226,18 +226,21 @@ public class ParksApiController {
     // parksApiService.getZoneWardReport(zone, ward, fromDate, toDate));
     // }
 
-    @GetMapping("/zoneWardReport")
-    public ResponseEntity<Map<String, Object>> getZoneWardReport(
+    @GetMapping("/parksVerificationReport")
+    public ResponseEntity<Map<String, Object>> getParksVerificationReport(
             @RequestParam(required = false) String zone,
             @RequestParam(required = false) String ward,
             @RequestParam(required = false) String fromDate,
-            @RequestParam(required = false) String toDate) {
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) Integer parkId,
+            @RequestParam(required = false) String verifiedFlag,
+            @RequestParam(required = false) String verificationDate) {
 
         Map<String, Object> response = new HashMap<>();
 
         try {
 
-            // 1. Validate dates present
+            // Validate dates
             if (fromDate == null || fromDate.isEmpty() ||
                     toDate == null || toDate.isEmpty()) {
 
@@ -246,21 +249,19 @@ public class ParksApiController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // 2. Parse dates
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             LocalDate from = LocalDate.parse(fromDate, formatter);
             LocalDate to = LocalDate.parse(toDate, formatter);
 
-            // 3. Validate date range
             if (from.isAfter(to)) {
                 response.put("status", "Error");
                 response.put("message", "fromDate should not be greater than toDate");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // 4. Call service
             return ResponseEntity.ok(
-                    parksApiService.getZoneWardReport(zone, ward, fromDate, toDate));
+                    parksApiService.getParksVerificationReport(zone, ward, fromDate, toDate, parkId, verifiedFlag,
+                            verificationDate));
 
         } catch (DateTimeParseException e) {
 
