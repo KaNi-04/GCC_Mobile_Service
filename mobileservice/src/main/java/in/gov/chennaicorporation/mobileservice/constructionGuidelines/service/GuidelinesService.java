@@ -1111,7 +1111,8 @@ public class GuidelinesService {
 			}
 
 			String buildupAreaStr = row.get("buildup_area").toString();
-			int buildup_area = Integer.parseInt(buildupAreaStr);
+			// int buildup_area = Integer.parseInt(buildupAreaStr);
+			double buildup_area = Double.parseDouble(buildupAreaStr);
 
 			System.out.println("buildup_area : " + buildup_area);
 

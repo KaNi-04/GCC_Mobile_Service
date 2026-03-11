@@ -23,12 +23,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 import javax.sql.DataSource;
+import org.slf4j.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -54,9 +57,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 
 import in.gov.chennaicorporation.mobileservice.gccactivity.service.DateTimeUtil;
+import in.gov.chennaicorporation.mobileservice.nulm.service.DocumentUploadService;
 
 @Service("iecomplaintservice")
 public class ieComplaintService {
+
+	private static final Logger logger = LoggerFactory.getLogger(ieComplaintService.class);
+
 	private JdbcTemplate jdbcTemplate;
 
 	private final Environment environment;
@@ -592,62 +599,85 @@ public class ieComplaintService {
 		}
 	}
 
-	public List<Map<String, Object>> getParentQuestionsList(String complaint_id, String loginId) {
-		String sql = "SELECT "
-				+ "    ql.*, "
-				+ "    CASE   "
-				+ "        WHEN (ql.input_type = 'text' OR ql.input_type = 'checkbox' OR ql.input_type = 'list') AND COUNT(qov.answer_id) > 0 THEN JSON_ARRAYAGG( "
-				+ "            JSON_OBJECT( "
-				+ "                'option_id', qov.answer_id, "
-				+ "                'value', qov.answer_id, "
-				+ "                'q_english', qov.english_name, "
-				+ "                'q_tamil', IFNULL(qov.tamil_name, ''), "
-				+ "                'orderby', qov.orderby "
-				+ "            ) "
-				+ "        ) "
-				+ "        ELSE JSON_ARRAY()  "
-				+ "    END AS options "
-				+ "FROM questionmaster ql "
-				+ "LEFT JOIN answer qov  "
-				+ "    ON qov.question_id = ql.question_id  "
-				+ "    AND qov.is_active = 1  "
-				+ "    AND qov.is_delete = 0 "
-				+ "WHERE ql.is_active = 1 AND ql.group_id= ?  "
-				+ "GROUP BY ql.question_id";
+	public List<Map<String, Object>> getParentQuestionsList(String flow_ref_id, String complaint_id, String loginId) {
 
-		List<Map<String, Object>> result = jdbcTemplate.queryForList(sql, complaint_id);
-		Iterator<Map<String, Object>> iterator = result.iterator();
-		ObjectMapper mapper = new ObjectMapper();
-		while (iterator.hasNext()) {
-			Map<String, Object> row = iterator.next();
-			// 🔹 Convert null q_tamil to empty string
-			if (row.get("q_tamil") == null) {
-				row.put("q_tamil", "");
-			}
-			Object optionsRaw = row.get("options");
-			if (optionsRaw != null && optionsRaw instanceof String) {
-				try {
-					List<Map<String, Object>> optionsParsed = mapper.readValue((String) optionsRaw, List.class);
-
-					// Sort options by 'orderby'
-					optionsParsed.sort(Comparator.comparing(opt -> {
-						Object order = opt.get("orderby");
-						return (order instanceof Number) ? ((Number) order).intValue() : 0;
-					}));
-
-					row.put("options", optionsParsed);
-				} catch (Exception e) {
-					row.put("options", null); // fallback if malformed
-				}
-			}
-		}
 		Map<String, Object> response = new HashMap<>();
-		response.put("status", "Success");
-		response.put("message", "IE Question List.");
-		response.put("complaint_id", complaint_id);
-		response.put("data", result);
 
-		return Collections.singletonList(response);
+		try {
+			String sql1 = "SELECT complaint_id FROM complaint_master WHERE flow_ref_id = ? and is_active = 1 and is_delete = 0  limit 1";
+			int complaintId = jdbcTemplate.queryForObject(sql1, new Object[] { flow_ref_id }, Integer.class);
+
+			if (complaintId > 0) {
+				String sql = "SELECT "
+						+ "    ql.*, "
+						+ "    CASE   "
+						+ "        WHEN (ql.input_type = 'text' OR ql.input_type = 'checkbox' OR ql.input_type = 'list') AND COUNT(qov.answer_id) > 0 THEN JSON_ARRAYAGG( "
+						+ "            JSON_OBJECT( "
+						+ "                'option_id', qov.answer_id, "
+						+ "                'value', qov.answer_id, "
+						+ "                'q_english', qov.english_name, "
+						+ "                'q_tamil', IFNULL(qov.tamil_name, ''), "
+						+ "                'orderby', qov.orderby "
+						+ "            ) "
+						+ "        ) "
+						+ "        ELSE JSON_ARRAY()  "
+						+ "    END AS options "
+						+ "FROM questionmaster ql "
+						+ "LEFT JOIN answer qov  "
+						+ "    ON qov.question_id = ql.question_id  "
+						+ "    AND qov.is_active = 1  "
+						+ "    AND qov.is_delete = 0 "
+						+ "WHERE ql.is_active = 1 AND ql.group_id= ?  "
+						+ "GROUP BY ql.question_id";
+
+				List<Map<String, Object>> result = jdbcTemplate.queryForList(sql, complaintId);
+				Iterator<Map<String, Object>> iterator = result.iterator();
+				ObjectMapper mapper = new ObjectMapper();
+				while (iterator.hasNext()) {
+					Map<String, Object> row = iterator.next();
+					// 🔹 Convert null q_tamil to empty string
+					if (row.get("q_tamil") == null) {
+						row.put("q_tamil", "");
+					}
+					Object optionsRaw = row.get("options");
+					if (optionsRaw != null && optionsRaw instanceof String) {
+						try {
+							List<Map<String, Object>> optionsParsed = mapper.readValue((String) optionsRaw, List.class);
+
+							// Sort options by 'orderby'
+							optionsParsed.sort(Comparator.comparing(opt -> {
+								Object order = opt.get("orderby");
+								return (order instanceof Number) ? ((Number) order).intValue() : 0;
+							}));
+
+							row.put("options", optionsParsed);
+						} catch (Exception e) {
+							row.put("options", null); // fallback if malformed
+						}
+					}
+				}
+
+				response.put("status", "Success");
+				response.put("message", "IE Question List.");
+				response.put("complaint_id", complaintId);
+				response.put("data", result);
+
+				return Collections.singletonList(response);
+
+			}
+
+			response.put("status", "Failed");
+			response.put("message", "Invalid flow ref id");
+
+			return Collections.singletonList(response);
+
+		} catch (Exception e) {
+			logger.error("Error in getParentQuestionsList", e);
+			response.put("status", "Failed");
+			response.put("message", "Invalid Flow ref id");
+			return Collections.singletonList(response);
+		}
+
 	}
 
 	// update
