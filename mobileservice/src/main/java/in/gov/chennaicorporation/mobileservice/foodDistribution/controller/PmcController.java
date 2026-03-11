@@ -21,6 +21,9 @@ public class PmcController {
     @Autowired
     private PmcService pmcservice;
 
+    
+    //kitchen
+    
     @GetMapping("/getConfig")
     public List<?> getConfig(@RequestParam("loginId") String loginId) {
         return pmcservice.getConfig(loginId);
@@ -89,4 +92,40 @@ public class PmcController {
                 image1, image2, image3, image4, image5);
     }
 
+    
+    //dispatch
+    @GetMapping("/getDispatchFoodCount")
+    public List<Map<String, Object>> getZoneCountForDispatch(
+            @RequestParam int shiftid,
+            @RequestParam int loginid,
+            @RequestParam String date) {
+
+        return pmcservice.getFinalFoodCountForDispatch(shiftid, loginid, date);
+    }
+    
+    @GetMapping("/getDeliverylocations")
+    public List<Map<String, Object>> getDeliverylocations(
+    		 @RequestParam int pmc_audit_id,
+    		 @RequestParam int hub_id
+    		){
+    	return pmcservice.getDeliverylocations(pmc_audit_id,hub_id);
+    }
+    
+    @PostMapping("/savedispatch")
+    public List<?> savedispatch(
+    		@RequestParam(value = "pmc_audit_id", required = true) int pmc_audit_id,
+    		@RequestParam(value = "driver_name", required = true) String driver_name,
+    		@RequestParam(value = "driver_mob_num", required = true) String driver_mob_num,
+    		@RequestParam(value = "vehicle_number", required = true) String vehicle_number,
+    		@RequestParam(value = "food_count", required = true) String food_count,
+    		@RequestParam(value = "packedfoodphoto", required = true) MultipartFile packedfoodphoto,
+            @RequestParam(value = "vehiclephoto", required = true) MultipartFile vehiclephoto,
+    		@RequestParam(value = "deliverycenters", required = true) String deliverycenters,
+    		@RequestParam(value = "loginId", required = true) String loginId,
+    		@RequestParam(value = "yet_dispatch_count", required = true) int yet_dispatch_count
+    		){
+    	
+    	return pmcservice.savedispatch(pmc_audit_id,driver_name,driver_mob_num,vehicle_number,food_count,packedfoodphoto,vehiclephoto,deliverycenters,loginId,yet_dispatch_count);
+    }
+    
 }
