@@ -327,7 +327,13 @@ public class StreetVendorService {
                                     "   LEFT JOIN `education_master` em ON vd.education_status=em.id " +
                                     "   LEFT JOIN `marital_status_master` msm ON vd.marital_status=msm.id " +
                                     " WHERE vd.ward IN (" + placeholders + ") "
-                                    + "AND vd.id NOT IN (SELECT vdid FROM vendor_approval_level_1)");
+                                    + "AND vd.id NOT IN (SELECT vdid FROM vendor_approval_level_1)"
+                                    + " AND vd.tamil_name IS NOT NULL AND vd.tamil_name != '' "
+                                    + " AND vd.tamil_f_h_name IS NOT NULL AND vd.tamil_f_h_name != '' "
+                                    + " AND vd.tamil_landmark IS NOT NULL AND vd.tamil_landmark != '' "
+                                    + " AND vd.tamil_gender IS NOT NULL AND vd.tamil_gender != '' "
+                                    + " AND vd.tamil_present_district IS NOT NULL AND vd.tamil_present_district != '' "
+                                    + " AND vd.tamil_vending_category IS NOT NULL AND vd.tamil_vending_category != '' ");
 
         return jdbcStreetVendorTemplate.queryForList(query.toString(),wardList.toArray());
     }
