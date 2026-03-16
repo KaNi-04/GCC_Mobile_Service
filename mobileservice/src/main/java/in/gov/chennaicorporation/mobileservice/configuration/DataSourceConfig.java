@@ -20,8 +20,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableTransactionManagement
 public class DataSourceConfig {
 
-//	 private static String host = "localhost:3306";
-//	 private static String dbpassword = "root";
+	// private static String host = "localhost:3306";
+	// private static String dbpassword = "root";
 	// private static String dbpassword = "gccroot";
 
 	// AWS
@@ -602,6 +602,17 @@ public class DataSourceConfig {
 		DriverManagerDataSource dataSource = new DriverManagerDataSource();
 		dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
 		dataSource.setUrl("jdbc:mysql://" + host + "/gcc_ie_complaints");
+		dataSource.setUsername("root");
+		dataSource.setPassword(dbpassword);
+		return dataSource;
+	}
+
+	////////////////////////////// For IE Complaints ////////////////////////
+	@Bean(name = "mysqlConstructionPaymentDataSource")
+	public DataSource mysqlConstructionPaymentDataSource() {
+		DriverManagerDataSource dataSource = new DriverManagerDataSource();
+		dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+		dataSource.setUrl("jdbc:mysql://" + host + "/construction_payment");
 		dataSource.setUsername("root");
 		dataSource.setPassword(dbpassword);
 		return dataSource;
