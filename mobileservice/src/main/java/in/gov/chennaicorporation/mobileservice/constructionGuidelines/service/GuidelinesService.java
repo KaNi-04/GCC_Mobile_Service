@@ -16,6 +16,7 @@ import java.sql.PreparedStatement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,6 +46,8 @@ import in.gov.chennaicorporation.mobileservice.gccactivity.service.DateTimeUtil;
 @Service
 public class GuidelinesService {
 	private JdbcTemplate jdbcGuidlines;
+
+	private JdbcTemplate jdbcPayment;
 	private final Environment environment;
 	private String fileBaseUrl;
 
@@ -55,6 +58,11 @@ public class GuidelinesService {
 	@Autowired
 	public void setDataSource(@Qualifier("mysqlGccConstructionGuidelinesSource") DataSource guidlinesDataSource) {
 		this.jdbcGuidlines = new JdbcTemplate(guidlinesDataSource);
+	}
+
+	@Autowired
+	public void setDataSourcePayment(@Qualifier("mysqlConstructionPaymentDataSource") DataSource paymentDataSource) {
+		this.jdbcPayment = new JdbcTemplate(paymentDataSource);
 	}
 
 	@Autowired
@@ -858,6 +866,72 @@ public class GuidelinesService {
 		return Collections.singletonList(response);
 	}
 
+	// @Transactional
+	// public List<Map<String, Object>> saveAfterNoticeDetails(
+	// String cdid,
+	// String ciid,
+	// String giid,
+	// String remarks,
+	// String status,
+	// String zone,
+	// String ward,
+	// String cby,
+	// String latitude,
+	// String longitude,
+	// MultipartFile mainfile) {
+	// Map<String, Object> response = new HashMap<>();
+	// List<Map<String, Object>> result = new ArrayList<>();
+
+	// String constimg = fileUpload("After_Notice", cdid + "_" + ciid + "_" + giid +
+	// "_" + status, mainfile);
+
+	// String type = "";
+
+	// // Prepare question image uploads
+	// MultipartFile[] files = {
+	// mainfile
+	// };
+
+	// // Insert query
+	// String insertSql = "INSERT INTO `after_notice_inspection`(`cdid`, `ciid`,
+	// `giid`, `image1`, `remarks`, `zone`, `ward`, `latitude`, `longitude`, `cby`,
+	// `status`) VALUES "
+	// + "(?,?,?,?,?,?,?,?,?,?,?)";
+
+	// KeyHolder keyHolder = new GeneratedKeyHolder();
+
+	// int affectedRows = jdbcGuidlines.update(connection -> {
+	// PreparedStatement ps = connection.prepareStatement(insertSql, new String[] {
+	// "cdid" });
+	// int i = 1;
+	// ps.setString(i++, cdid);
+	// ps.setString(i++, ciid);
+	// ps.setString(i++, giid);
+	// ps.setString(i++, constimg);
+	// ps.setString(i++, remarks);
+	// ps.setString(i++, zone);
+	// ps.setString(i++, ward);
+	// ps.setString(i++, latitude);
+	// ps.setString(i++, longitude);
+	// ps.setString(i++, cby);
+	// ps.setString(i++, status);
+	// return ps;
+	// }, keyHolder);
+
+	// if (affectedRows > 0) {
+	// int lastInsertId = keyHolder.getKey().intValue();
+	// response.put("insertId", lastInsertId);
+	// response.put("status", "success");
+	// response.put("message", "New After Notice details inserted successfully.");
+	// } else {
+	// response.put("status", "error");
+	// response.put("message", "New After Notice details insert failed.");
+	// }
+
+	// result.add(response);
+	// return result;
+	// }
+
 	@Transactional
 	public List<Map<String, Object>> saveAfterNoticeDetails(
 			String cdid,
@@ -871,49 +945,111 @@ public class GuidelinesService {
 			String latitude,
 			String longitude,
 			MultipartFile mainfile) {
+
 		Map<String, Object> response = new HashMap<>();
 		List<Map<String, Object>> result = new ArrayList<>();
 
-		String constimg = fileUpload("After_Notice", cdid + "_" + ciid + "_" + giid + "_" + status, mainfile);
+		try {
 
-		String type = "";
+			String constimg = fileUpload("After_Notice",
+					cdid + "_" + ciid + "_" + giid + "_" + status, mainfile);
 
-		// Prepare question image uploads
-		MultipartFile[] files = {
-				mainfile
-		};
+			String insertSql = "INSERT INTO after_notice_inspection "
+					+ "(cdid, ciid, giid, image1, remarks, zone, ward, latitude, longitude, cby, status) "
+					+ "VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 
-		// Insert query
-		String insertSql = "INSERT INTO `after_notice_inspection`(`cdid`, `ciid`, `giid`, `image1`, `remarks`, `zone`, `ward`, `latitude`, `longitude`, `cby`, `status`) VALUES "
-				+ "(?,?,?,?,?,?,?,?,?,?,?)";
+			KeyHolder keyHolder = new GeneratedKeyHolder();
 
-		KeyHolder keyHolder = new GeneratedKeyHolder();
+			int affectedRows = jdbcGuidlines.update(connection -> {
+				PreparedStatement ps = connection.prepareStatement(insertSql, new String[] { "id" });
+				int i = 1;
+				ps.setString(i++, cdid);
+				ps.setString(i++, ciid);
+				ps.setString(i++, giid);
+				ps.setString(i++, constimg);
+				ps.setString(i++, remarks);
+				ps.setString(i++, zone);
+				ps.setString(i++, ward);
+				ps.setString(i++, latitude);
+				ps.setString(i++, longitude);
+				ps.setString(i++, cby);
+				ps.setString(i++, status);
+				return ps;
+			}, keyHolder);
 
-		int affectedRows = jdbcGuidlines.update(connection -> {
-			PreparedStatement ps = connection.prepareStatement(insertSql, new String[] { "cdid" });
-			int i = 1;
-			ps.setString(i++, cdid);
-			ps.setString(i++, ciid);
-			ps.setString(i++, giid);
-			ps.setString(i++, constimg);
-			ps.setString(i++, remarks);
-			ps.setString(i++, zone);
-			ps.setString(i++, ward);
-			ps.setString(i++, latitude);
-			ps.setString(i++, longitude);
-			ps.setString(i++, cby);
-			ps.setString(i++, status);
-			return ps;
-		}, keyHolder);
+			if (affectedRows > 0) {
 
-		if (affectedRows > 0) {
-			int lastInsertId = keyHolder.getKey().intValue();
-			response.put("insertId", lastInsertId);
-			response.put("status", "success");
-			response.put("message", "New After Notice details inserted successfully.");
-		} else {
+				int lastInsertId = keyHolder.getKey().intValue();
+
+				/*
+				 * Fetch address, mobile and fine amount
+				 */
+				String fetchSql = "SELECT cd.site_address, cd.contractor_mobile, ci.fine_amount "
+						+ "FROM construction_details cd "
+						+ "JOIN construction_inspection ci ON ci.cdid = cd.cdid "
+						+ "WHERE ci.ciid = ?";
+
+				List<Map<String, Object>> fineDataList = jdbcGuidlines.queryForList(fetchSql, ciid);
+
+				System.out.println("Fetched fine data size: " + fineDataList.size());
+
+				if (!fineDataList.isEmpty()) {
+
+					Map<String, Object> fineData = fineDataList.get(0);
+
+					String siteAddress = (String) fineData.get("site_address");
+					Object mobileNo = fineData.get("contractor_mobile");
+					Object fineAmount = fineData.get("fine_amount");
+
+					System.out.println("Fine Amount: " + fineAmount);
+
+					/*
+					 * Check duplicate ciid
+					 */
+					String checkSql = "SELECT COUNT(*) FROM fine_details WHERE ciid=?";
+
+					Integer count = jdbcPayment.queryForObject(checkSql, Integer.class, ciid);
+
+					System.out.println("Existing fine count: " + count);
+
+					if (count == null || count == 0) {
+
+						String insertFineSql = "INSERT INTO fine_details "
+								+ "(cdid, ciid, building_address, mobile_no, fine_amount, cdate, is_active, payment_status) "
+								+ "VALUES (?, ?, ?, ?, ?, NOW(), 1, 'Pending')";
+
+						int fineInsert = jdbcPayment.update(insertFineSql,
+								cdid,
+								ciid,
+								siteAddress,
+								mobileNo,
+								fineAmount);
+
+						System.out.println("Fine inserted rows: " + fineInsert);
+
+					} else {
+						System.out.println("Fine already exists for ciid: " + ciid);
+					}
+
+				} else {
+					System.out.println("No matching construction data found for ciid: " + ciid);
+				}
+
+				response.put("insertId", lastInsertId);
+				response.put("status", "success");
+				response.put("message", "After Notice saved.");
+
+			} else {
+
+				response.put("status", "error");
+				response.put("message", "After Notice insert failed.");
+			}
+
+		} catch (Exception e) {
+
 			response.put("status", "error");
-			response.put("message", "New After Notice details  insert failed.");
+			response.put("message", "Error occurred: " + e.getMessage());
+			e.printStackTrace();
 		}
 
 		result.add(response);
@@ -926,7 +1062,7 @@ public class GuidelinesService {
 
 		String sql = "SELECT cd.*, " +
 				"CONCAT('" + fileBaseUrl + "/gccofficialapp/files', cd.image) AS photo, " +
-				"ci.ciid, ci.under_guidelines, ci.penalty, " +
+				"ci.ciid, ci.under_guidelines, ci.penalty, ci.fine_amount, " +
 				"CONCAT('" + fileBaseUrl + "/gccofficialapp/files', ani.image1) AS finephoto, " +
 				"date_format(ani.cdate, '%d-%m-%Y') as FineDate,  " +
 				"ani.cdate as finedate " +
@@ -997,6 +1133,26 @@ public class GuidelinesService {
 			// "&ciid=" + row.get("ciid");
 
 			row.put("downloadNoticeLink", downloadLink);
+
+			/* Fetch payment status and payment_date from payment DB */
+			String paymentSql = "SELECT fd.payment_status, " +
+					"DATE_FORMAT(py.payment_date,'%Y-%m-%d %H:%i:%s') AS payment_date " +
+					"FROM fine_details fd " +
+					"LEFT JOIN payment py ON py.fine_id = fd.id " +
+					"WHERE fd.ciid=?";
+
+			List<Map<String, Object>> paymentList = jdbcPayment.queryForList(paymentSql, row.get("ciid"));
+
+			String paymentStatus = "Pending";
+			Object paymentDate = null;
+
+			if (!paymentList.isEmpty()) {
+				paymentStatus = (String) paymentList.get(0).get("payment_status");
+				paymentDate = paymentList.get(0).get("payment_date");
+			}
+
+			row.put("payment_status", paymentStatus);
+			row.put("payment_date", paymentDate);
 		}
 
 		Map<String, Object> response = new HashMap<>();
@@ -1289,6 +1445,90 @@ public class GuidelinesService {
 		return result;
 	}
 
+	// public List<Map<String, Object>> getLockAndSealedList(String loginid, String
+	// latitude, String longitude) {
+
+	// String ward = getWardByLoginId(loginid, "");
+
+	// String sql = "SELECT cd.*, " +
+	// "CONCAT('" + fileBaseUrl + "/gccofficialapp/files', cd.image) AS photo, " +
+	// "ci.ciid, ci.under_guidelines, ci.penalty, " +
+	// "CONCAT('" + fileBaseUrl + "/gccofficialapp/files', ani.image1) AS finephoto,
+	// " +
+	// "DATE_FORMAT(ani.cdate,'%d-%m-%Y') AS FineDate, " +
+	// "ani.cdate AS finedate " +
+	// "FROM construction_details cd " +
+	// "LEFT JOIN construction_inspection ci ON ci.cdid = cd.cdid " +
+	// "LEFT JOIN lock_and_sealed_notice_inspection ani ON ani.cdid = cd.cdid " +
+	// "LEFT JOIN after_notice_inspection fni ON fni.cdid = cd.cdid " +
+	// "WHERE cd.isactive = 1 " +
+	// "AND ci.isactive = 1 " +
+	// "AND ci.penalty IN ('High','Medium','Low') " +
+	// "AND cd.ward = ? " +
+	// "AND fni.status IN ('locked','stop')";
+
+	// List<Map<String, Object>> result = jdbcGuidlines.queryForList(sql, ward);
+
+	// LocalDate today = LocalDate.now();
+
+	// for (Map<String, Object> row : result) {
+
+	// Boolean allowRevisit = false;
+	// Object cdateObj = row.get("finedate");
+
+	// if (cdateObj != null) {
+
+	// LocalDate cdate = null;
+
+	// if (cdateObj instanceof LocalDate) {
+	// cdate = (LocalDate) cdateObj;
+	// } else if (cdateObj instanceof java.sql.Date) {
+	// cdate = ((java.sql.Date) cdateObj).toLocalDate();
+	// } else if (cdateObj instanceof java.sql.Timestamp) {
+	// cdate = ((java.sql.Timestamp) cdateObj).toLocalDateTime().toLocalDate();
+	// } else if (cdateObj instanceof LocalDateTime) {
+	// cdate = ((LocalDateTime) cdateObj).toLocalDate();
+	// } else if (cdateObj instanceof String) {
+	// try {
+	// DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+	// cdate = LocalDateTime.parse((String) cdateObj, dtf).toLocalDate();
+	// } catch (Exception e) {
+	// System.err.println("Could not parse cdate: " + cdateObj);
+	// }
+	// }
+
+	// }
+	// /* Fetch payment status and payment_date from payment DB */
+	// String paymentSql = "SELECT fd.payment_status,
+	// DATE_FORMAT(py.payment_date,'%Y-%m-%d %H:%i:%s') AS payment_date "
+	// +
+	// "FROM fine_details fd " +
+	// "LEFT JOIN payment py ON py.fine_id = fd.id " +
+	// "WHERE fd.ciid=?";
+
+	// List<Map<String, Object>> paymentList = jdbcPayment.queryForList(paymentSql,
+	// row.get("ciid"));
+
+	// String paymentStatus = "Pending";
+	// Object paymentDate = null;
+
+	// if (!paymentList.isEmpty()) {
+	// paymentStatus = (String) paymentList.get(0).get("payment_status");
+	// paymentDate = paymentList.get(0).get("payment_date");
+	// }
+
+	// row.put("payment_status", paymentStatus);
+	// row.put("payment_date", paymentDate);
+	// }
+
+	// Map<String, Object> response = new HashMap<>();
+	// response.put("status", "Success");
+	// response.put("message", "Construction List with Guidelines & Answers.");
+	// response.put("data", result);
+
+	// return Collections.singletonList(response);
+	// }
+
 	public List<Map<String, Object>> getLockAndSealedList(String loginid, String latitude, String longitude) {
 
 		String ward = getWardByLoginId(loginid, "");
@@ -1297,7 +1537,6 @@ public class GuidelinesService {
 				"CONCAT('" + fileBaseUrl + "/gccofficialapp/files', cd.image) AS photo, " +
 				"ci.ciid, ci.under_guidelines, ci.penalty, " +
 				"CONCAT('" + fileBaseUrl + "/gccofficialapp/files', ani.image1) AS finephoto, " +
-				"DATE_FORMAT(ani.cdate,'%d-%m-%Y') AS FineDate, " +
 				"ani.cdate AS finedate " +
 				"FROM construction_details cd " +
 				"LEFT JOIN construction_inspection ci ON ci.cdid = cd.cdid " +
@@ -1317,49 +1556,62 @@ public class GuidelinesService {
 
 			Boolean allowRevisit = false;
 			Object cdateObj = row.get("finedate");
+			LocalDate cdate = null;
 
 			if (cdateObj != null) {
 
-				LocalDate cdate = null;
+				try {
 
-				if (cdateObj instanceof LocalDate) {
-					cdate = (LocalDate) cdateObj;
-				} else if (cdateObj instanceof java.sql.Date) {
-					cdate = ((java.sql.Date) cdateObj).toLocalDate();
-				} else if (cdateObj instanceof java.sql.Timestamp) {
-					cdate = ((java.sql.Timestamp) cdateObj).toLocalDateTime().toLocalDate();
-				} else if (cdateObj instanceof LocalDateTime) {
-					cdate = ((LocalDateTime) cdateObj).toLocalDate();
-				} else if (cdateObj instanceof String) {
-					try {
-						DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-						cdate = LocalDateTime.parse((String) cdateObj, dtf).toLocalDate();
-					} catch (Exception e) {
-						System.err.println("Could not parse cdate: " + cdateObj);
+					if (cdateObj instanceof LocalDate) {
+						cdate = (LocalDate) cdateObj;
+
+					} else if (cdateObj instanceof java.sql.Date) {
+						cdate = ((java.sql.Date) cdateObj).toLocalDate();
+
+					} else if (cdateObj instanceof java.sql.Timestamp) {
+						cdate = ((java.sql.Timestamp) cdateObj)
+								.toLocalDateTime()
+								.toLocalDate();
+
+					} else if (cdateObj instanceof LocalDateTime) {
+						cdate = ((LocalDateTime) cdateObj).toLocalDate();
+
+					} else if (cdateObj instanceof String) {
+
+						String cdateStr = ((String) cdateObj).trim();
+
+						DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+						cdate = LocalDate.parse(cdateStr, formatter);
 					}
+
+				} catch (Exception e) {
+					System.err.println("Raw cdate type: " +
+							cdateObj.getClass().getName() +
+							" | value: " + cdateObj);
 				}
-
-				// if (cdate != null) {
-
-				// LocalDate finalDate = cdate.plusDays(7);
-
-				// allowRevisit = !today.isBefore(finalDate);
-
-				// System.out.println("ID: " + row.get("cdid")
-				// + " | finalDate: " + finalDate
-				// + " | today: " + today
-				// + " | allowRevisit: " + allowRevisit);
-				// }
 			}
 
-			// row.put("allowRevisit", allowRevisit);
+			row.put("allow_revisit", allowRevisit);
 
-			// String downloadLink =
-			// "http://localhost:8067/gccofficialapp/api/pdf/finalnotice?" +
-			// "cdid=" + row.get("cdid") +
-			// "&ciid=" + row.get("ciid");
+			/* Fetch payment status and payment_date from payment DB */
+			String paymentSql = "SELECT fd.payment_status, " +
+					"DATE_FORMAT(py.payment_date,'%Y-%m-%d %H:%i:%s') AS payment_date " +
+					"FROM fine_details fd " +
+					"LEFT JOIN payment py ON py.fine_id = fd.id " +
+					"WHERE fd.ciid=?";
 
-			// row.put("downloadNoticeLink", downloadLink);
+			List<Map<String, Object>> paymentList = jdbcPayment.queryForList(paymentSql, row.get("ciid"));
+
+			String paymentStatus = "Pending";
+			Object paymentDate = null;
+
+			if (!paymentList.isEmpty()) {
+				paymentStatus = (String) paymentList.get(0).get("payment_status");
+				paymentDate = paymentList.get(0).get("payment_date");
+			}
+
+			row.put("payment_status", paymentStatus);
+			row.put("payment_date", paymentDate);
 		}
 
 		Map<String, Object> response = new HashMap<>();
