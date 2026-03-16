@@ -103,13 +103,7 @@ public class PmcController {
         return pmcservice.getFinalFoodCountForDispatch(shiftid, loginid, date);
     }
     
-    @GetMapping("/getDeliverylocations")
-    public List<Map<String, Object>> getDeliverylocations(
-    		 @RequestParam int pmc_audit_id,
-    		 @RequestParam int hub_id
-    		){
-    	return pmcservice.getDeliverylocations(pmc_audit_id,hub_id);
-    }
+
     
     @PostMapping("/savedispatch")
     public List<?> savedispatch(
@@ -117,15 +111,14 @@ public class PmcController {
     		@RequestParam(value = "driver_name", required = true) String driver_name,
     		@RequestParam(value = "driver_mob_num", required = true) String driver_mob_num,
     		@RequestParam(value = "vehicle_number", required = true) String vehicle_number,
-    		@RequestParam(value = "food_count", required = true) String food_count,
     		@RequestParam(value = "packedfoodphoto", required = true) MultipartFile packedfoodphoto,
             @RequestParam(value = "vehiclephoto", required = true) MultipartFile vehiclephoto,
-    		@RequestParam(value = "deliverycenters", required = true) String deliverycenters,
     		@RequestParam(value = "loginId", required = true) String loginId,
-    		@RequestParam(value = "yet_dispatch_count", required = true) int yet_dispatch_count
+    		@RequestParam(value = "yet_dispatch_count", required = true) int yet_dispatch_count,
+    		@RequestParam(value = "dispatch_food_list") String dispatch_food_list
     		){
     	
-    	return pmcservice.savedispatch(pmc_audit_id,driver_name,driver_mob_num,vehicle_number,food_count,packedfoodphoto,vehiclephoto,deliverycenters,loginId,yet_dispatch_count);
+    	return pmcservice.savedispatch(pmc_audit_id,driver_name,driver_mob_num,vehicle_number,packedfoodphoto,vehiclephoto,loginId,yet_dispatch_count,dispatch_food_list);
     }
     
 }
