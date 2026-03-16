@@ -21,55 +21,94 @@ import in.gov.chennaicorporation.mobileservice.service.PdfGeneratorService;
 @RequestMapping("/gccofficialapp/api/pdf")
 public class PdfTemplateController {
 
-    @Autowired
-    private PdfGeneratorService pdfGeneratorService;
-    
-    @Autowired
-    private GuidelinesService guidelinesService;
-/*
-    @GetMapping("/template")
-    public ResponseEntity<byte[]> generateFromTemplate(
-    		@RequestParam(value = "cdid", required = false) String cdid,
-    		@RequestParam(value = "ciid", required = false) String ciid
-    ) {
-    	//Map<String, Object> data = new HashMap<>();
-    	
-        //data.put("siteLocation", siteLocation);
-        //data.put("violations", violations);
-        //data.put("violationLevel", violationLevel);
-        //data.put("clause", clause);
-        //data.put("fineAmount", fineAmount);
-        //data.put("date", LocalDate.now().toString());
-        
-        
-        String attachmentFileName="UNDER_CLEAN_AND_SAFE_CONSTRUCTION_GUIDELINES_NOTICE_"+LocalDate.now().toString()+"pdf";
+        @Autowired
+        private PdfGeneratorService pdfGeneratorService;
 
-        byte[] pdfBytes = pdfGeneratorService.generatePdf(guidelinesService.getNoticeData(cdid, ciid));
+        @Autowired
+        private GuidelinesService guidelinesService;
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", attachmentFileName);
+        /*
+         * @GetMapping("/template")
+         * public ResponseEntity<byte[]> generateFromTemplate(
+         * 
+         * @RequestParam(value = "cdid", required = false) String cdid,
+         * 
+         * @RequestParam(value = "ciid", required = false) String ciid
+         * ) {
+         * //Map<String, Object> data = new HashMap<>();
+         * 
+         * //data.put("siteLocation", siteLocation);
+         * //data.put("violations", violations);
+         * //data.put("violationLevel", violationLevel);
+         * //data.put("clause", clause);
+         * //data.put("fineAmount", fineAmount);
+         * //data.put("date", LocalDate.now().toString());
+         * 
+         * 
+         * String
+         * attachmentFileName="UNDER_CLEAN_AND_SAFE_CONSTRUCTION_GUIDELINES_NOTICE_"+
+         * LocalDate.now().toString()+"pdf";
+         * 
+         * byte[] pdfBytes =
+         * pdfGeneratorService.generatePdf(guidelinesService.getNoticeData(cdid, ciid));
+         * 
+         * HttpHeaders headers = new HttpHeaders();
+         * headers.setContentType(MediaType.APPLICATION_PDF);
+         * headers.setContentDispositionFormData("attachment", attachmentFileName);
+         * 
+         * return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+         * }
+         */
+        @GetMapping("/template")
+        public ResponseEntity<byte[]> generateFromTemplate(
+                        @RequestParam(value = "cdid", required = false) String cdid,
+                        @RequestParam(value = "ciid", required = false) String ciid) {
+                String attachmentFileName = "UNDER_CLEAN_AND_SAFE_CONSTRUCTION_GUIDELINES_NOTICE_" + LocalDate.now()
+                                + ".pdf";
 
-        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
-    }
-    */
-    @GetMapping("/template")
-    public ResponseEntity<byte[]> generateFromTemplate(
-            @RequestParam(value = "cdid", required = false) String cdid,
-            @RequestParam(value = "ciid", required = false) String ciid
-    ) {
-        String attachmentFileName = "UNDER_CLEAN_AND_SAFE_CONSTRUCTION_GUIDELINES_NOTICE_" + LocalDate.now() + ".pdf";
+                // Generate PDF content
+                byte[] pdfBytes = pdfGeneratorService.generatePdf(
+                                guidelinesService.getNoticeData(cdid, ciid));
 
-        // Generate PDF content
-        byte[] pdfBytes = pdfGeneratorService.generatePdf(
-                guidelinesService.getNoticeData(cdid, ciid)
-        );
+                // Prepare response headers
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_PDF);
+                headers.setContentDispositionFormData("attachment", attachmentFileName);
 
-        // Prepare response headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", attachmentFileName);
+                return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        }
 
-        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
-    }
+        @GetMapping("/secondnotice")
+        public ResponseEntity<byte[]> generateSecondNoticeFromTemplate(
+                        @RequestParam(value = "cdid", required = false) String cdid,
+                        @RequestParam(value = "ciid", required = false) String ciid) {
+                String attachmentFileName = "SECOND_NOTICE_UNDER_CLEAN_AND_SAFE_CONSTRUCTION_GUIDELINES_NOTICE_"
+                                + LocalDate.now() + ".pdf";
+
+                byte[] pdfBytes = pdfGeneratorService.generatePdfSecondNotice(
+                                guidelinesService.getNoticeData(cdid, ciid));
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_PDF);
+                headers.setContentDispositionFormData("attachment", attachmentFileName);
+
+                return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        }
+
+        @GetMapping("/finalnotice")
+        public ResponseEntity<byte[]> generateFinalNoticeFromTemplate(
+                        @RequestParam(value = "cdid", required = false) String cdid,
+                        @RequestParam(value = "ciid", required = false) String ciid) {
+                String attachmentFileName = "FINAL_NOTICE_UNDER_CLEAN_AND_SAFE_CONSTRUCTION_GUIDELINES_NOTICE_"
+                                + LocalDate.now() + ".pdf";
+
+                byte[] pdfBytes = pdfGeneratorService.generatePdfFinalNotice(
+                                guidelinesService.getNoticeData(cdid, ciid));
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_PDF);
+                headers.setContentDispositionFormData("attachment", attachmentFileName);
+
+                return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        }
 }

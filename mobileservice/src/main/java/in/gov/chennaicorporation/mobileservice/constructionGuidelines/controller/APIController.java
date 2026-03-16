@@ -161,4 +161,31 @@ public class APIController {
 		return guidelinesService.saveFinalNoticeDetails(
 				cdid, ciid, giid, remarks, status, zone, ward, cby, latitude, longitude, mainfile);
 	}
+
+	// yogi
+	@PostMapping(value = "/saveFinalNoticeDetailsLockAndSealed")
+	public List<Map<String, Object>> saveFinalNoticeDetailsLockAndSealed(
+			@RequestParam(value = "cdid", required = true) String cdid,
+			@RequestParam(value = "ciid", required = true) String ciid,
+			@RequestParam(value = "giid", required = true) String giid,
+			@RequestParam(value = "remarks", required = true) String remarks,
+			@RequestParam(value = "status", required = true) String status,
+			@RequestParam(value = "zone", required = true) String zone,
+			@RequestParam(value = "ward", required = true) String ward,
+			@RequestParam(value = "loginId", required = true) String cby,
+			@RequestParam(value = "latitude", required = true) String latitude,
+			@RequestParam(value = "longitude", required = true) String longitude,
+			@RequestParam(value = "mainfile", required = true) MultipartFile mainfile) {
+		return guidelinesService.saveFinalNoticeDetailLockAndSealed(
+				cdid, ciid, giid, remarks, status, zone, ward, cby, latitude, longitude, mainfile);
+	}
+
+	// yogi
+	@GetMapping(value = "/getLockAndSealedList")
+	public List<?> getLockAndSealedList(
+			@RequestParam(value = "loginId", required = true) String cby,
+			@RequestParam(value = "latitude", required = true) String latitude,
+			@RequestParam(value = "longitude", required = true) String longitude) {
+		return guidelinesService.getLockAndSealedList(cby, latitude, longitude);
+	}
 }

@@ -927,7 +927,6 @@ public class ParksApiService {
             /*
              * EMPLOYEE LEVEL DRILL
              */
-
             if (parkId != null && verifiedFlag != null && verificationDate != null) {
 
                 StringBuilder empSql = new StringBuilder();
@@ -938,14 +937,12 @@ public class ParksApiService {
                 empSql.append("IFNULL(ofp.enrollment_id,'') AS enrollment_id, ");
                 empSql.append("IFNULL(ofp.verified_status,'') AS verified_status, ");
                 empSql.append("IFNULL(ofp.lat,'') AS lat, ");
-                empSql.append("IFNULL(ofp.long,'') AS long, ");
+                empSql.append("IFNULL(ofp.`long`,'') AS `long`, ");
                 empSql.append("IFNULL(ofp.address,'') AS address, ");
                 empSql.append("DATE_FORMAT(ofp.cdate,'%Y-%m-%d %H:%i:%s') AS verification_date, ");
-
                 empSql.append("CASE WHEN ofp.photo_url IS NOT NULL ");
                 empSql.append("THEN CONCAT('" + fileBaseUrl + "/gccofficialapp/files', ofp.photo_url) ");
                 empSql.append("ELSE '' END AS verified_image_url ");
-
                 empSql.append("FROM officer_feedback_parks ofp ");
                 empSql.append("WHERE ofp.is_active = 1 ");
                 empSql.append("AND ofp.is_delete = 0 ");
@@ -961,7 +958,8 @@ public class ParksApiService {
 
                 response.put("status", "Success");
                 response.put("message",
-                        empList.isEmpty() ? "No employee records found" : "Employee verification fetched successfully");
+                        empList.isEmpty() ? "No employee records found"
+                                : "Employee verification fetched successfully");
                 response.put("data", empList);
 
                 return response;
@@ -970,42 +968,34 @@ public class ParksApiService {
             /*
              * PARK DATE DRILL
              */
-
             if (parkId != null) {
 
                 StringBuilder drillSql = new StringBuilder();
 
                 drillSql.append("SELECT ");
                 drillSql.append("DATE_FORMAT(ofp.cdate,'%Y-%m-%d') AS inspection_date, ");
-
-                drillSql.append("IFNULL(COUNT(DISTINCT ofp.enrollment_id),0) AS verified_count, ");
-
-                drillSql.append("IFNULL(COUNT(DISTINCT CASE WHEN LOWER(ofp.verified_status)='same' ");
-                drillSql.append("THEN ofp.enrollment_id END),0) AS same_count, ");
-
-                drillSql.append("IFNULL(COUNT(DISTINCT CASE WHEN LOWER(ofp.verified_status)='wrong' ");
-                drillSql.append("THEN ofp.enrollment_id END),0) AS wrong_count ");
-
+                drillSql.append("COUNT(DISTINCT ofp.enrollment_id) AS verified_count, ");
+                drillSql.append("COUNT(DISTINCT CASE WHEN LOWER(ofp.verified_status)='same' ");
+                drillSql.append("THEN ofp.enrollment_id END) AS same_count, ");
+                drillSql.append("COUNT(DISTINCT CASE WHEN LOWER(ofp.verified_status)='wrong' ");
+                drillSql.append("THEN ofp.enrollment_id END) AS wrong_count ");
                 drillSql.append("FROM officer_feedback_parks ofp ");
-
                 drillSql.append("WHERE ofp.is_active = 1 ");
                 drillSql.append("AND ofp.is_delete = 0 ");
                 drillSql.append("AND ofp.park_id = ? ");
-
-                if (fromDate != null && toDate != null) {
-                    drillSql.append("AND DATE(ofp.cdate) BETWEEN ? AND ? ");
-                }
-
-                drillSql.append("GROUP BY DATE(ofp.cdate) ");
-                drillSql.append("ORDER BY inspection_date DESC ");
 
                 List<Object> drillParams = new ArrayList<>();
                 drillParams.add(parkId);
 
                 if (fromDate != null && toDate != null) {
+
+                    drillSql.append("AND DATE(ofp.cdate) BETWEEN ? AND ? ");
                     drillParams.add(fromDate);
                     drillParams.add(toDate);
                 }
+
+                drillSql.append("GROUP BY inspection_date ");
+                drillSql.append("ORDER BY inspection_date DESC ");
 
                 List<Map<String, Object>> drillList = jdbcNULMTemplate.queryForList(
                         drillSql.toString(),
@@ -1013,7 +1003,8 @@ public class ParksApiService {
 
                 response.put("status", "Success");
                 response.put("message",
-                        drillList.isEmpty() ? "No records found" : "Inspection data fetched successfully");
+                        drillList.isEmpty() ? "No records found"
+                                : "Inspection data fetched successfully");
                 response.put("data", drillList);
 
                 return response;
@@ -1022,7 +1013,6 @@ public class ParksApiService {
             /*
              * SUMMARY QUERY
              */
-
             StringBuilder sql = new StringBuilder();
 
             sql.append("SELECT p.zone ");
@@ -1031,14 +1021,14 @@ public class ParksApiService {
                 sql.append(", p.division AS ward ");
             }
 
-            sql.append(", IFNULL(COUNT(DISTINCT p.park_id),0) AS park_count ");
-            sql.append(", IFNULL(COUNT(DISTINCT ofp.park_id),0) AS inspected_park_count ");
+            sql.append(", COUNT(DISTINCT p.park_id) AS park_count ");
+            sql.append(", COUNT(DISTINCT ofp.park_id) AS inspected_park_count ");
 
-            sql.append(", IFNULL(COUNT(DISTINCT CASE WHEN LOWER(ofp.verified_status)='same' ");
-            sql.append("THEN ofp.enrollment_id END),0) AS matched_employee_count ");
+            sql.append(", COUNT(DISTINCT CASE WHEN LOWER(ofp.verified_status)='same' ");
+            sql.append("THEN ofp.enrollment_id END) AS matched_employee_count ");
 
-            sql.append(", IFNULL(COUNT(DISTINCT CASE WHEN LOWER(ofp.verified_status)='wrong' ");
-            sql.append("THEN ofp.enrollment_id END),0) AS not_matched_employee_count ");
+            sql.append(", COUNT(DISTINCT CASE WHEN LOWER(ofp.verified_status)='wrong' ");
+            sql.append("THEN ofp.enrollment_id END) AS not_matched_employee_count ");
 
             sql.append("FROM park_details p ");
 
@@ -1047,18 +1037,15 @@ public class ParksApiService {
             sql.append("AND ofp.is_active = 1 ");
             sql.append("AND ofp.is_delete = 0 ");
 
-            if (fromDate != null && toDate != null) {
-                sql.append("AND DATE(ofp.cdate) BETWEEN ? AND ? ");
-            }
-
-            sql.append("WHERE 1=1 ");
-
             List<Object> params = new ArrayList<>();
 
             if (fromDate != null && toDate != null) {
+                sql.append("AND DATE(ofp.cdate) BETWEEN ? AND ? ");
                 params.add(fromDate);
                 params.add(toDate);
             }
+
+            sql.append("WHERE 1=1 ");
 
             if (zone != null && !zone.trim().isEmpty()) {
                 sql.append("AND p.zone = ? ");
@@ -1081,7 +1068,6 @@ public class ParksApiService {
             /*
              * PARK WISE QUERY
              */
-
             StringBuilder parkSql = new StringBuilder();
 
             parkSql.append("SELECT ");
@@ -1089,17 +1075,15 @@ public class ParksApiService {
             parkSql.append("p.division AS ward, ");
             parkSql.append("e.park_id, ");
             parkSql.append("e.park_name, ");
+            parkSql.append("COUNT(DISTINCT e.enrollment_id) AS employee_count, ");
 
-            parkSql.append("IFNULL(COUNT(DISTINCT e.enrollment_id),0) AS employee_count, ");
+            parkSql.append("COUNT(DISTINCT CASE WHEN LOWER(ofp.verified_status)='same' ");
+            parkSql.append("THEN ofp.enrollment_id END) AS matched_employee_count, ");
 
-            parkSql.append("IFNULL(COUNT(DISTINCT CASE WHEN LOWER(ofp.verified_status)='same' ");
-            parkSql.append("THEN ofp.enrollment_id END),0) AS matched_employee_count, ");
-
-            parkSql.append("IFNULL(COUNT(DISTINCT CASE WHEN LOWER(ofp.verified_status)='wrong' ");
-            parkSql.append("THEN ofp.enrollment_id END),0) AS not_matched_employee_count ");
+            parkSql.append("COUNT(DISTINCT CASE WHEN LOWER(ofp.verified_status)='wrong' ");
+            parkSql.append("THEN ofp.enrollment_id END) AS not_matched_employee_count ");
 
             parkSql.append("FROM enrollment_table e ");
-
             parkSql.append("LEFT JOIN park_details p ON p.park_id = e.park_id ");
 
             parkSql.append("LEFT JOIN officer_feedback_parks ofp ");
@@ -1107,19 +1091,16 @@ public class ParksApiService {
             parkSql.append("AND ofp.is_active = 1 ");
             parkSql.append("AND ofp.is_delete = 0 ");
 
+            List<Object> parkParams = new ArrayList<>();
+
             if (fromDate != null && toDate != null) {
                 parkSql.append("AND DATE(ofp.cdate) BETWEEN ? AND ? ");
+                parkParams.add(fromDate);
+                parkParams.add(toDate);
             }
 
             parkSql.append("WHERE e.isactive = 1 ");
             parkSql.append("AND e.isdelete = 0 ");
-
-            List<Object> parkParams = new ArrayList<>();
-
-            if (fromDate != null && toDate != null) {
-                parkParams.add(fromDate);
-                parkParams.add(toDate);
-            }
 
             if (zone != null && !zone.trim().isEmpty()) {
                 parkSql.append("AND p.zone = ? ");
@@ -1136,23 +1117,16 @@ public class ParksApiService {
             List<Map<String, Object>> parkList = jdbcNULMTemplate.queryForList(parkSql.toString(),
                     parkParams.toArray());
 
-            /*
-             * IF WARD SELECTED → RETURN PARK LIST
-             */
-
             if (ward != null && !ward.trim().isEmpty()) {
 
                 response.put("status", "Success");
                 response.put("message",
-                        parkList.isEmpty() ? "No parks found" : "Park wise report fetched successfully");
+                        parkList.isEmpty() ? "No parks found"
+                                : "Park wise report fetched successfully");
                 response.put("data", parkList);
 
                 return response;
             }
-
-            /*
-             * MAP PARK DATA TO SUMMARY
-             */
 
             for (Map<String, Object> summary : summaryList) {
 
@@ -1160,15 +1134,15 @@ public class ParksApiService {
 
                 for (Map<String, Object> park : parkList) {
 
-                    String summaryZone = summary.get("zone") != null ? summary.get("zone").toString() : "";
-                    String parkZone = park.get("zone") != null ? park.get("zone").toString() : "";
+                    String summaryZone = String.valueOf(summary.get("zone"));
+                    String parkZone = String.valueOf(park.get("zone"));
 
                     boolean match = summaryZone.equals(parkZone);
 
                     if (summary.containsKey("ward")) {
 
-                        String summaryWard = summary.get("ward") != null ? summary.get("ward").toString() : "";
-                        String parkWard = park.get("ward") != null ? park.get("ward").toString() : "";
+                        String summaryWard = String.valueOf(summary.get("ward"));
+                        String parkWard = String.valueOf(park.get("ward"));
 
                         match = match && summaryWard.equals(parkWard);
                     }
@@ -1187,7 +1161,9 @@ public class ParksApiService {
             }
 
             response.put("status", "Success");
-            response.put("message", summaryList.isEmpty() ? "No records found" : "Report fetched successfully");
+            response.put("message",
+                    summaryList.isEmpty() ? "No records found"
+                            : "Report fetched successfully");
             response.put("data", summaryList);
 
         } catch (Exception e) {

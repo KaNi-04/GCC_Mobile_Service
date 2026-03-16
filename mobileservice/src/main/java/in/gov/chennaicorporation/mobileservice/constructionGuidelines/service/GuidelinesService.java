@@ -771,9 +771,14 @@ public class GuidelinesService {
 
 			row.put("allowRevisit", allowRevisit);
 
-			String downloadLink = "https://gccservices.in/gccofficialapp/api/pdf/template?" +
+			String downloadLink = "https://gccservices.in/gccofficialapp/api/pdf/secondnotice?" +
 					"cdid=" + row.get("cdid") +
 					"&ciid=" + row.get("ciid");
+
+			// String downloadLink =
+			// "http://localhost:8067/gccofficialapp/api/pdf/secondnotice?" +
+			// "cdid=" + row.get("cdid") +
+			// "&ciid=" + row.get("ciid");
 
 			row.put("downloadNoticeLink", downloadLink);
 		}
@@ -982,9 +987,14 @@ public class GuidelinesService {
 			// row.put("allowRevisit", allowRevisit);
 			row.put("allowRevisit", true);
 
-			String downloadLink = "https://gccservices.in/gccofficialapp/api/pdf/template?" +
+			String downloadLink = "https://gccservices.in/gccofficialapp/api/pdf/finalnotice?" +
 					"cdid=" + row.get("cdid") +
 					"&ciid=" + row.get("ciid");
+
+			// String downloadLink =
+			// "http://localhost:8067/gccofficialapp/api/pdf/finalnotice?" +
+			// "cdid=" + row.get("cdid") +
+			// "&ciid=" + row.get("ciid");
 
 			row.put("downloadNoticeLink", downloadLink);
 		}
@@ -1064,9 +1074,13 @@ public class GuidelinesService {
 		String sql = "SELECT cd.*, "
 				+ "CONCAT('" + fileBaseUrl + "/gccofficialapp/files', cd.image) AS photo, "
 				+ "DATE_FORMAT(cd.cdate, '%d-%m-%Y') AS ddate, "
+				+ "DATE_FORMAT(ani.cdate, '%d-%m-%Y') AS ndate, "
+				+ "DATE_FORMAT(fni.cdate, '%d-%m-%Y') AS fndate, "
 				+ "ci.ciid, ci.under_guidelines, ci.penalty "
 				+ "FROM construction_details cd "
 				+ "LEFT JOIN construction_inspection ci ON ci.cdid = cd.cdid "
+				+ "LEFT JOIN after_notice_inspection ani ON ani.cdid = cd.cdid AND ani.ciid = ci.ciid AND ani.isactive = 1 "
+				+ "LEFT JOIN final_notice_inspection fni ON fni.cdid = cd.cdid AND fni.ciid = ci.ciid AND fni.isactive = 1 "
 				+ "WHERE cd.isactive = 1 AND ci.isactive = 1 AND ci.penalty IN ('High','Medium','Low') AND cd.cdid=? AND ci.ciid=?";
 
 		List<Map<String, Object>> result = jdbcGuidlines.queryForList(sql, cdidtxt, ciidtxt);
@@ -1150,6 +1164,9 @@ public class GuidelinesService {
 			data.put("fineAmount", fineAmount);
 			data.put("fineAmountWords", convertNumberToIndianWords(fineAmount));
 			data.put("date", row.get("ddate"));
+			data.put("ndate", row.get("ndate"));
+			data.put("fndate", row.get("fndate"));
+			data.put("contractor_name", row.get("contractor_name"));
 		}
 		return data;
 	}
@@ -1207,5 +1224,149 @@ public class GuidelinesService {
 		}
 
 		return words.toString().trim();
+	}
+
+	// yogi
+	@Transactional
+	public List<Map<String, Object>> saveFinalNoticeDetailLockAndSealed(
+			String cdid,
+			String ciid,
+			String giid,
+			String remarks,
+			String status,
+			String zone,
+			String ward,
+			String cby,
+			String latitude,
+			String longitude,
+			MultipartFile mainfile) {
+		Map<String, Object> response = new HashMap<>();
+		List<Map<String, Object>> result = new ArrayList<>();
+
+		String constimg = fileUpload("Lock_and_Sealed", cdid + "_" + ciid + "_" + giid + "_" + status, mainfile);
+
+		String type = "";
+
+		// Prepare question image uploads
+		MultipartFile[] files = {
+				mainfile
+		};
+
+		// Insert query
+		String insertSql = "INSERT INTO `lock_and_sealed_notice_inspection`(`cdid`, `ciid`, `giid`, `image1`, `remarks`, `zone`, `ward`, `latitude`, `longitude`, `cby`, `status`) VALUES "
+				+ "(?,?,?,?,?,?,?,?,?,?,?)";
+
+		KeyHolder keyHolder = new GeneratedKeyHolder();
+
+		int affectedRows = jdbcGuidlines.update(connection -> {
+			PreparedStatement ps = connection.prepareStatement(insertSql, new String[] { "cdid" });
+			int i = 1;
+			ps.setString(i++, cdid);
+			ps.setString(i++, ciid);
+			ps.setString(i++, giid);
+			ps.setString(i++, constimg);
+			ps.setString(i++, remarks);
+			ps.setString(i++, zone);
+			ps.setString(i++, ward);
+			ps.setString(i++, latitude);
+			ps.setString(i++, longitude);
+			ps.setString(i++, cby);
+			ps.setString(i++, status);
+			return ps;
+		}, keyHolder);
+
+		if (affectedRows > 0) {
+			int lastInsertId = keyHolder.getKey().intValue();
+			response.put("insertId", lastInsertId);
+			response.put("status", "success");
+			response.put("message", "New Lock and Sealed details inserted successfully.");
+		} else {
+			response.put("status", "error");
+			response.put("message", "New Lock and Sealed details  insert failed.");
+		}
+
+		result.add(response);
+		return result;
+	}
+
+	public List<Map<String, Object>> getLockAndSealedList(String loginid, String latitude, String longitude) {
+
+		String ward = getWardByLoginId(loginid, "");
+
+		String sql = "SELECT cd.*, " +
+				"CONCAT('" + fileBaseUrl + "/gccofficialapp/files', cd.image) AS photo, " +
+				"ci.ciid, ci.under_guidelines, ci.penalty, " +
+				"CONCAT('" + fileBaseUrl + "/gccofficialapp/files', ani.image1) AS finephoto, " +
+				"DATE_FORMAT(ani.cdate,'%d-%m-%Y') AS FineDate, " +
+				"ani.cdate AS finedate " +
+				"FROM construction_details cd " +
+				"LEFT JOIN construction_inspection ci ON ci.cdid = cd.cdid " +
+				"LEFT JOIN lock_and_sealed_notice_inspection ani ON ani.cdid = cd.cdid " +
+				"LEFT JOIN after_notice_inspection fni ON fni.cdid = cd.cdid " +
+				"WHERE cd.isactive = 1 " +
+				"AND ci.isactive = 1 " +
+				"AND ci.penalty IN ('High','Medium','Low') " +
+				"AND cd.ward = ? " +
+				"AND fni.status IN ('locked','stop')";
+
+		List<Map<String, Object>> result = jdbcGuidlines.queryForList(sql, ward);
+
+		LocalDate today = LocalDate.now();
+
+		for (Map<String, Object> row : result) {
+
+			Boolean allowRevisit = false;
+			Object cdateObj = row.get("finedate");
+
+			if (cdateObj != null) {
+
+				LocalDate cdate = null;
+
+				if (cdateObj instanceof LocalDate) {
+					cdate = (LocalDate) cdateObj;
+				} else if (cdateObj instanceof java.sql.Date) {
+					cdate = ((java.sql.Date) cdateObj).toLocalDate();
+				} else if (cdateObj instanceof java.sql.Timestamp) {
+					cdate = ((java.sql.Timestamp) cdateObj).toLocalDateTime().toLocalDate();
+				} else if (cdateObj instanceof LocalDateTime) {
+					cdate = ((LocalDateTime) cdateObj).toLocalDate();
+				} else if (cdateObj instanceof String) {
+					try {
+						DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+						cdate = LocalDateTime.parse((String) cdateObj, dtf).toLocalDate();
+					} catch (Exception e) {
+						System.err.println("Could not parse cdate: " + cdateObj);
+					}
+				}
+
+				// if (cdate != null) {
+
+				// LocalDate finalDate = cdate.plusDays(7);
+
+				// allowRevisit = !today.isBefore(finalDate);
+
+				// System.out.println("ID: " + row.get("cdid")
+				// + " | finalDate: " + finalDate
+				// + " | today: " + today
+				// + " | allowRevisit: " + allowRevisit);
+				// }
+			}
+
+			// row.put("allowRevisit", allowRevisit);
+
+			// String downloadLink =
+			// "http://localhost:8067/gccofficialapp/api/pdf/finalnotice?" +
+			// "cdid=" + row.get("cdid") +
+			// "&ciid=" + row.get("ciid");
+
+			// row.put("downloadNoticeLink", downloadLink);
+		}
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("status", "Success");
+		response.put("message", "Construction List with Guidelines & Answers.");
+		response.put("data", result);
+
+		return Collections.singletonList(response);
 	}
 }

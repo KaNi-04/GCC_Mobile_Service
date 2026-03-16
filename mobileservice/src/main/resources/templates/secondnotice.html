@@ -63,12 +63,12 @@
     </div>
 
     <!-- Notice Title -->
-    <div class="title">NOTICE - I</div>
+    <div class="title">NOTICE - II</div>
     <div class="subtitle">UNDER CLEAN AND SAFE CONSTRUCTION GUIDELINES 2025</div>
 
     <!-- Date aligned to right -->
     <div class="date-container">
-        Date: <span th:text="${date}">dd/mm/yyyy</span>
+        Date: <span th:text="${ndate}">dd/mm/yyyy</span>
     </div>
 
     <!-- Notice Body -->
@@ -92,13 +92,19 @@
         directed to:
     </p>
 
-    <ol>
-        <li>Rectify the violations within 15 days from the date of receipt of this notice.</li>
-        <li>Submit photographic/video evidence and compliance report to this office upon rectification.</li>
-    </ol>
+    <!-- <ol>
+    <li>Rectify the violations within 15 days from the date of receipt of this notice.</li>
+    <li>Submit photographic/video evidence and compliance report to this office upon rectification.</li>
+</ol> -->
 
-    <p>Failure to comply within 15 days from the date of receipt of this notice shall attract:</p>
-    <ol>
+    <p>On <span th:text="${date}">dd/mm/yyyy</span> the Greater Chennai Corporation has issued a notice and
+        instructed you to rectify the violations on your Construction within 15
+        days:</p>
+
+
+    <p>Accordingly it has been found that the violations on your Construction site
+        have not been rectified yet. </p>
+    <!-- <ol>
         <li>
             Penalty of Rs <u><span th:text="'&nbsp;&nbsp;' + ${fineAmount} + '&nbsp;&nbsp;'"></span></u>
             (<span th:text="'&nbsp;&nbsp;' + ${fineAmountWords} + '&nbsp;&nbsp;'"></span>)
@@ -107,7 +113,12 @@
             Failing to comply within 7 Days of imposing of fine may result in a
             <strong>“Stop Work Notice”</strong> and construction activity at your site will be halted.
         </li>
-    </ol>
+    </ol> -->
+
+    <p>Hence the penalty of Rs. <span th:text="'&nbsp;&nbsp;' + ${fineAmount} + '&nbsp;&nbsp;'"></span> has been issued
+        to your Construction site.
+        Failing to rectify the violations within 7 Days of imposing of fine, may result in
+        “stop work notice” and construction activity at your site will be halted. </p>
 
     <!-- Footer Signature -->
     <div class="footer">

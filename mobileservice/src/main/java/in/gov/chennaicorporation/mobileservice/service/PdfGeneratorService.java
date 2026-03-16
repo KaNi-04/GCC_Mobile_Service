@@ -16,7 +16,7 @@ import java.util.Map;
 
 @Service
 public class PdfGeneratorService {
-	@Autowired
+    @Autowired
     private TemplateEngine templateEngine;
 
     public byte[] generatePdf(Map<String, Object> data) {
@@ -24,6 +24,48 @@ public class PdfGeneratorService {
         context.setVariables(data);
 
         String htmlContent = templateEngine.process("pdf-template", context);
+
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        PdfRendererBuilder builder = new PdfRendererBuilder();
+        builder.useFastMode();
+        builder.withHtmlContent(htmlContent, null);
+        builder.toStream(os);
+        try {
+            builder.run();
+        } catch (IOException e) {
+            e.printStackTrace(); // or log it properly
+            throw new RuntimeException("PDF generation failed", e);
+        }
+
+        return os.toByteArray();
+    }
+
+    public byte[] generatePdfSecondNotice(Map<String, Object> data) {
+        Context context = new Context();
+        context.setVariables(data);
+
+        String htmlContent = templateEngine.process("secondnotice", context);
+
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        PdfRendererBuilder builder = new PdfRendererBuilder();
+        builder.useFastMode();
+        builder.withHtmlContent(htmlContent, null);
+        builder.toStream(os);
+        try {
+            builder.run();
+        } catch (IOException e) {
+            e.printStackTrace(); // or log it properly
+            throw new RuntimeException("PDF generation failed", e);
+        }
+
+        return os.toByteArray();
+    }
+
+    public byte[] generatePdfFinalNotice(Map<String, Object> data) {
+        Context context = new Context();
+        context.setVariables(data);
+
+        String htmlContent = templateEngine.process("finalnotice", context);
 
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         PdfRendererBuilder builder = new PdfRendererBuilder();

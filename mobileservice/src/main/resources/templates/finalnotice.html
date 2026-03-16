@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <!-- <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }
+
+        .header {
+            text-align: center;
+        }
+
+        .header img {
+            width: 100px;
+            height: auto;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        /* .date-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }  */
+
+        .date-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .to-container {
+            margin-bottom: 20px;
+        }
+
+        .violations {
+            margin-left: 20px;
+        }
+
+        .footer {
+            /*position: absolute;*/
+            bottom: 40px;
+            right: 40px;
+            text-align: left;
+        }
+
+        body {
+            font-family: "Times New Roman", serif;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        .subject-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .subject-label {
+            width: 120px;
+            font-weight: bold;
+        }
+
+        .subject-text {
+            flex: 1;
+            text-align: justify;
+        }
+
+        .center-stars {
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .letter-body {
+            text-align: justify;
+            text-indent: 40px;
+            margin-top: 10px;
+        }
+    </style> -->
+
+    <style>
+        @page {
+            size: A4;
+            margin: 25px 40px;
+        }
+
+        body {
+            font-family: "Times New Roman", serif;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+        .header {
+            text-align: center;
+        }
+
+        .header img {
+            width: 70px;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .date-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+
+        .to-container {
+            margin-bottom: 10px;
+        }
+
+        .subject-row {
+            display: flex;
+            margin-bottom: 5px;
+        }
+
+        .subject-label {
+            width: 90px;
+            font-weight: bold;
+        }
+
+        .subject-text {
+            flex: 1;
+            text-align: justify;
+        }
+
+        .center-stars {
+            text-align: center;
+            margin: 5px 0;
+        }
+
+        p {
+            text-align: justify;
+            margin: 6px 0;
+        }
+
+        .letter-body {
+            text-indent: 30px;
+        }
+
+        .footer {
+            margin-top: 25px;
+            text-align: left;
+        }
+
+        /* Prevent page breaks */
+        body,
+        p,
+        div {
+            page-break-inside: avoid;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- GCC Logo and Header -->
+    <div class="header">
+        <img src="https://chennaicorporation.gov.in/gcc/images/270-2709575_greater-chennai-corporation-dr-greater-chennai-corporation-logo.png"
+            alt="GCC Logo" width="40px" />
+        <div style="font-size: 18px; font-weight: bold;">Greater Chennai Corporation</div>
+        <div style="font-size: 16px;">Chennai</div>
+    </div>
+
+    <!-- Notice Title -->
+    <div class="title">STOP WORK NOTICE</div>
+    <div class="subtitle">UNDER CLEAN AND SAFE CONSTRUCTION GUIDELINES 2025</div>
+
+    <!-- Date aligned to right -->
+
+    <div class="date-container">
+        Date: <span th:text="${ndate}">dd/mm/yyyy</span>
+    </div>
+
+    <div class="to-container">
+        To: <span th:text="${contractor_name}"></span>
+    </div>
+
+    <!-- Notice Body -->
+
+
+    <div class="subject-row">
+        <div class="subject-label">Subject:</div>
+
+        <div class="subject-text">
+            Greater Chennai Corporation – Zone <span th:text="${zone}"></span>,
+            Unit <span th:text="${unit}"></span>,
+            Division <span th:text="${ward}"></span> –
+            Stop Work Notice – Non-Compliance with Clean and Safe Construction
+            Guidelines 2025 – Reg.
+        </div>
+    </div>
+
+    <div class="center-stars">
+        *****
+    </div>
+
+    <p>Sir/Madam,</p>
+
+    <p class="letter-body">
+        This is to bring to your notice that despite the earlier notice issued
+        dated <span th:text="${date}"></span>, your construction site located at
+        <span th:text="${siteLocation}"></span> has failed to comply with the
+        Clean and Safe Construction Guidelines 2025 issued by the Greater Chennai Corporation.
+    </p>
+
+
+    <p class="letter-body">
+        As per clause (<span th:text="${#strings.arrayJoin(clause, ', ')}"></span>) of the Guidelines, and after
+        allowing the
+        stipulated 15-days period for rectification, the violations still persist, a fine
+        amount of Rs. <span th:text="'&nbsp;&nbsp;' + ${fineAmount} + '&nbsp;&nbsp;'"></span>
+        (Rupees <span th:text="'&nbsp;&nbsp;' + ${fineAmountWords} + '&nbsp;&nbsp;'"></span>)
+        is imposed and again a 7-days period for rectification is given. No
+        satisfactory photographic/video evidence or compliance report has been
+        submitted to this office.
+    </p>
+
+    <p>Therefore, in accordance with GCC norms, you are hereby directed to
+        immediately stop all construction activities at the above-mentioned site with
+        effect from the date of this notice. You are not permitted to resume any
+        form of construction work until further orders and written clearance are
+        issued by the competent authority of the GCC. </p>
+
+
+    <p>
+        Failure to comply with this stop-work Notice will invite further legal
+        action, including but not limited to sealing of the premises under clean and
+        safe construction guide lines 2025. For any clarification, you may contact the
+        Assistant Engineer (DIV) of your respective zone.
+    </p>
+
+
+    <!-- Footer Signature -->
+    <div class="footer">
+        <p>
+            Issued By:<br />
+            AE/JE – <span th:text="${engineerName}">_____</span><br />
+            Division - <span th:text="${ward}">_____</span><br />
+            Zone <span th:text="${zone}">_____</span>, GCC
+        </p>
+    </div>
+
+</body>
+
+</html>
