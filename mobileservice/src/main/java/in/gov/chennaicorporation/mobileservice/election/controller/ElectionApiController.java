@@ -9,9 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import in.gov.chennaicorporation.mobileservice.election.service.ElectionService;
@@ -122,4 +124,64 @@ public class ElectionApiController {
         }
     }
 
+    @PostMapping("/savePollPersonUpdate")
+    public ResponseEntity<?> savePollPersonUpdate(
+            @RequestParam(required = false) Integer slno,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String designationId,
+            @RequestParam(required = false) String sex,
+            @RequestParam(required = false) String address1,
+            @RequestParam(required = false) String address2,
+            @RequestParam(required = false) String address3,
+            @RequestParam(required = false) String pincode,
+            @RequestParam(required = false) String nearPolicesta,
+            @RequestParam(required = false) String phoneNo,
+            @RequestParam(required = false) String mobileNo,
+            @RequestParam(required = false) Integer homeDist,
+            @RequestParam(required = false) Integer nativeAcNo,
+            @RequestParam(required = false) Integer resideAcNo,
+            @RequestParam(required = false) Integer electorAcNo,
+            @RequestParam(required = false) Integer electorPartNo,
+            @RequestParam(required = false) Integer electorSlNo,
+            @RequestParam(required = false) String electorEpicNo,
+            @RequestParam(required = false) String updatedBy,
+            @RequestParam(required = false) MultipartFile photo) {
+
+        try {
+
+            // SLNO validation
+            if (slno == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "Failed",
+                        "message", "SLNO is mandatory"));
+            }
+
+            // Mobile validation
+            if (mobileNo == null || !mobileNo.matches("\\d{10}")) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "Failed",
+                        "message", "Mobile number must be 10 digits"));
+            }
+
+            // Call service
+            Map<String, Object> result = electionService.savePollPersonUpdate(
+                    slno, name, designationId, sex,
+                    address1, address2, address3,
+                    pincode, nearPolicesta, phoneNo, mobileNo,
+                    homeDist, nativeAcNo, resideAcNo,
+                    electorAcNo, electorPartNo, electorSlNo,
+                    electorEpicNo, updatedBy, photo);
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            return ResponseEntity.status(HttpStatus.OK).body(Map.of(
+                    "status", "Failed",
+                    "message", "Failed to save data",
+                    "error", e.getMessage() // optional (for debugging)
+            ));
+        }
+    }
 }
