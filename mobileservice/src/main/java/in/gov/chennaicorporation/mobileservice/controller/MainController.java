@@ -19,33 +19,39 @@ import in.gov.chennaicorporation.mobileservice.service.OfficialAPIService;
 public class MainController {
 
 	@Autowired
-    private MainService mainService;
-    private final Environment environment;
+	private MainService mainService;
+	private final Environment environment;
 
-    @Autowired
-    public MainController(Environment environment) {
-        this.environment = environment;
-    }
-	
-	
-	@GetMapping({"", "/", "/index"})
+	@Autowired
+	public MainController(Environment environment) {
+		this.environment = environment;
+	}
+
+	@GetMapping({ "", "/", "/index" })
 	public String main(Model model) {
 		String assetsBaseUrl = environment.getProperty("assets.base-url");
 		model.addAttribute("assetsBaseUrl", assetsBaseUrl);
 		return "error";
 	}
-	
-	@GetMapping({"/support"})
+
+	@GetMapping({ "/support" })
 	public String support(Model model) {
 		String assetsBaseUrl = environment.getProperty("assets.base-url");
 		model.addAttribute("assetsBaseUrl", assetsBaseUrl);
 		return "modules/gccofficialapp/support";
 	}
-	
-	@GetMapping({"/policy"})
+
+	@GetMapping({ "/policy" })
 	public String main2(Model model) {
 		String assetsBaseUrl = environment.getProperty("assets.base-url");
 		model.addAttribute("assetsBaseUrl", assetsBaseUrl);
 		return "modules/gccofficialapp/policy";
+	}
+
+	@GetMapping({ "/electionsupport" })
+	public String electionsupport(Model model) {
+		String assetsBaseUrl = environment.getProperty("assets.base-url");
+		model.addAttribute("assetsBaseUrl", assetsBaseUrl);
+		return "modules/gccofficialapp/electionsupport";
 	}
 }
