@@ -56,8 +56,7 @@ public class ElectionService {
             String sql = "SELECT " +
 
             /* Person Details */
-                    "ppn.id AS person_id, " +
-                    "ppn.slno, " +
+                    "ppn.slno AS slno, " +
                     "UPPER(ppn.name) AS name, " +
                     "ppn.age, " +
                     "ppn.sex, " +
@@ -67,54 +66,55 @@ public class ElectionService {
                     "ppn.r_address2, " +
                     "ppn.r_address3, " +
                     "ppn.r_pincode, " +
-                    "ppn.batch_no," +
 
                     /* Department */
-                    "ppn.dept AS dept_id, " +
-                    "dm.dept_name, " +
+                    "ppn.dept AS dept_name, " +
+                    "dm.dept_id, " +
 
                     /* Designation */
-                    "ppn.designation_id AS designation_id, " +
-                    "d.new_designation AS designation_name, " +
+                    // "ppn.designation_id AS designation_id, " +
+                    // "d.new_designation AS designation_name, " +
+                    "ppn.designation AS designation_name, " +
 
                     /* Office */
-                    "ppn.office_id AS office_id, " +
-                    "od.office_name, " +
+                    // "ppn.office_id AS office_id, " +
+                    // "od.office_name, " +
+                    "ppn.office as office_name, " +
 
                     /* Image */
                     "CONCAT('" + fileBaseUrl + "/election/files', ppm.image_path) AS img_full_path, " +
 
                     /* Office Full Address */
                     "CONCAT( " +
-                    "COALESCE(od.address1, ''), ' ', " +
-                    "COALESCE(od.address2, ''), ' ', " +
-                    "COALESCE(od.address3, ''), ' ', " +
-                    "COALESCE(od.pincode, '') " +
+                    "COALESCE(ppn.address1, ''), ' ', " +
+                    "COALESCE(ppn.address2, ''), ' ', " +
+                    "COALESCE(ppn.address3, ''), ' ', " +
+                    "COALESCE(ppn.pincode, '') " +
                     ") AS office_address, " +
 
                     /* Constituencies */
                     "ppn.native_ac_no, ac_native.ac_name AS native_constituency, " +
                     "ppn.reside_ac_no, ac_reside.ac_name AS residential_constituency, " +
                     "ppn.elector_ac_no, ac_elector.ac_name AS elector_constituency, " +
-                    "od.work_ac_no, ac_work.ac_name AS working_constituency, " +
-                    "ppn.elector_epic_no AS elector_epic_no, " +
+                    "ppn.work_ac_no, ac_work.ac_name AS working_constituency, " +
+                    "ppn.epic_no AS elector_epic_no, " +
                     "ppn.elector_part_no AS elector_part_no, " +
                     "ppn.elector_sl_no AS elector_sl_no, " +
                     "ppn.elector_ac_no AS elector_ac_no " +
 
-                    "FROM poll_person_new ppn " +
+                    "FROM poll_person ppn " +
 
-                    "LEFT JOIN poll_person_images ppm ON ppm.ppn_id = ppn.id " +
+                    "LEFT JOIN poll_person_images ppm ON ppm.slno = ppn.slno " +
                     "LEFT JOIN dept_master dm ON ppn.dept = dm.dept_id " +
-                    "LEFT JOIN designation d ON ppn.designation_id = d.desig_id " +
-                    "LEFT JOIN office_details od ON ppn.office_id = od.id " +
+                    // "LEFT JOIN designation d ON ppn.designation_id = d.desig_id " +
+                    // "LEFT JOIN office_details od ON ppn.office_id = od.id " +
                     "LEFT JOIN ac_list_all ac_native ON ac_native.ac_no = ppn.native_ac_no " +
                     "LEFT JOIN ac_list_all ac_reside ON ac_reside.ac_no = ppn.reside_ac_no " +
                     "LEFT JOIN ac_list_all ac_elector ON ac_elector.ac_no = ppn.elector_ac_no " +
-                    "LEFT JOIN ac_list_all ac_work ON ac_work.ac_no = od.work_ac_no " +
+                    "LEFT JOIN ac_list_all ac_work ON ac_work.ac_no = ppn.work_ac_no " +
 
-                    "WHERE ppn.slno = ? " +
-                    "AND ppn.is_active = 1 AND ppn.is_delete = 0";
+                    "WHERE ppn.slno = ? ";
+            // "AND ppn.is_active = 1 AND ppn.is_delete = 0";
 
             List<Map<String, Object>> data = jdbcElectionTemplate.queryForList(sql, slno);
 
@@ -122,11 +122,41 @@ public class ElectionService {
             // throw new RuntimeException("Your details are not registered");
             // }
 
-            /* 🔥 Convert all NULL values to empty string */
+            /* Convert all NULL values to empty string */
+            // for (Map<String, Object> row : data) {
+            // for (Map.Entry<String, Object> entry : row.entrySet()) {
+            // if (entry.getValue() == null) {
+            // entry.setValue("");
+            // }
+            // }
+            // }
             for (Map<String, Object> row : data) {
+
                 for (Map.Entry<String, Object> entry : row.entrySet()) {
+
+                    // Convert NULL → empty string
                     if (entry.getValue() == null) {
                         entry.setValue("");
+                        continue;
+                    }
+
+                    String key = entry.getKey();
+                    Object value = entry.getValue();
+
+                    // Convert slno → String
+                    if ("slno".equalsIgnoreCase(key)) {
+                        entry.setValue(String.valueOf(value));
+                    }
+
+                    // Convert AC numbers → Integer
+                    if ("native_ac_no".equalsIgnoreCase(key) ||
+                            "reside_ac_no".equalsIgnoreCase(key)) {
+
+                        try {
+                            entry.setValue(Integer.parseInt(value.toString()));
+                        } catch (Exception ex) {
+                            entry.setValue(0); // fallback if invalid
+                        }
                     }
                 }
             }
@@ -144,7 +174,7 @@ public class ElectionService {
         try {
 
             String sql = "SELECT r_mobile_no AS mobile_number, slno " +
-                    "FROM poll_person_new " +
+                    "FROM poll_person " +
                     "WHERE r_mobile_no = ?";
 
             List<Map<String, Object>> data = jdbcElectionTemplate.queryForList(sql, mobileNo);
@@ -197,7 +227,8 @@ public class ElectionService {
     }
 
     private String saveimage(MultipartFile file, String slno) {
-        String uploadDirectory = environment.getProperty("file.upload.directory");
+        // String uploadDirectory = environment.getProperty("file.upload.directory");
+        String uploadDirectory = environment.getProperty("file.upload.directory.web");
         String serviceFolderName = environment.getProperty("polling_person_images_foldername");
         var year = DateTimeUtil.getCurrentYear();
         // var month = DateTimeUtil.getCurrentMonth();
@@ -318,8 +349,12 @@ public class ElectionService {
                     updatedBy);
 
             response.put("status", "success");
-            response.put("message", "Poll person update request submitted successfully");
+            response.put("message",
+                    "Your profile update request have submitted succesfully. The requested changes will be updated within a week");
 
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Error while saving: " + e.getMessage());

@@ -177,11 +177,11 @@ public class ElectionApiController {
         } catch (Exception e) {
             e.printStackTrace();
 
-            return ResponseEntity.status(HttpStatus.OK).body(Map.of(
-                    "status", "Failed",
-                    "message", "Failed to save data",
-                    "error", e.getMessage() // optional (for debugging)
-            ));
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", "Failed");
+            errorResponse.put("message", e.getMessage() != null ? e.getMessage() : "Failed to save data");
+
+            return ResponseEntity.status(HttpStatus.OK).body(errorResponse);
         }
     }
 }
