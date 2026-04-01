@@ -240,6 +240,11 @@ public class DriverService {
 					sqlQuery = "SELECT `loginid`, `name`, `username`, `hub_id`  FROM `driver_login` WHERE (`username`=? AND `password`=?) AND (`isactive`=1 AND `isdelete`=0) LIMIT 1";
 					result = jdbcFoodTemplate.queryForList(sqlQuery, username, password);
 					break;
+					
+				case "pmc":
+					sqlQuery = "SELECT `loginid`, `name`, `username`, `hub_id`  FROM `driver_login` WHERE (`username`=? AND `password`=?) AND (`isactive`=1 AND `isdelete`=0) LIMIT 1";
+					result = jdbcFoodTemplate.queryForList(sqlQuery, username, password);
+					break;
 				// additional cases can be added here
 				default:
 					sqlQuery = "SELECT `loginid`, `name`, `username`  FROM `driver_login` WHERE (`username`=? AND `password`=?) AND (`isactive`=1 AND `isdelete`=0) LIMIT 1";
