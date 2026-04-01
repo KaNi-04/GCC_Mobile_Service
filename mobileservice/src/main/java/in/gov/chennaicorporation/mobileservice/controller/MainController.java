@@ -47,6 +47,13 @@ public class MainController {
 		model.addAttribute("assetsBaseUrl", assetsBaseUrl);
 		return "modules/gccofficialapp/policy";
 	}
+	
+	@GetMapping({ "/foodschemepolicy" })
+	public String foodschemepolicy(Model model) {
+		String assetsBaseUrl = environment.getProperty("assets.base-url");
+		model.addAttribute("assetsBaseUrl", assetsBaseUrl);
+		return "modules/gccofficialapp/foodschemepolicy";
+	}
 
 	@GetMapping({ "/electionsupport" })
 	public String electionsupport(Model model) {

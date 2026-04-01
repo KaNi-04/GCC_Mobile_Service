@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,8 +41,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openhtmltopdf.css.style.derived.StringValue;
 
@@ -149,12 +152,17 @@ public class PmcService {
 
         uploadDirectory = uploadDirectory + serviceFolderName + "pmc/" + filetype + "/" + year + "/" + month + "/"
                 + date;
+        
+        System.out.println("Uploading file: " + file.getOriginalFilename());
+        System.out.println("Upload directory: " + uploadDirectory);
+
 
         try {
-            // Create directory if it doesn't exist
+        	   // Create directory if it doesn't exist
             Path directoryPath = Paths.get(uploadDirectory);
             if (!Files.exists(directoryPath)) {
                 Files.createDirectories(directoryPath);
+                System.out.println("Directory created: " + directoryPath);
             }
 
             // Datetime string
@@ -163,8 +171,25 @@ public class PmcService {
             datetimetxt = datetimetxt + "_" + generateRandomFileString(6); // Attached Random text
 
             // File name
-            String fileName = name + "_" + id + "_" + datetimetxt + "_" + file.getOriginalFilename();
-            fileName = fileName.replaceAll("\\s+", ""); // Remove space on filename
+//            String fileName = name + "_" + id + "_" + datetimetxt + "_" + file.getOriginalFilename();
+//            fileName = fileName.replaceAll("\\s+", ""); // Remove space on filename
+            //
+            String originalFileName = file.getOriginalFilename();
+
+            System.out.println("Original filename BEFORE fix: " + originalFileName);
+
+            if (originalFileName == null || originalFileName.trim().isEmpty()) {
+                originalFileName = "q_" + id + "_" + System.currentTimeMillis() + ".jpg";
+            }
+
+            // optional sanitize
+            originalFileName = originalFileName.replaceAll("[^a-zA-Z0-9\\.\\-_]", "_");
+
+            // File name
+            String fileName = name + "_" + id + "_" + datetimetxt + "_" + originalFileName;
+            fileName = fileName.replaceAll("\\s+", "");
+            
+            //
 
             String filePath = uploadDirectory + "/" + fileName;
 
@@ -173,6 +198,15 @@ public class PmcService {
 
             // Create a new Path object
             Path path = Paths.get(filePath);
+            
+            
+            System.out.println("Uploading file: " + file.getOriginalFilename());
+            System.out.println("Upload directory: " + uploadDirectory);
+            System.out.println("Full file path: " + filePath);
+            System.out.println("Directory exists: " + Files.exists(directoryPath));
+            System.out.println("Directory writable: " + Files.isWritable(directoryPath));
+            System.out.println("File size: " + file.getSize());
+            System.out.println("Content type: " + file.getContentType());
 
             // Get the bytes of the file
             byte[] bytes = file.getBytes();
@@ -184,7 +218,11 @@ public class PmcService {
                 // Write the bytes to the file
                 Files.write(path, compressedBytes);
             } else {
-                // Write the bytes to the file
+               
+            	
+            	System.out.println("File size: " + file.getSize());
+            	System.out.println("Content type: " + file.getContentType());
+            	 // Write the bytes to the file
                 Files.write(path, bytes);
             }
             // Get current date & time
@@ -204,7 +242,10 @@ public class PmcService {
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Failed to save file " + file.getOriginalFilename());
-            return "error";
+            //return "error";
+            
+            
+            return e.getMessage();
         }
     }
 
@@ -868,7 +909,7 @@ public class PmcService {
 
             List<Map<String, Object>> rows = jdbcPmcTemplate.queryForList(sql, pmc_audit_id);
 
-            Map<Integer, Map<String, Object>> dispatchMap = new LinkedHashMap<>();
+            Map<Integer, Map<String, Object>> dispatchMap = new LinkedHashMap<>();  
 
             for (Map<String, Object> row : rows) {
 
@@ -938,5 +979,828 @@ public class PmcService {
 
         return Collections.singletonList(response);
     }
+    
+    
+    public List<Map<String, Object>> getFinalFoodCountPerHubId(int shiftid, int loginid, String date) {
+
+        String searchDate = convertDateFormat(date, 0);
+        // System.out.println("searchDate="+searchDate);
+
+        Map<String, Object> response = new HashMap<>();
+        Map<String, Object> data = new HashMap<>();
+
+        try {
+
+           
+            // 1️ Get hub_id safely
+            String hubSql = " SELECT hub_id  "
+                    + "	            FROM driver_login  "
+                    + "	            WHERE loginid = ? "
+                    + "	            AND isactive = 1 "
+                    + "	            AND isdelete = 0 ";
+
+            List<Integer> hubList = jdbcPmcTemplate.query(
+                    hubSql,
+                    (rs, rowNum) -> rs.getInt("hub_id"),
+                    loginid);
+
+            if (hubList.isEmpty() || hubList.get(0) == null || hubList.get(0) == 0) {
+                response.put("message", "No hub mapped for login id");
+                response.put("status", "Failed");
+                return Collections.singletonList(response);
+
+            }
+
+            Integer hub_id = hubList.get(0);
+
+            // 🔹 Zone-wise Sum
+            String zoneSql = " SELECT  "
+                    + "	                lm.location, "
+                    + "	                SUM( "
+                    + "	                    COALESCE(dr.permanent,0) + "
+                    + "	                    COALESCE(dr.nulm,0) + "
+                    + "	                    COALESCE(dr.private,0) + "
+                    + "	                    COALESCE(dr.nmr,0) + "
+                    + "	                    COALESCE(dr.others,0) "
+                    + "	                ) AS total_count "
+                    + "	            FROM daily_request dr "
+                    + "	            left JOIN location_mapping lm  "
+                    + "	                ON dr.request_by = lm.siloginid AND dr.ward=lm.ward "
+                    + "	            WHERE dr.shiftid = ? "
+                    + "	            AND dr.required_date = ? "
+                    + "	            AND dr.hub_id = ? "
+                    + "	            AND dr.isactive = 1 "
+                    + "	            AND dr.isdelete = 0 "
+                    + "	            GROUP BY lm.location ";
+
+            List<Map<String, Object>> zoneData = jdbcPmcTemplate.queryForList(zoneSql, shiftid, searchDate, hub_id);
+
+            // 🔹 3️ Total Sum
+            String totalSql = " SELECT  "
+                    + "	                SUM( "
+                    + "	                    COALESCE(permanent,0) + "
+                    + "	                    COALESCE(nulm,0) + "
+                    + "	                    COALESCE(private,0) + "
+                    + "	                    COALESCE(nmr,0) + "
+                    + "	                    COALESCE(others,0) "
+                    + "	                ) "
+                    + "	            FROM daily_request "
+                    + "	            WHERE shiftid = ? "
+                    + "	            AND required_date = ? "
+                    + "	            AND hub_id = ? "
+                    + "	            AND isactive = 1 "
+                    + "	            AND isdelete = 0 ";
+
+            Integer totalCount = jdbcPmcTemplate.queryForObject(
+                    totalSql, Integer.class,
+                    shiftid, searchDate, hub_id);
+
+            // 🔹 Shift
+            String shiftSql = " SELECT  "
+                    + "	                name "
+                    + "	            FROM shift_master "
+                    + "	            WHERE shiftid = ? "
+                    + "	            AND isactive = 1 "
+                    + "	            AND isdelete = 0 ";
+
+            String shift_name = jdbcPmcTemplate.queryForObject(
+                    shiftSql, String.class,
+                    shiftid);
+
+            if (totalCount == null) {
+                totalCount = 0;
+            }
+
+            // 🔹 4️ If no data found
+            if (zoneData.isEmpty() || totalCount == 0) {
+                response.put("message", "No data available for this hub");
+                response.put("status", "Failed");
+                return Collections.singletonList(response);
+
+            }
+
+            // 🔹 5️ Success Response
+            data.put("locationwisedata", zoneData);
+            data.put("total_food_count", totalCount);
+
+            response.put("hub_id", hub_id);
+            response.put("feedbackstatus", "pending");
+            response.put("shift_name", shift_name);
+            response.put("req_date", date);
+            response.put("data", data);
+            response.put("message", "Zone Food count Details.");
+            response.put("status", "Success");
+
+        } catch (Exception e) {
+            response.put("message", "Error in getting total food count");
+            response.put("status", "Failed");
+            e.printStackTrace();
+        }
+
+        return Collections.singletonList(response);
+
+    }
+    
+    
+    public List<Map<String, Object>> getNotFilledCategories(int shiftid, int loginid, String date) {
+		
+    	
+    	String searchDate = convertDateFormat(date, 0);
+        // System.out.println("searchDate="+searchDate);
+
+        Map<String, Object> response = new HashMap<>();
+    	try {
+    		
+    		
+    		String zoneSql = " SELECT qcm_id FROM pmc_audit WHERE isactive=1 AND isdelete=0 AND shiftid=? AND audit_date=? AND cby=? ";
+
+            List<Map<String, Object>> filled_categories = jdbcPmcTemplate.queryForList(zoneSql, shiftid, searchDate, loginid);
+            
+            String allCategories_sql= "SELECT * FROM questions_category_master WHERE isactive=1 AND isdelete=0 ORDER BY qcm_id ";
+            
+            List<Map<String, Object>> all_categories = jdbcPmcTemplate.queryForList(allCategories_sql);
+            
+            // Collect filled qcm_id into Set
+            Set<Integer> filledIds = new HashSet<>();
+            for (Map<String, Object> row : filled_categories) {
+                filledIds.add(((Number) row.get("qcm_id")).intValue());
+            }
+
+            // Filter all_categories
+            List<Map<String, Object>> notFilledCategories = new ArrayList<>();
+            for (Map<String, Object> row : all_categories) {
+                Integer qcmId = ((Number) row.get("qcm_id")).intValue();
+                if (!filledIds.contains(qcmId)) {
+                    notFilledCategories.add(row);
+                }
+            }
+            
+            int completed_categories=filled_categories.size();
+            int total_categories=all_categories.size();
+            int pending_categories=total_categories-completed_categories;
+            
+            List<Map<String, Object>> countdata = new ArrayList<>();
+
+            Map<String, Object> countMap = new HashMap<>();
+            countMap.put("completed_categories", completed_categories);
+            countMap.put("total_categories", total_categories);
+            countMap.put("pending_categories", pending_categories);
+
+            countdata.add(countMap);
+                    
+            response.put("data", notFilledCategories);
+            response.put("countdata", countdata);
+    		
+    		 response.put("message", "Fetched UnFilled Categories.");
+             response.put("status", "Success");
+			
+		} catch (Exception e) {
+			response.put("message", "Error in getting UnFilled Categories");
+            response.put("status", "Failed");
+            e.printStackTrace();
+		}
+    	
+    	return Collections.singletonList(response);
+	}
+    
+    
+    
+    
+    public List<Map<String, Object>> getquestionsbycat(int qcm_id) {
+		
+    	String sql = "SELECT "
+                + "    ql.*, "
+                + "    CASE   "
+                + "        WHEN (ql.question_type = 'select' OR ql.question_type = 'radio') AND COUNT(qov.aid) > 0 THEN JSON_ARRAYAGG( "
+                + "            JSON_OBJECT( "
+                + "                'option_id', qov.aid, "
+                + "                'english_name', qov.english_name,"
+                + "				   'tamil_name',qov.tamil_name, "
+                + "				   'opt_mandatory',qov.opt_mandatory, "
+                + "                'value', qov.aid, "
+                + "				   'remarksfield', (qov.remarks_required = 1), "
+                + "				   'imgfield', (qov.img_required = 1), "
+                + "                'orderby', qov.orderby "
+                + "            ) "
+                + "        ) "
+                + "        ELSE JSON_ARRAY()  "
+                + "    END AS options "
+                + "FROM pmc_questions_master ql "
+                + "LEFT JOIN pmc_answer_master qov  "
+                + "    ON qov.qid = ql.qid  "
+                + "    AND qov.isactive = 1  "
+                + "    AND qov.isdelete = 0 "
+                + "WHERE ql.isactive = 1 AND ql.qcm_id=? "
+                + "GROUP BY ql.qid";
+
+        List<Map<String, Object>> result = jdbcPmcTemplate.queryForList(sql,qcm_id);
+        Iterator<Map<String, Object>> iterator = result.iterator();
+        ObjectMapper mapper = new ObjectMapper();
+        while (iterator.hasNext()) {
+            Map<String, Object> row = iterator.next();
+            Object optionsRaw = row.get("options");
+            if (optionsRaw != null && optionsRaw instanceof String) {
+                try {
+                    List<Map<String, Object>> optionsParsed = mapper.readValue((String) optionsRaw, List.class);
+
+                    // Sort options by 'orderby'
+                    optionsParsed.sort(Comparator.comparing(opt -> {
+                        Object order = opt.get("orderby");
+                        return (order instanceof Number) ? ((Number) order).intValue() : 0;
+                    }));
+
+                    row.put("options", optionsParsed);
+                } catch (Exception e) {
+                    row.put("options", null); // fallback if malformed
+                }
+            }
+        }
+        
+        String cat_sql="SELECT * FROM questions_category_master WHERE isactive=1 AND isdelete=0 AND qcm_id=? ";
+        List<Map<String, Object>> category_details = jdbcPmcTemplate.queryForList(cat_sql,qcm_id);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "Success");
+        response.put("message", "PMC feedback Question List.");
+        response.put("data", result);
+        response.put("category_details", category_details);
+
+        return Collections.singletonList(response);
+	}
+    
+    @Transactional
+    public List<?> saveFeedbackbycat(
+            String loginId, String auditdate, String shiftid,
+            String latitude, String longitude, String zone, String ward, String address,
+            String final_food_count, String foodid, String food_others,
+            String hub_id, String qcm_id,
+            String questionAnswers, MultipartFile[] images) {
+    	
+    	System.out.println("images="+images);
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+
+            String formattedDate = convertDateFormat(auditdate, 0);
+            
+            final int finalFoodCount = 
+            	    (final_food_count != null && !final_food_count.trim().isEmpty())
+            	        ? Integer.parseInt(final_food_count.trim())
+            	        : 0;
+
+            // ✅ 1. Insert into pmc_audit
+            String auditSql = "INSERT INTO pmc_audit (audit_date, shiftid, latitude, longitude, zone, ward, address, qcm_id, final_food_count, foodid, food_others, cby, hub_id) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+            KeyHolder keyHolder = new GeneratedKeyHolder();
+
+            jdbcPmcTemplate.update(connection -> {
+                PreparedStatement ps = connection.prepareStatement(auditSql, Statement.RETURN_GENERATED_KEYS);
+                ps.setString(1, formattedDate);
+                ps.setInt(2, Integer.parseInt(shiftid));
+                ps.setString(3, latitude);
+                ps.setString(4, longitude);
+                ps.setString(5, zone);
+                ps.setString(6, ward);
+                ps.setString(7, address);
+                ps.setInt(8, Integer.parseInt(qcm_id));
+                ps.setInt(9, finalFoodCount);
+                ps.setInt(10, Integer.parseInt(foodid));
+                ps.setString(11, food_others);
+                ps.setInt(12, Integer.parseInt(loginId));
+                ps.setInt(13, Integer.parseInt(hub_id));
+                return ps;
+            }, keyHolder);
+
+            int auditId = keyHolder.getKey().intValue();
+            String auditIdStr = String.valueOf(auditId);
+
+            // ✅ 2. Parse JSON
+            ObjectMapper mapper = new ObjectMapper();
+            List<Map<String, Object>> qaList = mapper.readValue(
+                    questionAnswers,
+                    new TypeReference<List<Map<String, Object>>>() {}
+            );
+
+            // ✅ 3. Prepare Image Map (qid → file)
+            Map<Integer, MultipartFile> imageMap = new HashMap<>();
+
+            if (images != null) {
+                for (MultipartFile file : images) {
+
+                    String fileName = file.getOriginalFilename();
+
+                    if (fileName != null && fileName.startsWith("q_")) {
+
+                        try {
+                            // Example: q_43_filename.jpg
+                            String[] parts = fileName.split("_");
+
+                            if (parts.length >= 2) {
+                                Integer qidFromFile = Integer.parseInt(parts[1]);
+                                imageMap.put(qidFromFile, file);
+                            }
+
+                        } catch (Exception e) {
+                            System.out.println("Invalid filename format: " + fileName);
+                        }
+                    }
+                }
+            }
+
+            // ✅ 4. Insert into pmc_feedback
+            String feedbackSql = "INSERT INTO pmc_feedback (pmc_audit_id, questions, answer, remarks, image,qcmid,hub_id) VALUES (?, ?, ?, ?, ?,?,?)";
+
+            for (Map<String, Object> qa : qaList) {
+
+                // skip invalid
+                if (qa.get("qid") == null || qa.get("value") == null) continue;
+
+                Integer qid = Integer.parseInt(qa.get("qid").toString());
+                Integer value = Integer.parseInt(qa.get("value").toString());
+                String remarks = qa.get("remarks") != null ? qa.get("remarks").toString() : null;
+
+                String imagePath = null;
+
+                // ✅ NEW: get image using qid
+                MultipartFile file = imageMap.get(qid);
+
+                if (file != null && !file.isEmpty()) {
+
+                    imagePath = fileUpload(
+                            "pmc_feedback_img",
+                            auditIdStr,
+                            file,
+                            "pmcfeedback"
+                    );
+                }
+
+                // ✅ insert feedback row
+                jdbcPmcTemplate.update(feedbackSql,
+                        auditId,
+                        qid,
+                        value,
+                        remarks,
+                        imagePath,
+                        Integer.parseInt(qcm_id),
+                        Integer.parseInt(hub_id)
+                );
+            }
+
+            response.put("status", "Success");
+            response.put("message", "Feedback Saved Successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("status", "Failed");
+            response.put("message", "Error while saving feedback");
+        }
+
+        return Collections.singletonList(response);
+    }
+
+	public List<Map<String, Object>> getselectedmenu(int shiftid, int loginid, String date) {
+		
+		String formattedDate = convertDateFormat(date, 0);
+		 Map<String, Object> response = new HashMap<>();
+		try {
+			
+			// 1️ Get hub_id safely
+            String hubSql = " SELECT hub_id  "
+                    + "	            FROM driver_login  "
+                    + "	            WHERE loginid = ? "
+                    + "	            AND isactive = 1 "
+                    + "	            AND isdelete = 0 ";
+
+            List<Integer> hubList = jdbcPmcTemplate.query(
+                    hubSql,
+                    (rs, rowNum) -> rs.getInt("hub_id"),
+                    loginid);
+
+            if (hubList.isEmpty() || hubList.get(0) == null || hubList.get(0) == 0) {
+                response.put("message", "No hub mapped for login id");
+                response.put("status", "Failed");
+                return Collections.singletonList(response);
+
+            }
+
+            Integer hub_id = hubList.get(0);
+            
+            String totalSql = " SELECT  "
+                    + "	                SUM( "
+                    + "	                    COALESCE(permanent,0) + "
+                    + "	                    COALESCE(nulm,0) + "
+                    + "	                    COALESCE(private,0) + "
+                    + "	                    COALESCE(nmr,0) + "
+                    + "	                    COALESCE(others,0) "
+                    + "	                ) "
+                    + "	            FROM daily_request "
+                    + "	            WHERE shiftid = ? "
+                    + "	            AND required_date = ? "
+                    + "	            AND hub_id = ? "
+                    + "	            AND isactive = 1 "
+                    + "	            AND isdelete = 0 ";
+
+            Integer totalCount = jdbcPmcTemplate.queryForObject(
+                    totalSql, Integer.class,
+                    shiftid, formattedDate, hub_id);
+            
+            
+    		String sql="SELECT pa.foodid,flm.name FROM pmc_audit pa LEFT JOIN food_list_master flm ON flm.foodid=pa.foodid WHERE flm.isactive=1 AND date(pa.audit_date)=? AND pa.shiftid=? AND pa.cby=? LIMIT 1";
+
+    		List<Map<String, Object>> food_details=jdbcPmcTemplate.queryForList(sql,formattedDate,shiftid,loginid);
+    		
+    		response.put("totalCount",totalCount);
+    		response.put("food_details",food_details);
+    		
+    		response.put("message", "Food Details.");
+            response.put("status", "Success");
+			
+		} catch (Exception e) {
+			 response.put("message", "Error in getting Food Details");
+	            response.put("status", "Failed");
+	            e.printStackTrace();
+	        }
+
+	        return Collections.singletonList(response);
+		
+	}
+
+	public List<Map<String, Object>> getfeedbackreport(int shiftid, int loginid, String date) {
+
+	    String formattedDate = convertDateFormat(date, 0);
+	    Map<String, Object> response = new HashMap<>();
+
+	    try {
+
+	        // ✅ 1. Get hub_id
+	        String hubSql = "SELECT hub_id FROM driver_login WHERE loginid=? AND isactive=1 AND isdelete=0";
+
+	        List<Integer> hubList = jdbcPmcTemplate.query(
+	                hubSql,
+	                (rs, rowNum) -> rs.getInt("hub_id"),
+	                loginid
+	        );
+
+	        if (hubList.isEmpty() || hubList.get(0) == null || hubList.get(0) == 0) {
+	            response.put("message", "No hub mapped for login id");
+	            response.put("status", "Failed");
+	            return Collections.singletonList(response);
+	        }
+
+	        Integer hub_id = hubList.get(0);
+
+	        // ✅ 2. Check audit data exists
+	        StringBuilder auditCheckSql = new StringBuilder(
+	        	    "SELECT id FROM pmc_audit WHERE shiftid=? AND hub_id=? AND isactive=1 AND isdelete=0 "
+	        	);
+
+	        	List<Object> auditParams = new ArrayList<>();
+	        	auditParams.add(shiftid);
+	        	auditParams.add(hub_id);
+
+	        	if (date != null && !date.trim().isEmpty()) {
+	        	    auditCheckSql.append(" AND audit_date=? ");
+	        	    auditParams.add(formattedDate);
+	        	}
+
+	        	List<Integer> auditIds = jdbcPmcTemplate.query(
+	        	        auditCheckSql.toString(),
+	        	        (rs, rowNum) -> rs.getInt("id"),
+	        	        auditParams.toArray()
+	        	);
+
+	        if (auditIds.isEmpty()) {
+	            response.put("message", "No data");
+	            response.put("status", "Failed");
+	            return Collections.singletonList(response);
+	        }
+
+	        // ✅ 3. Fetch full flat data
+	        StringBuilder reportSql = new StringBuilder();
+
+	        reportSql.append(
+	            "SELECT pa.id AS audit_id, pa.qcm_id, qcm.audit_category, " +
+	            "pf.questions AS qid, pq.q_english AS question, " +
+	            "pf.answer AS aid, pam.english_name AS answer, " +
+	            "IFNULL(pf.remarks, '') AS remarks, " +
+	            "IFNULL(pf.image, '') AS image, " +
+	            "CASE " +
+	            " WHEN pf.image IS NULL OR pf.image = '' " +
+	            " THEN '' " +
+	            " ELSE CONCAT('" + fileBaseUrl + "/gccofficialapp/files', pf.image) " +
+	            "END AS img_full_path "+
+	            "FROM pmc_audit pa " +
+	            "JOIN pmc_feedback pf ON pf.pmc_audit_id = pa.id AND pf.isactive=1 AND pf.isdelete=0 " +
+	            "JOIN pmc_questions_master pq ON pq.qid = pf.questions AND pq.isactive=1 AND pq.isdelete=0 " +
+	            "JOIN pmc_answer_master pam ON pam.aid = pf.answer AND pam.isactive=1 AND pam.isdelete=0 " +
+	            "JOIN questions_category_master qcm ON qcm.qcm_id = pa.qcm_id AND qcm.isactive=1 AND qcm.isdelete=0 " +
+	            "WHERE pa.shiftid=? AND pa.hub_id=? AND pa.isactive=1 AND pa.isdelete=0 "
+	        );
+	        
+	        
+
+	        List<Object> params = new ArrayList<>();
+
+	        params.add(shiftid);
+	        params.add(hub_id);
+
+	        if (date != null && !date.trim().isEmpty()) {
+	            reportSql.append(" AND pa.audit_date=? ");
+	            params.add(formattedDate);
+	        }
+	        
+	        reportSql.append(" ORDER BY pa.qcm_id, pq.orderby ");
+	        
+	        List<Map<String, Object>> flatData = jdbcPmcTemplate.queryForList(
+	                reportSql.toString(),
+	                params.toArray()
+	        );
+
+	        // ✅ 4. Convert to nested structure
+	        Map<Integer, Map<String, Object>> categoryMap = new LinkedHashMap<>();
+
+	        for (Map<String, Object> row : flatData) {
+
+	            Integer qcmId = (Integer) row.get("qcm_id");
+
+	            // 🔹 create category if not exists
+	            if (!categoryMap.containsKey(qcmId)) {
+
+	                Map<String, Object> category = new HashMap<>();
+	                category.put("qcm_id", qcmId);
+	                category.put("category", row.get("audit_category"));
+	                category.put("questions", new ArrayList<>());
+
+	                categoryMap.put(qcmId, category);
+	            }
+
+	            // 🔹 build question object
+	            Map<String, Object> question = new HashMap<>();
+	            question.put("qid", row.get("qid"));
+	            question.put("question", row.get("question"));
+	            question.put("aid", row.get("aid"));
+	            question.put("answer", row.get("answer"));
+	            question.put("remarks", row.get("remarks"));
+	            //question.put("image", row.get("image"));
+	            question.put("img_full_path", row.get("img_full_path"));
+
+	            // 🔹 add to category
+	            List<Map<String, Object>> questions =
+	                    (List<Map<String, Object>>) categoryMap.get(qcmId).get("questions");
+
+	            questions.add(question);
+	        }
+
+	        // ✅ 5. Final response
+	        List<Map<String, Object>> finalData = new ArrayList<>(categoryMap.values());
+
+	        response.put("data", finalData);
+	        response.put("message", "Food Feedback Details");
+	        response.put("status", "Success");
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        response.put("message", "Error in getting food feedback reports");
+	        response.put("status", "Failed");
+	    }
+
+	    return Collections.singletonList(response);
+	}
+
+	public List<Map<String, Object>> getFoodCountForDispatch(int shiftid, int loginid, String date) {
+		String searchDate = convertDateFormat(date, 0);
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+        	
+        	// 1️ Get hub_id safely
+            String hubSql = " SELECT hub_id  "
+                    + "	            FROM driver_login  "
+                    + "	            WHERE loginid = ? "
+                    + "	            AND isactive = 1 "
+                    + "	            AND isdelete = 0 ";
+
+            List<Integer> hubList = jdbcPmcTemplate.query(
+                    hubSql,
+                    (rs, rowNum) -> rs.getInt("hub_id"),
+                    loginid);
+
+            if (hubList.isEmpty() || hubList.get(0) == null || hubList.get(0) == 0) {
+                response.put("message", "No hub mapped for login id");
+                response.put("status", "Failed");
+                return Collections.singletonList(response);
+
+            }
+
+            Integer hub_id = hubList.get(0);
+
+            int finalFoodCount = 0;
+            int yet_dispatch_count = 0;
+            
+            List<Map<String, Object>> location_foodcount = new ArrayList<>();
+            List<Map<String, Object>> already_assigned = new ArrayList<>();
+
+            String totalSql = " SELECT  "
+                    + "	                SUM( "
+                    + "	                    COALESCE(permanent,0) + "
+                    + "	                    COALESCE(nulm,0) + "
+                    + "	                    COALESCE(private,0) + "
+                    + "	                    COALESCE(nmr,0) + "
+                    + "	                    COALESCE(others,0) "
+                    + "	                ) "
+                    + "	            FROM daily_request "
+                    + "	            WHERE shiftid = ? "
+                    + "	            AND required_date = ? "
+                    + "	            AND hub_id = ? "
+                    + "	            AND isactive = 1 "
+                    + "	            AND isdelete = 0 ";
+
+            Integer totalCount = jdbcPmcTemplate.queryForObject(
+                    totalSql, Integer.class,
+                    shiftid, searchDate, hub_id);
+            
+            finalFoodCount=totalCount;
+            
+            if(finalFoodCount<=0) {
+            	response.put("message", "NO Food Count for this hub");
+                response.put("status", "Failed");
+            }
+            else {
+            	
+            	response.put("totalCount", totalCount);
+                
+                
+                String wardSql = " SELECT  lm.id,lm.location,dr.ward,"
+                        + "	                SUM( "
+                        + "	                    COALESCE(dr.permanent,0) + "
+                        + "	                    COALESCE(dr.nulm,0) + "
+                        + "	                    COALESCE(dr.private,0) + "
+                        + "	                    COALESCE(dr.nmr,0) + "
+                        + "	                    COALESCE(dr.others,0) "
+                        + "	                ) as foodcount "
+                        + "	            FROM daily_request dr "
+                        + " LEFT JOIN location_mapping lm ON lm.ward=dr.ward "
+                        + "	            WHERE dr.shiftid = ? "
+                        + "	            AND dr.required_date = ? "
+                        + "	            AND dr.hub_id = ? "
+                        + "	            AND dr.isactive = 1 "
+                        + "	            AND dr.isdelete = 0 "
+                        + " GROUP BY lm.id,lm.location,dr.ward"
+                        + " ORDER BY dr.ward ";
+
+                location_foodcount = jdbcPmcTemplate.queryForList(wardSql, shiftid, searchDate, hub_id);
+                
+                String disSql = " SELECT  "
+                        + "	       COALESCE(SUM(dfc.food_count),0) FROM pmc_dispatch pd LEFT JOIN pmc_dispatch_food_counts dfc ON dfc.pmc_dispatch_id=pd.id "
+                        + " WHERE date(pd.send_date)=? AND pd.shift_id=? AND pd.hub_id=? "
+                        + "  AND pd.isactive = 1 AND pd.isdelete = 0 AND dfc.isactive = 1 AND dfc.isdelete = 0 ";
+
+                Integer dispatchfoodCount = jdbcPmcTemplate.queryForObject(
+               		 disSql, Integer.class,
+                        searchDate,shiftid,hub_id);
+                
+                yet_dispatch_count = finalFoodCount - dispatchfoodCount;
+
+                String assigned_locationsql = "SELECT dfc.delivery_location  FROM pmc_dispatch pd LEFT JOIN pmc_dispatch_food_counts dfc ON dfc.pmc_dispatch_id=pd.id "
+                		+ "  WHERE date(pd.send_date)=? AND pd.shift_id=? AND pd.hub_id=? "
+                		+ "   AND pd.isactive = 1 AND pd.isdelete = 0 AND dfc.isactive = 1 AND dfc.isdelete = 0";
+                already_assigned = jdbcPmcTemplate.queryForList(assigned_locationsql,  searchDate,shiftid,hub_id);
+                // System.out.println("already_assigned="+already_assigned);
+                
+                Set<Integer> assignedIds = already_assigned.stream()
+                        .map(m -> ((Number) m.get("delivery_location")).intValue())
+                        .collect(Collectors.toSet());
+                
+                location_foodcount = location_foodcount.stream()
+                        .filter(loc -> !assignedIds.contains(((Number) loc.get("id")).intValue()))
+                        .collect(Collectors.toList());
+                
+                String shiftSql = " SELECT  name "
+                        + "	            FROM shift_master "
+                        + "	            WHERE shiftid = ? "
+                        + "	            AND isactive = 1 "
+                        + "	            AND isdelete = 0 ";
+
+                String shift_name = jdbcPmcTemplate.queryForObject(
+                        shiftSql, String.class,
+                        shiftid);
+
+                response.put("shift_name", shift_name);
+                response.put("req_date", date);
+                if (yet_dispatch_count >= 0) {
+                    response.put("yet_dispatch_count", yet_dispatch_count);
+                } else {
+                    response.put("yet_dispatch_count", 0);
+                }
+                
+                response.put("location_foodcount", location_foodcount);
+
+           	    response.put("message", "Food count Details for Dispatch.");
+                response.put("status", "Success");
+            	
+            }
+        	
+             			
+		} catch (Exception e) {
+			response.put("message", "Error in getting food count Details for Dispatch.");
+            response.put("status", "Failed");
+            e.printStackTrace();
+		}
+        return Collections.singletonList(response);
+
+
+	}
+
+	public List<?> savefordispatch(String auditdate, String shiftid, String hub_id, String driver_name,
+			String driver_mob_num, String vehicle_number, MultipartFile packedfoodphoto, MultipartFile vehiclephoto,
+			String loginId, int yet_dispatch_count, String dispatch_food_list) {
+		
+		 Map<String, Object> response = new HashMap<>();
+
+		 String formattedDate = convertDateFormat(auditdate, 0);
+		 System.out.println("formattedDate: " + formattedDate);
+		 System.out.println("shiftid: " + shiftid);
+		 System.out.println("hub_id: " + hub_id);
+		 System.out.println("driver_name: " + driver_name);
+		 System.out.println("dispatch_food_list: " + dispatch_food_list);
+		 try {
+			 
+			 if (packedfoodphoto == null || packedfoodphoto.isEmpty()) {
+				    response.put("status", "Failed");
+				    response.put("message", "Packed food photo missing");
+				    return Collections.singletonList(response);
+				}
+			 
+			 if (dispatch_food_list.isEmpty()) {
+	                response.put("status", "Failed");
+	                response.put("message", "Dispatching Location Details is Empty.");
+	            } else if (yet_dispatch_count <= 0) {
+	                response.put("status", "Failed");
+	                response.put("message", "Dispatch Count is Zero or less than Zero.");
+	            }
+	            else {
+	            	ObjectMapper mapper = new ObjectMapper();
+	            	List<Map<String, Object>> dispatchList = mapper.readValue(dispatch_food_list, List.class);
+	            	
+	            	String packedfoodphoto_url = fileUpload("packedfoodphoto", hub_id, packedfoodphoto,
+	                        "packedfood");
+	                String vehiclephoto_url = fileUpload("vehiclephoto", hub_id, vehiclephoto, "vehiclephoto");
+	                
+	                String auditSql = " INSERT INTO pmc_dispatch "
+	                        + "	            (send_date,driver_name,driver_mob_num,vehicle_number,packed_food_url,vehicle_photo_url,cby,shift_id,hub_id) "
+	                        + "	            VALUES (?,?,?,?,?,?,?,?,?) ";
+
+	                KeyHolder keyHolder = new GeneratedKeyHolder();
+
+	                jdbcPmcTemplate.update(con -> {
+	                    PreparedStatement ps = con.prepareStatement(
+	                            auditSql, Statement.RETURN_GENERATED_KEYS);
+	                    ps.setString(1,formattedDate );
+	                    ps.setString(2, driver_name);
+	                    ps.setString(3, driver_mob_num);
+	                    ps.setString(4, vehicle_number);
+	                    ps.setString(5, packedfoodphoto_url);
+	                    ps.setString(6, vehiclephoto_url);
+	                    ps.setInt(7, Integer.parseInt(loginId));
+	                    ps.setInt(8,Integer.parseInt(shiftid));
+	                    ps.setInt(9,Integer.parseInt(hub_id));
+	                    return ps;
+	                }, keyHolder);
+	                
+	                int pmc_dispatch_id = keyHolder.getKey().intValue();
+
+	                String foodInsertSql = "INSERT INTO pmc_dispatch_food_counts "
+	                        + "(pmc_dispatch_id, delivery_location, food_count) "
+	                        + "VALUES (?,?,?)";
+
+	                for (Map<String, Object> row : dispatchList) {
+
+	                    int locationId = ((Number) row.get("id")).intValue();
+	                    int foodCount = ((Number) row.get("foodcount")).intValue();
+
+	                    jdbcPmcTemplate.update(foodInsertSql,
+	                            pmc_dispatch_id,
+	                            locationId,
+	                            foodCount);
+	                }
+
+
+	                response.put("status", "Success");
+	                response.put("message", "Dispatch Saved Successfully");
+	            }
+	
+		} catch (Exception e) {
+			 response.put("status", "Failed");
+	            response.put("message", e.getMessage());
+	            e.printStackTrace();
+
+		}
+		
+		 return Collections.singletonList(response);
+
+	}
+    
 
 }
