@@ -303,6 +303,29 @@ public class ChildSurveyService {
             }
         }
 
+        // Save surveyor location details single time after loop
+        String zone = params.get("zone");
+        String ward = params.get("ward");
+        String lat = params.get("latitude");
+        if (lat == null)
+            lat = params.get("lat");
+        String lng = params.get("longitude");
+        if (lng == null)
+            lng = params.get("long");
+        String address = params.get("address");
+
+        if (zone != null || lat != null || lng != null) {
+            try {
+                String logindetailsSql = "INSERT INTO surveyor_location_details " +
+                        "(loginId, zone, ward, latitude, longitude, address, is_active, is_delete, cdate) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, 1, 0, NOW())";
+                jdbcChildSurveyTemplate.update(logindetailsSql, cby, zone, ward, lat, lng, address);
+            } catch (Exception e) {
+                System.out.println("❌ Error saving surveyor location details: " + e.getMessage());
+            }
+        }
+
         return "Saved Successfully";
     }
+
 }

@@ -52,7 +52,7 @@ public class ChildSurveyApiController {
     // return ResponseEntity.ok(response);
     // }
 
-    @PostMapping(value = "/save", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @PostMapping(value = "/save", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<?> saveSurvey(@RequestParam Map<String, String> params) {
 
         String result = childSurveyService.saveSurveyFromParams(params);
