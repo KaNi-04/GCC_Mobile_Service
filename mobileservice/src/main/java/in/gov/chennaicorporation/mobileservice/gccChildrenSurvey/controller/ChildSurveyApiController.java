@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.catalina.connector.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -52,7 +53,8 @@ public class ChildSurveyApiController {
     // return ResponseEntity.ok(response);
     // }
 
-    @PostMapping(value = "/save", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
+    @PostMapping(value = "/save", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<?> saveSurvey(@RequestParam Map<String, String> params) {
 
         String result = childSurveyService.saveSurveyFromParams(params);
@@ -60,6 +62,14 @@ public class ChildSurveyApiController {
         return ResponseEntity.ok(Map.of(
                 "status", true,
                 "message", result));
+    }
+
+    @GetMapping("/login")
+    public ResponseEntity<?> getLogin(@RequestParam String mobileNo, String password) {
+
+        Map<String, Object> response = childSurveyService.getLoginDetails(mobileNo, password);
+
+        return ResponseEntity.ok(response);
     }
 
 }

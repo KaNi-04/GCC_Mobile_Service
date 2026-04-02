@@ -100,7 +100,7 @@ public class ChildSurveyService {
 
         if (masterTable != null && !masterTable.isEmpty()) {
 
-            options = getOptionsFromMaster(masterTable);
+            options = getOptionsFromMaster(masterTable, qid);
 
         } else {
 
@@ -115,6 +115,7 @@ public class ChildSurveyService {
 
                 Map<String, Object> optionMap = new LinkedHashMap<>();
 
+                String englishName = (String) opt.get("english_name");
                 optionMap.put("option_id", opt.get("option_id"));
                 optionMap.put("english_name", opt.get("english_name"));
                 optionMap.put("tamil_name", safe(opt.get("tamil_name")));
@@ -124,6 +125,14 @@ public class ChildSurveyService {
                 // optionMap.put("textname", opt.get("text_name"));
                 // optionMap.put("remarksfield", opt.get("remarks_required"));
                 optionMap.put("opt_mandatory", opt.get("is_mandatory"));
+
+                // NEW FIELD
+                boolean isOthers = englishName != null && englishName.equalsIgnoreCase("Others");
+
+                optionMap.put("is_others", isOthers);
+
+                // tell frontend to show textbox
+                optionMap.put("text", isOthers);
 
                 Integer aid = (Integer) opt.get("option_id");
 
@@ -166,7 +175,21 @@ public class ChildSurveyService {
         return childQuestions;
     }
 
-    private List<Map<String, Object>> getOptionsFromMaster(String tableName) {
+    // private List<Map<String, Object>> getOptionsFromMaster(String tableName) {
+
+    // String sql = "SELECT id AS option_id, " +
+    // "english_name, " +
+    // "IFNULL(tamil_name, '') AS tamil_name, " +
+    // "orderby, " +
+    // "is_mandatory " +
+    // "FROM " + tableName + " " +
+    // "WHERE isactive=1 AND isdelete=0 " +
+    // "ORDER BY orderby";
+
+    // return jdbcChildSurveyTemplate.queryForList(sql);
+    // }
+
+    private List<Map<String, Object>> getOptionsFromMaster(String tableName, Integer parentQid) {
 
         String sql = "SELECT id AS option_id, " +
                 "english_name, " +
@@ -177,7 +200,46 @@ public class ChildSurveyService {
                 "WHERE isactive=1 AND isdelete=0 " +
                 "ORDER BY orderby";
 
-        return jdbcChildSurveyTemplate.queryForList(sql);
+        List<Map<String, Object>> dbOptions = jdbcChildSurveyTemplate.queryForList(sql);
+
+        List<Map<String, Object>> options = new ArrayList<>();
+
+        for (Map<String, Object> opt : dbOptions) {
+
+            Map<String, Object> optionMap = new LinkedHashMap<>();
+
+            String englishName = (String) opt.get("english_name");
+
+            optionMap.put("option_id", opt.get("option_id"));
+            optionMap.put("english_name", englishName);
+            optionMap.put("tamil_name", opt.get("tamil_name"));
+            optionMap.put("orderby", opt.get("orderby"));
+            optionMap.put("is_mandatory", opt.get("is_mandatory"));
+
+            List<Map<String, Object>> childQuestions = new ArrayList<>();
+
+            // 🔥 HANDLE "OTHERS"
+            if (englishName != null && englishName.equalsIgnoreCase("Others")) {
+
+                Map<String, Object> child = new LinkedHashMap<>();
+
+                child.put("qid", parentQid); // same parent qid
+                child.put("q_english", "Please specify");
+                child.put("q_tamil", "");
+                child.put("question_type", "text");
+                child.put("field_name", "q" + parentQid + "_other");
+                child.put("is_mandatory", false);
+                child.put("is_dropdown", false);
+
+                childQuestions.add(child);
+            }
+
+            optionMap.put("child_questions", childQuestions);
+
+            options.add(optionMap);
+        }
+
+        return options;
     }
 
     private String calculateAge(String dobStr) {
@@ -194,8 +256,8 @@ public class ChildSurveyService {
     public String saveSurveyFromParams(Map<String, String> params) {
 
         String insertSql = "INSERT INTO child_survey_response " +
-                "(qid, answer, cby, parent_answer_id, cdate, isactive, isdelete) " +
-                "VALUES (?, ?, ?, ?, NOW(), 1, 0)";
+                "(qid, answer, others_answer,cby, parent_answer_id, cdate, isactive, isdelete) " +
+                "VALUES (?, ?, ?, ?, ?, NOW(), 1, 0)";
 
         String cby = params.getOrDefault("cby", "1");
 
@@ -278,6 +340,9 @@ public class ChildSurveyService {
                 try {
                     Integer qid = Integer.parseInt(fieldName.substring(1));
 
+                    String othersKey = fieldName + "_other";
+                    String othersValue = params.getOrDefault(othersKey, "");
+
                     System.out.println("✔ QID: " + qid);
 
                     // DOB → AGE
@@ -294,7 +359,7 @@ public class ChildSurveyService {
                         jdbcChildSurveyTemplate.update(insertSql, 10, age, cby, parentId);
 
                     } else {
-                        jdbcChildSurveyTemplate.update(insertSql, qid, answer, cby, null);
+                        jdbcChildSurveyTemplate.update(insertSql, qid, answer, othersValue, cby, null);
                     }
 
                 } catch (Exception e) {
@@ -326,6 +391,37 @@ public class ChildSurveyService {
         }
 
         return "Saved Successfully";
+    }
+
+    public Map<String, Object> getLoginDetails(String mobileNo, String password) {
+
+        try {
+
+            String sql = "SELECT uid as loginId,user_name, password, mobile_no, is_active, is_delete " +
+                    "FROM login_details " +
+                    "WHERE mobile_no = ? AND password = ? AND is_active = 1 AND is_delete = 0 Limit 1";
+
+            List<Map<String, Object>> data = jdbcChildSurveyTemplate.queryForList(sql, mobileNo, password);
+
+            Map<String, Object> response = new HashMap<>();
+
+            if (!data.isEmpty()) {
+                // Login success
+                response.put("is_login", true);
+                response.put("message", "Login Success");
+                response.put("data", data);
+            } else {
+                // Login failed
+                response.put("is_login", false);
+                response.put("message", "Invalid mobile number or password");
+            }
+
+            return response;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error fetching batch details: " + e.getMessage());
+        }
     }
 
 }
