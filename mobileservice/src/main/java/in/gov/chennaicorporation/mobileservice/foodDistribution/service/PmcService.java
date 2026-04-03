@@ -1180,6 +1180,7 @@ public class PmcService {
                 + "                'value', qov.aid, "
                 + "				   'remarksfield', (qov.remarks_required = 1), "
                 + "				   'imgfield', (qov.img_required = 1), "
+                + "				   'textfield', (qov.text_required = 1), "
                 + "                'orderby', qov.orderby "
                 + "            ) "
                 + "        ) "
@@ -1310,7 +1311,7 @@ public class PmcService {
             }
 
             // ✅ 4. Insert into pmc_feedback
-            String feedbackSql = "INSERT INTO pmc_feedback (pmc_audit_id, questions, answer, remarks, image,qcmid,hub_id) VALUES (?, ?, ?, ?, ?,?,?)";
+            String feedbackSql = "INSERT INTO pmc_feedback (pmc_audit_id, questions, answer, remarks, image,qcmid,hub_id,penaltycount) VALUES (?, ?, ?, ?, ?,?,?,?)";
 
             for (Map<String, Object> qa : qaList) {
 
@@ -1320,6 +1321,9 @@ public class PmcService {
                 Integer qid = Integer.parseInt(qa.get("qid").toString());
                 Integer value = Integer.parseInt(qa.get("value").toString());
                 String remarks = qa.get("remarks") != null ? qa.get("remarks").toString() : null;
+                Integer textfield = (qa.get("textfield") != null && !qa.get("textfield").toString().trim().isEmpty())
+                        ? Integer.parseInt(qa.get("textfield").toString())
+                        : null;
 
                 String imagePath = null;
 
@@ -1344,7 +1348,8 @@ public class PmcService {
                         remarks,
                         imagePath,
                         Integer.parseInt(qcm_id),
-                        Integer.parseInt(hub_id)
+                        Integer.parseInt(hub_id),
+                        textfield
                 );
             }
 
@@ -1472,7 +1477,7 @@ public class PmcService {
 	        	);
 
 	        if (auditIds.isEmpty()) {
-	            response.put("message", "No data");
+	            response.put("message", "No Audit data for "+date+".");
 	            response.put("status", "Failed");
 	            return Collections.singletonList(response);
 	        }
@@ -1486,6 +1491,7 @@ public class PmcService {
 	            "pf.answer AS aid, pam.english_name AS answer, " +
 	            "IFNULL(pf.remarks, '') AS remarks, " +
 	            "IFNULL(pf.image, '') AS image, " +
+	            "qcm.penalty_amt, CAST(pam.opt_mandatory AS UNSIGNED) AS opt_mandatory, IFNULL(pf.penaltycount,0) AS penaltycount, " +
 	            "CASE " +
 	            " WHEN pf.image IS NULL OR pf.image = '' " +
 	            " THEN '' " +
@@ -1521,6 +1527,7 @@ public class PmcService {
 	        // ✅ 4. Convert to nested structure
 	        Map<Integer, Map<String, Object>> categoryMap = new LinkedHashMap<>();
 
+	        Map<Integer, Double> categoryPenaltyMap = new HashMap<>();
 	        for (Map<String, Object> row : flatData) {
 
 	            Integer qcmId = (Integer) row.get("qcm_id");
@@ -1545,12 +1552,57 @@ public class PmcService {
 	            question.put("remarks", row.get("remarks"));
 	            //question.put("image", row.get("image"));
 	            question.put("img_full_path", row.get("img_full_path"));
+	            question.put("penaltycount", row.get("penaltycount"));
+	            
+	            Double penaltyAmt = row.get("penalty_amt") != null
+	                    ? ((Number) row.get("penalty_amt")).doubleValue()
+	                    : 0.0;
+
+	            Integer penaltyCount = row.get("penaltycount") != null
+	                    ? ((Number) row.get("penaltycount")).intValue()
+	                    : 0;
+
+	            Integer optMandatory = row.get("opt_mandatory") != null
+	                    ? ((Number) row.get("opt_mandatory")).intValue()
+	                    : 0;
+
+	            double finalPenalty = 0;
+
+	            // ✅ ONLY if opt_mandatory = 1
+	            if (optMandatory == 1) {
+
+	                if (qcmId == 11 || qcmId == 12) {
+	                    // 🔥 multiply logic
+	                    finalPenalty = penaltyAmt * penaltyCount;
+	                } else {
+	                    // 🔥 normal logic
+	                    finalPenalty = penaltyAmt;
+	                }
+	            }
+	            
+	            question.put("penalty_amt", finalPenalty);
+	            question.put("penaltycount", penaltyCount);
+	            
+	            categoryPenaltyMap.put(
+	            	    qcmId,
+	            	    categoryPenaltyMap.getOrDefault(qcmId, 0.0) + finalPenalty
+	            	);
 
 	            // 🔹 add to category
 	            List<Map<String, Object>> questions =
 	                    (List<Map<String, Object>>) categoryMap.get(qcmId).get("questions");
 
 	            questions.add(question);
+	        }
+	        
+	        for (Map.Entry<Integer, Map<String, Object>> entry : categoryMap.entrySet()) {
+
+	            Integer qcmId = entry.getKey();
+	            Map<String, Object> category = entry.getValue();
+
+	            double totalPenalty = categoryPenaltyMap.getOrDefault(qcmId, 0.0);
+
+	            category.put("cat_penalty_amt", totalPenalty);
 	        }
 
 	        // ✅ 5. Final response
@@ -1736,9 +1788,11 @@ public class PmcService {
 			 if (dispatch_food_list.isEmpty()) {
 	                response.put("status", "Failed");
 	                response.put("message", "Dispatching Location Details is Empty.");
+	                return Collections.singletonList(response);
 	            } else if (yet_dispatch_count <= 0) {
 	                response.put("status", "Failed");
 	                response.put("message", "Dispatch Count is Zero or less than Zero.");
+	                return Collections.singletonList(response);
 	            }
 	            else {
 	            	ObjectMapper mapper = new ObjectMapper();
@@ -1779,6 +1833,7 @@ public class PmcService {
 
 	                    int locationId = ((Number) row.get("id")).intValue();
 	                    int foodCount = ((Number) row.get("foodcount")).intValue();
+	                    
 
 	                    jdbcPmcTemplate.update(foodInsertSql,
 	                            pmc_dispatch_id,
@@ -1800,6 +1855,359 @@ public class PmcService {
 		
 		 return Collections.singletonList(response);
 
+	}
+
+	public List<Map<String, Object>> getfoodswingData(int shiftid, int loginid, String date) {
+		
+		String formattedDate = convertDateFormat(date, 0);
+	    Map<String, Object> response = new HashMap<>();
+
+	    try {
+
+	        // ✅ 1. Get hub_id
+	        String hubSql = "SELECT hub_id FROM driver_login WHERE loginid=? AND isactive=1 AND isdelete=0";
+
+	        List<Integer> hubList = jdbcPmcTemplate.query(
+	                hubSql,
+	                (rs, rowNum) -> rs.getInt("hub_id"),
+	                loginid
+	        );
+
+	        if (hubList.isEmpty() || hubList.get(0) == null || hubList.get(0) == 0) {
+	            response.put("message", "No hub mapped for login id");
+	            response.put("status", "Failed");
+	            return Collections.singletonList(response);
+	        }
+
+	        Integer hub_id = hubList.get(0);
+
+	        // ✅ 2. Check audit data exists
+	        StringBuilder auditCheckSql = new StringBuilder(
+	        	    "SELECT id FROM pmc_audit WHERE shiftid=? AND hub_id=? AND isactive=1 AND isdelete=0 "
+	        	);
+
+	        	List<Object> auditParams = new ArrayList<>();
+	        	auditParams.add(shiftid);
+	        	auditParams.add(hub_id);
+
+	        	if (date != null && !date.trim().isEmpty()) {
+	        	    auditCheckSql.append(" AND audit_date=? ");
+	        	    auditParams.add(formattedDate);
+	        	}
+
+	        	List<Integer> auditIds = jdbcPmcTemplate.query(
+	        	        auditCheckSql.toString(),
+	        	        (rs, rowNum) -> rs.getInt("id"),
+	        	        auditParams.toArray()
+	        	);
+
+	        if (auditIds.isEmpty()) {
+	            response.put("message", "No Audit data for "+date+".");
+	            response.put("status", "Failed");
+	            return Collections.singletonList(response);
+	        }
+
+	        // ✅ 3. Fetch full flat data
+	        StringBuilder reportSql = new StringBuilder();
+
+	        reportSql.append(
+	            "SELECT pf.id as main_id,pa.id AS audit_id, pa.qcm_id, qcm.audit_category, " +
+	            "pf.questions AS qid, pq.q_english AS question, " +
+	            "pf.answer AS aid, pam.english_name AS answer, " +
+	            "IFNULL(pf.remarks, '') AS remarks, " +
+	            "IFNULL(pf.image, '') AS image, " +
+	            "CASE " +
+	            " WHEN pf.image IS NULL OR pf.image = '' " +
+	            " THEN '' " +
+	            " ELSE CONCAT('" + fileBaseUrl + "/gccofficialapp/files', pf.image) " +
+	            "END AS img_full_path "+
+	            "FROM pmc_audit pa " +
+	            "JOIN pmc_feedback pf ON pf.pmc_audit_id = pa.id AND pf.isactive=1 AND pf.isdelete=0 AND pf.food_swing_sts is NULL " +
+	            "JOIN pmc_questions_master pq ON pq.qid = pf.questions AND pq.isactive=1 AND pq.isdelete=0 " +
+	            "JOIN pmc_answer_master pam ON pam.aid = pf.answer AND pam.isactive=1 AND pam.isdelete=0 AND pam.opt_mandatory=1 " +
+	            "JOIN questions_category_master qcm ON qcm.qcm_id = pa.qcm_id AND qcm.isactive=1 AND qcm.isdelete=0 " +
+	            "WHERE pa.shiftid=? AND pa.hub_id=? AND pa.isactive=1 AND pa.isdelete=0 "
+	        );
+	        
+	        
+
+	        List<Object> params = new ArrayList<>();
+
+	        params.add(shiftid);
+	        params.add(hub_id);
+
+	        if (date != null && !date.trim().isEmpty()) {
+	            reportSql.append(" AND pa.audit_date=? ");
+	            params.add(formattedDate);
+	        }
+	        
+	        reportSql.append(" ORDER BY pa.qcm_id, pq.orderby ");
+	        
+	        List<Map<String, Object>> flatData = jdbcPmcTemplate.queryForList(
+	                reportSql.toString(),
+	                params.toArray()
+	        );
+
+	        // ✅ 4. Convert to nested structure
+	        Map<Integer, Map<String, Object>> categoryMap = new LinkedHashMap<>();
+
+	        for (Map<String, Object> row : flatData) {
+
+	            Integer qcmId = (Integer) row.get("qcm_id");
+
+	            // 🔹 create category if not exists
+	            if (!categoryMap.containsKey(qcmId)) {
+
+	            	Map<String, Object> category = new LinkedHashMap<>();
+	            	category.put("category", row.get("audit_category"));
+	            	category.put("qcm_id", qcmId);                       
+	            	category.put("questions", new ArrayList<>());  
+
+	                categoryMap.put(qcmId, category);
+	            }
+
+	            // 🔹 build question object
+	            Map<String, Object> question = new LinkedHashMap<>();
+	            question.put("question", row.get("question"));
+	            question.put("answer", row.get("answer"));
+	            question.put("question_type", "radio");
+	            question.put("img_full_path", row.get("img_full_path"));
+	            question.put("main_id", row.get("main_id"));
+	            question.put("qid", row.get("qid"));
+	            question.put("aid", row.get("aid"));
+	            question.put("remarks", row.get("remarks"));
+	            
+	            question.put("question_type", "radio");
+	            
+	            List<Map<String, Object>> options = new ArrayList<>();
+
+	            Map<String, Object> opt1 = new HashMap<>();
+	            opt1.put("value", "accept");
+	            opt1.put("orderby", 1);
+	            opt1.put("english_name", "Accept");
+	            opt1.put("remarksfield", false);
+	            opt1.put("opt_mandatory", 0);
+
+	            Map<String, Object> opt2 = new HashMap<>();
+	            opt2.put("value", "challenge");
+	            opt2.put("orderby", 2);
+	            opt2.put("english_name", "Challenge");
+	            opt2.put("remarksfield", true);
+	            opt2.put("opt_mandatory", 1);
+
+	            options.add(opt1);
+	            options.add(opt2);
+
+	            // ✅ attach options
+	            question.put("options", options);
+	            
+
+	            // 🔹 add to category
+	            List<Map<String, Object>> questions =
+	                    (List<Map<String, Object>>) categoryMap.get(qcmId).get("questions");
+
+	            questions.add(question);
+	        }
+	        
+	        
+
+	        // ✅ 5. Final response
+	        List<Map<String, Object>> finalData = new ArrayList<>(categoryMap.values());
+
+	        response.put("data", finalData);
+	        response.put("message", "Food Swing Details for "+ date);
+	        response.put("status", "Success");
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        response.put("message", "Error in getting food swing details");
+	        response.put("status", "Failed");
+	    }
+
+	    return Collections.singletonList(response);
+	}
+	
+	public List<Map<String, Object>> getfoodswingDataNoCategory(int shiftid, int loginid, String date) {
+
+	    String formattedDate = convertDateFormat(date, 0);
+	    Map<String, Object> response = new HashMap<>();
+
+	    try {
+
+	        // ✅ 1. Get hub_id
+	        String hubSql = "SELECT hub_id FROM driver_login WHERE loginid=? AND isactive=1 AND isdelete=0";
+
+	        List<Integer> hubList = jdbcPmcTemplate.query(
+	                hubSql,
+	                (rs, rowNum) -> rs.getInt("hub_id"),
+	                loginid
+	        );
+
+	        if (hubList.isEmpty() || hubList.get(0) == null || hubList.get(0) == 0) {
+	            response.put("message", "No hub mapped for login id");
+	            response.put("status", "Failed");
+	            return Collections.singletonList(response);
+	        }
+
+	        Integer hub_id = hubList.get(0);
+
+	        // ✅ 2. Check audit exists
+	        StringBuilder auditCheckSql = new StringBuilder(
+	                "SELECT id FROM pmc_audit WHERE shiftid=? AND hub_id=? AND isactive=1 AND isdelete=0 "
+	        );
+
+	        List<Object> auditParams = new ArrayList<>();
+	        auditParams.add(shiftid);
+	        auditParams.add(hub_id);
+
+	        if (date != null && !date.trim().isEmpty()) {
+	            auditCheckSql.append(" AND audit_date=? ");
+	            auditParams.add(formattedDate);
+	        }
+
+	        List<Integer> auditIds = jdbcPmcTemplate.query(
+	                auditCheckSql.toString(),
+	                (rs, rowNum) -> rs.getInt("id"),
+	                auditParams.toArray()
+	        );
+
+	        if (auditIds.isEmpty()) {
+	            response.put("message", "No Audit data for " + date);
+	            response.put("status", "Failed");
+	            return Collections.singletonList(response);
+	        }
+
+	        // ✅ 3. Fetch data (same query)
+	        StringBuilder reportSql = new StringBuilder();
+
+	        reportSql.append(
+	                "SELECT pf.id as main_id, pa.qcm_id, " +
+	                "pf.questions AS qid, pq.q_english AS question, " +
+	                "pf.answer AS aid, pam.english_name AS answer, " +
+	                "IFNULL(pf.remarks, '') AS remarks, " +
+	                "CASE WHEN pf.image IS NULL OR pf.image = '' THEN '' " +
+	                "ELSE CONCAT('" + fileBaseUrl + "/gccofficialapp/files', pf.image) END AS img_full_path " +
+	                "FROM pmc_audit pa " +
+	                "JOIN pmc_feedback pf ON pf.pmc_audit_id = pa.id AND pf.isactive=1 AND pf.isdelete=0 AND pf.food_swing_sts is NULL " +
+	                "JOIN pmc_questions_master pq ON pq.qid = pf.questions AND pq.isactive=1 AND pq.isdelete=0 " +
+	                "JOIN pmc_answer_master pam ON pam.aid = pf.answer AND pam.isactive=1 AND pam.isdelete=0 AND pam.opt_mandatory=1 " +
+	                "WHERE pa.shiftid=? AND pa.hub_id=? AND pa.isactive=1 AND pa.isdelete=0 "
+	        );
+
+	        List<Object> params = new ArrayList<>();
+	        params.add(shiftid);
+	        params.add(hub_id);
+
+	        if (date != null && !date.trim().isEmpty()) {
+	            reportSql.append(" AND pa.audit_date=? ");
+	            params.add(formattedDate);
+	        }
+
+	        reportSql.append(" ORDER BY pq.orderby ");
+
+	        List<Map<String, Object>> flatData = jdbcPmcTemplate.queryForList(
+	                reportSql.toString(),
+	                params.toArray()
+	        );
+
+	        // ✅ 4. Build flat list
+	        List<Map<String, Object>> questionList = new ArrayList<>();
+
+	        for (Map<String, Object> row : flatData) {
+
+	            Map<String, Object> question = new LinkedHashMap<>();
+
+	            question.put("question", row.get("question"));
+	            question.put("answer", row.get("answer"));
+	            question.put("question_type", "radio");
+	            question.put("img_full_path", row.get("img_full_path"));
+	            question.put("main_id", row.get("main_id"));
+	            question.put("qid", row.get("qid"));
+	            question.put("aid", row.get("aid"));
+	            question.put("remarks", row.get("remarks"));
+
+	            // ✅ options
+	            List<Map<String, Object>> options = new ArrayList<>();
+
+	            Map<String, Object> opt1 = new HashMap<>();
+	            opt1.put("value", "accept");
+	            opt1.put("orderby", 1);
+	            opt1.put("english_name", "Accept");
+	            opt1.put("remarksfield", false);
+	            opt1.put("opt_mandatory", 0);
+
+	            Map<String, Object> opt2 = new HashMap<>();
+	            opt2.put("value", "challenge");
+	            opt2.put("orderby", 2);
+	            opt2.put("english_name", "Challenge");
+	            opt2.put("remarksfield", true);
+	            opt2.put("opt_mandatory", 1);
+
+	            options.add(opt1);
+	            options.add(opt2);
+
+	            question.put("options", options);
+
+	            questionList.add(question);
+	        }
+
+	        // ✅ 5. Final response
+	        response.put("data", questionList);
+	        response.put("message", "Food Swing Details (No Category) for " + date);
+	        response.put("status", "Success");
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        response.put("message", "Error in getting data");
+	        response.put("status", "Failed");
+	    }
+
+	    return Collections.singletonList(response);
+	}
+
+	public List<?> savefoodswingdata(String questionAnswers, String loginId) {
+
+	    Map<String, Object> response = new HashMap<>();
+
+	    try {
+
+	        if (questionAnswers == null || questionAnswers.trim().isEmpty()) {
+	            response.put("status", "Failed");
+	            response.put("message", "questionAnswers is Empty");
+	            return Collections.singletonList(response);
+	        }
+	        
+	        ObjectMapper mapper = new ObjectMapper();
+            List<Map<String, Object>> questionAnswersList = mapper.readValue(
+                    questionAnswers,
+                    new TypeReference<List<Map<String, Object>>>() {}
+            );
+
+	        int userId = Integer.parseInt(loginId);
+
+	        String foodInsertSql = "UPDATE pmc_feedback SET food_swing_sts=?, fs_remarks=?, fs_cby=?, fs_cdate=NOW() WHERE id=? AND isactive=1 AND isdelete=0";
+
+	        for (Map<String, Object> row : questionAnswersList) {
+
+	            if (row.get("main_id") == null) continue;
+
+	            int main_id = ((Number) row.get("main_id")).intValue();
+	            String answer = row.get("answer") != null ? row.get("answer").toString() : null;
+	            String remarks = row.get("remarks") != null ? row.get("remarks").toString() : null;
+
+	            jdbcPmcTemplate.update(foodInsertSql, answer, remarks, userId, main_id);
+	        }
+
+	        response.put("status", "Success");
+	        response.put("message", "Feedback updated Successfully");
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        response.put("status", "Failed");
+	        response.put("message", "Error while updating feedback");
+	    }
+
+	    return Collections.singletonList(response);
 	}
     
 

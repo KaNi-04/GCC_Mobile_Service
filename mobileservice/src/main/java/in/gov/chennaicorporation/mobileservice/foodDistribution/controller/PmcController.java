@@ -164,6 +164,34 @@ public class PmcController {
         return pmcservice.getfeedbackreport(shiftid, loginid, date);
     }
     
+    @GetMapping("/getfoodswingData")
+    public List<Map<String, Object>> getfoodswingData(
+            @RequestParam int shiftid,
+            @RequestParam int loginid,
+            @RequestParam String date){
+    	
+    	return pmcservice.getfoodswingData(shiftid, loginid, date);
+    	
+    }
+    
+    @GetMapping("/getfoodswingDataNoCategory")
+    public List<Map<String, Object>> getfoodswingDataNoCategory(
+            @RequestParam int shiftid,
+            @RequestParam int loginid,
+            @RequestParam String date) {
+
+        return pmcservice.getfoodswingDataNoCategory(shiftid, loginid, date);
+    }
+    
+    @PostMapping("/savefoodswingdata")
+    public List<?> savefoodswingdata(
+       @RequestParam(value = "questionAnswers", required = true) String questionAnswers,
+       @RequestParam(value = "loginId", required = true) String loginId
+    		){
+    	
+    	return pmcservice.savefoodswingdata(questionAnswers,loginId);
+    }
+    
 
     // dispatch
 //    @GetMapping("/getDispatchFoodCount")
