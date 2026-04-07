@@ -1446,4 +1446,58 @@ private JdbcTemplate jdbcFoodTemplate;
 	    
 	    return Collections.singletonList(response);
 	}
+	
+	
+	// Scheduler
+	@Transactional
+	public void autoInsertNextDayRequest() {
+
+        String sql = 
+            "INSERT INTO daily_request (" +
+            "ward, required_date, " +
+            "permanent, nulm, private, nmr, others, " +
+            "weeklyoff_permanent, weeklyoff_nulm, weeklyoff_private, weeklyoff_nmr, weeklyoff_others, " +
+            "absentees_permanent, absentees_nulm, absentees_private, absentees_nmr, absentees_others, " +
+            "shiftid, request_by, isauto_request, hub_id" +
+            ") " +
+
+            "SELECT " +
+            "cm.ward, " +
+            "DATE_ADD(CURDATE(), INTERVAL 1 DAY), " +
+
+            "cm.permanent, cm.nulm, cm.private, cm.nmr, cm.others, " +
+            "cm.weeklyoff_permanent, cm.weeklyoff_nulm, cm.weeklyoff_private, cm.weeklyoff_nmr, cm.weeklyoff_others, " +
+
+            "0, 0, 0, 0, 0, " +
+
+            "cm.shiftid, " +
+            "lm.siloginid, " +   
+            "1, " +              
+            "cm.hub_id " +
+
+            "FROM count_master cm " +
+
+            "INNER JOIN location_mapping lm " +
+            "ON lm.ward = cm.ward " +
+            "AND lm.hub_master_id <=> cm.hub_id " +
+            "AND lm.isactive = 1 " +
+            "AND lm.isdelete = 0 " +
+
+            "WHERE cm.isactive = 1 " +
+            "AND cm.isdelete = 0 " +
+
+            "AND NOT EXISTS ( " +
+            "   SELECT 1 FROM daily_request dr " +
+            "   WHERE dr.ward = cm.ward " +
+            "   AND dr.shiftid = cm.shiftid " +
+            "   AND dr.hub_id <=> cm.hub_id " +
+            "   AND dr.required_date = DATE_ADD(CURDATE(), INTERVAL 1 DAY) " +
+            "   AND dr.isdelete = 0 " +
+            ")";
+
+        int inserted = jdbcFoodTemplate.update(sql);
+
+        System.out.println("Auto inserted rows: " + inserted);
+    }
+	
 }

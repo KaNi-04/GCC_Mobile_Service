@@ -37,69 +37,60 @@ public class PmcController {
 //        return pmcservice.getFinalFoodCount(shiftid, loginid, date);
 //    }
 
-    @GetMapping("/getfeedbackquestions")
-    public List<Map<String, Object>> getFeedbackQuestions(
-            @RequestParam(value = "loginId", required = false) String loginId) {
-        return pmcservice.getParentQuestionsList(loginId);
-    }
+//    @GetMapping("/getfeedbackquestions")
+//    public List<Map<String, Object>> getFeedbackQuestions(
+//            @RequestParam(value = "loginId", required = false) String loginId) {
+//        return pmcservice.getParentQuestionsList(loginId);
+//    }
 
-    @PostMapping("/savefeedback")
-    public List<?> savefeedback(
-            @RequestParam(value = "loginId", required = true) String loginId,
-            @RequestParam(value = "auditdate", required = true) String auditdate,
-            @RequestParam(value = "shiftid", required = true) String shiftid,
-            @RequestParam(value = "latitude", required = true) String latitude,
-            @RequestParam(value = "longitude", required = true) String longitude,
-            @RequestParam(value = "zone", required = true) String zone,
-            @RequestParam(value = "ward", required = true) String ward,
-            @RequestParam(value = "address", required = true) String address,
-            @RequestParam(value = "final_food_count", required = true) String final_food_count,
-            @RequestParam(value = "foodid", required = true) String foodid,
-            @RequestParam(value = "food_others", required = false) String food_others,
-            @RequestParam(value = "hub_id", required = true) String hub_id,
-
-            @RequestParam(value = "q1", required = true) String q1,
-            @RequestParam(value = "q2", required = true) String q2,
-            @RequestParam(value = "q3", required = true) String q3,
-            @RequestParam(value = "q4", required = true) String q4,
-            @RequestParam(value = "q5", required = true) String q5,
-            @RequestParam(value = "q6", required = true) String q6,
-            @RequestParam(value = "q7", required = true) String q7,
-            @RequestParam(value = "q8", required = true) String q8,
-            @RequestParam(value = "q9", required = true) String q9,
-            @RequestParam(value = "q10", required = true) String q10,
-            @RequestParam(value = "q11", required = true) String q11,
-            @RequestParam(value = "q12", required = true) String q12,
-            @RequestParam(value = "q13", required = true) String q13,
-            @RequestParam(value = "q14", required = true) String q14,
-            @RequestParam(value = "q15", required = true) String q15,
-            @RequestParam(value = "q16", required = true) String q16,
-            @RequestParam(value = "q17", required = true) String q17,
-            @RequestParam(value = "q18", required = true) String q18,
-
-            @RequestParam(value = "image1", required = true) MultipartFile image1,
-            @RequestParam(value = "image2", required = true) MultipartFile image2,
-            @RequestParam(value = "image3", required = true) MultipartFile image3,
-            @RequestParam(value = "image4", required = true) MultipartFile image4,
-            @RequestParam(value = "image5", required = true) MultipartFile image5) {
-
-        return pmcservice.saveFeedback(
-                loginId, auditdate, shiftid, latitude, longitude, zone, ward, address,
-                final_food_count, foodid, food_others, hub_id,
-                Arrays.asList(q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
-                        q11, q12, q13, q14, q15, q16, q17, q18),
-                image1, image2, image3, image4, image5);
-    }
+//    @PostMapping("/savefeedback")
+//    public List<?> savefeedback(
+//            @RequestParam(value = "loginId", required = true) String loginId,
+//            @RequestParam(value = "auditdate", required = true) String auditdate,
+//            @RequestParam(value = "shiftid", required = true) String shiftid,
+//            @RequestParam(value = "latitude", required = true) String latitude,
+//            @RequestParam(value = "longitude", required = true) String longitude,
+//            @RequestParam(value = "zone", required = true) String zone,
+//            @RequestParam(value = "ward", required = true) String ward,
+//            @RequestParam(value = "address", required = true) String address,
+//            @RequestParam(value = "final_food_count", required = true) String final_food_count,
+//            @RequestParam(value = "foodid", required = true) String foodid,
+//            @RequestParam(value = "food_others", required = false) String food_others,
+//            @RequestParam(value = "hub_id", required = true) String hub_id,
+//
+//            @RequestParam(value = "q1", required = true) String q1,
+//            @RequestParam(value = "q2", required = true) String q2,
+//            @RequestParam(value = "q3", required = true) String q3,
+//            @RequestParam(value = "q4", required = true) String q4,
+//            @RequestParam(value = "q5", required = true) String q5,
+//            @RequestParam(value = "q6", required = true) String q6,
+//            @RequestParam(value = "q7", required = true) String q7,
+//            @RequestParam(value = "q8", required = true) String q8,
+//            @RequestParam(value = "q9", required = true) String q9,
+//            @RequestParam(value = "q10", required = true) String q10,
+//            @RequestParam(value = "q11", required = true) String q11,
+//            @RequestParam(value = "q12", required = true) String q12,
+//            @RequestParam(value = "q13", required = true) String q13,
+//            @RequestParam(value = "q14", required = true) String q14,
+//            @RequestParam(value = "q15", required = true) String q15,
+//            @RequestParam(value = "q16", required = true) String q16,
+//            @RequestParam(value = "q17", required = true) String q17,
+//            @RequestParam(value = "q18", required = true) String q18,
+//
+//            @RequestParam(value = "image1", required = true) MultipartFile image1,
+//            @RequestParam(value = "image2", required = true) MultipartFile image2,
+//            @RequestParam(value = "image3", required = true) MultipartFile image3,
+//            @RequestParam(value = "image4", required = true) MultipartFile image4,
+//            @RequestParam(value = "image5", required = true) MultipartFile image5) {
+//
+//        return pmcservice.saveFeedback(
+//                loginId, auditdate, shiftid, latitude, longitude, zone, ward, address,
+//                final_food_count, foodid, food_others, hub_id,
+//                Arrays.asList(q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+//                        q11, q12, q13, q14, q15, q16, q17, q18),
+//                image1, image2, image3, image4, image5);
+//    }
     
-    
-    @GetMapping("/getFinalFoodCount")
-    public List<Map<String, Object>> getFinalFoodCount(
-            @RequestParam int shiftid,
-            @RequestParam int loginid,
-            @RequestParam String date) {
-
-        return pmcservice.getFinalFoodCountPerHubId(shiftid, loginid, date);
-    }
     
     @GetMapping("/getNotFilledCategories")
     public List<Map<String, Object>> getNotFilledCategories(
@@ -113,11 +104,14 @@ public class PmcController {
     
     @GetMapping("/getquestionsbycat")
     public List<Map<String, Object>> getquestionsbycat(
-            @RequestParam int qcm_id) {
+            @RequestParam int qcm_id,
+            @RequestParam int loginid,
+            @RequestParam int shiftid,
+            @RequestParam String latitude,
+    		@RequestParam String longitude) {
 
-        return pmcservice.getquestionsbycat(qcm_id);
+        return pmcservice.getquestionsbycat(qcm_id,loginid,shiftid,latitude,longitude);
     }
-    
     
     @GetMapping("/getselectedmenu")
     public List<Map<String, Object>> getselectedmenu(
@@ -154,6 +148,112 @@ public class PmcController {
     		);
     }
     
+    @GetMapping("/issuefoundhubs")
+    public List<Map<String, Object>> getfeedbackhubdetails(
+    		@RequestParam int loginid,
+    		@RequestParam String date
+    		){
+    	return pmcservice.getfeedbackhubdetails(loginid, date);
+    }
+    
+    
+    @GetMapping("/getfoodswingDataNoCategory")
+    public List<Map<String, Object>> getfoodswingDataNoCategory(
+            @RequestParam int shiftid,
+            @RequestParam int hub_id,
+            @RequestParam String date,
+            @RequestParam(value = "latitude", required = false) String latitude,
+    		@RequestParam(value = "longitude", required = false) String longitude) {
+
+        return pmcservice.getfoodswingDataNoCategory(shiftid, hub_id, date,latitude,longitude);
+    }
+    
+    
+    @PostMapping("/savefoodswingdata")
+    public List<?> savefoodswingdata(
+       @RequestParam(value = "questionAnswers", required = true) String questionAnswers,
+       @RequestParam(value = "loginId", required = true) String loginId,
+       @RequestParam(value = "latitude", required = false) String latitude,
+		@RequestParam(value = "longitude", required = false) String longitude,
+		@RequestParam(value = "images", required = false) MultipartFile[] images
+    		){
+    	
+    	return pmcservice.savefoodswingdata(questionAnswers,loginId,latitude,longitude,images);  
+    }
+    
+  
+    //ce login data
+    
+    @GetMapping("/celoginhubs")
+    public List<Map<String, Object>> getceloginhubs(
+    		@RequestParam (value = "date", required = true) String date
+    		){
+    	return pmcservice.getceloginhubs(date);
+    }
+    
+    
+    @GetMapping("/getCEDataNoCategory")
+    public List<Map<String, Object>> getCEDataNoCategory(
+            @RequestParam int shiftid,
+            @RequestParam int hub_id,
+            @RequestParam String date) {
+
+        return pmcservice.getCEDataNoCategory(shiftid, hub_id, date);
+    }
+    
+    @PostMapping("/savecelogindata")
+    public List<?> savecelogindata(
+       @RequestParam(value = "questionAnswers", required = true) String questionAnswers,
+       @RequestParam(value = "loginId", required = true) String loginId
+    		){
+    	
+    	return pmcservice.savecelogindata(questionAnswers,loginId);  
+    }
+    
+    //
+    
+    
+    //Report
+    @GetMapping("/gethubsforreport")
+    public List<Map<String, Object>> gethubsforreport(
+            @RequestParam String date,
+            @RequestParam(required = false) Integer loginId) {
+
+        return pmcservice.gethubsforreport(date, loginId);
+    }
+    
+    @GetMapping("/getcatsforhubreport")
+    public List<Map<String, Object>> getcatsforhubreport(
+            @RequestParam int shiftid,
+            @RequestParam int hub_id,
+            @RequestParam String date) {
+
+        return pmcservice.getcatsforhubreport(shiftid, hub_id, date);
+    }
+    
+    @GetMapping("/getreportdata")
+    public List<Map<String, Object>> getreportdata(
+            @RequestParam int shiftid,
+            @RequestParam int hub_id,
+            @RequestParam String date,
+            @RequestParam int qcm_id) {
+
+        return pmcservice.getreportdata(shiftid, hub_id, date,qcm_id);
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     @GetMapping("/getfeedbackreport")
     public List<Map<String, Object>> getfeedbackreport(
@@ -163,6 +263,19 @@ public class PmcController {
 
         return pmcservice.getfeedbackreport(shiftid, loginid, date);
     }
+    
+    
+    
+ 
+    @GetMapping("/getFinalFoodCount")
+    public List<Map<String, Object>> getFinalFoodCount(
+            @RequestParam int shiftid,
+            @RequestParam int loginid,
+            @RequestParam String date) {
+
+        return pmcservice.getFinalFoodCountPerHubId(shiftid, loginid, date);
+    }
+    
     
     @GetMapping("/getfoodswingData")
     public List<Map<String, Object>> getfoodswingData(
@@ -174,23 +287,14 @@ public class PmcController {
     	
     }
     
-    @GetMapping("/getfoodswingDataNoCategory")
-    public List<Map<String, Object>> getfoodswingDataNoCategory(
-            @RequestParam int shiftid,
-            @RequestParam int loginid,
-            @RequestParam String date) {
-
-        return pmcservice.getfoodswingDataNoCategory(shiftid, loginid, date);
-    }
     
-    @PostMapping("/savefoodswingdata")
-    public List<?> savefoodswingdata(
-       @RequestParam(value = "questionAnswers", required = true) String questionAnswers,
-       @RequestParam(value = "loginId", required = true) String loginId
-    		){
-    	
-    	return pmcservice.savefoodswingdata(questionAnswers,loginId);
-    }
+    
+
+    
+    
+   
+    
+    
     
 
     // dispatch
