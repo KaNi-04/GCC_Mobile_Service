@@ -1226,16 +1226,17 @@ public class PmcService {
                 boolean shouldShow = false;
                 boolean isCompleted = false;
 
-                // ✅ DAILY (days = 1)
+                //   DAILY (days = 1)
                 if (days == 1) {
-                    shouldShow = true;
-
-                    if (lastDateObj != null && lastDateObj.toLocalDate().equals(today)) {
+                	if (lastDateObj != null && lastDateObj.toLocalDate().equals(today)) {
                         isCompleted = true;
+                        continue; // skip
                     }
+
+                    shouldShow = true;
                 }
 
-                // ✅ WEEKLY / MONTHLY / YEARLY
+                //   WEEKLY / MONTHLY / YEARLY
                 else {
 
                     // ❗ Only Shift B allowed
@@ -1269,7 +1270,7 @@ public class PmcService {
             int total = allCategories.size();
             int pending = filteredCategories.size();
 
-            // ✅ 4. Count data
+            //   4. Count data
             List<Map<String, Object>> countdata = new ArrayList<>();
 
             Map<String, Object> countMap = new HashMap<>();
@@ -1430,7 +1431,7 @@ public class PmcService {
 
         try {
 
-            // ✅ 1. Get hub_id
+            //   1. Get hub_id
             String hubSql = "SELECT hub_id FROM driver_login WHERE loginid=? AND isactive=1 AND isdelete=0";
 
             List<Integer> hubList = jdbcPmcTemplate.query(
@@ -1447,7 +1448,7 @@ public class PmcService {
 
             Integer hub_id = hubList.get(0);
             
-         // ✅ 2. Get frequency + last filled date
+         //   2. Get frequency + last filled date
             String freqSql =
                     "SELECT fm.days, MAX(pa.audit_date) AS last_filled_date " +
                     "FROM questions_category_master qcm " +
@@ -1468,7 +1469,7 @@ public class PmcService {
 
             LocalDate today = LocalDate.now();
             
-            // ✅ 3. Apply frequency logic
+            //   3. Apply frequency logic
 
             // DAILY
             if (days == 1) {
@@ -2671,7 +2672,7 @@ public class PmcService {
 //	            return Collections.singletonList(response);
 //	        }
 
-	        // ✅ MAIN QUERY (all hubs)
+	        //   MAIN QUERY (all hubs)
 	        String sql =
 	                "SELECT hm.id AS hub_id, hm.permanent_location AS hub_name,hm.zone,hm.ward,hm.latitude,hm.longitude "
 	                + " FROM hub_master hm "
@@ -2934,7 +2935,7 @@ public class PmcService {
 	        String formattedDate = convertDateFormat(date, 0);
 	        Integer hub_id = 0;
 
-	        // ✅ optional hub filter
+	        //   optional hub filter
 	        if (loginId != null && loginId != 0) {
 
 	            String hubSql = "SELECT hub_id FROM driver_login WHERE loginid=? AND isactive=1 AND isdelete=0";
@@ -2984,7 +2985,7 @@ public class PmcService {
 	        List<Map<String, Object>> raw =
 	                jdbcPmcTemplate.queryForList(sql.toString(), params.toArray());
 
-	        // ✅ Convert to grouped JSON (hub → shifts[])
+	        //   Convert to grouped JSON (hub → shifts[])
 	        Map<Integer, Map<String, Object>> hubMap = new LinkedHashMap<>();
 
 	        for (Map<String, Object> row : raw) {
