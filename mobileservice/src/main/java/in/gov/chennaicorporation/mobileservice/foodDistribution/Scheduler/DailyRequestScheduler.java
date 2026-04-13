@@ -23,4 +23,27 @@ public class DailyRequestScheduler {
 		distributionService.autoInsertNextDayRequest();
 		System.out.println("Food Daily Request Scheduler Ended......");
     }
+	
+	@Scheduled(cron = "0 0 13 * * ?", zone = "Asia/Kolkata") // 1 PM
+	public void runAutoAcceptFoodswingShift1() {
+		System.out.println("Shift-A Automatic Fine Accept Scheduler Started......");
+		distributionService.autoInsertForFineShift1();
+		System.out.println("Shift-A Automatic Fine Accept Scheduler Ended......");
+	}
+	
+	@Scheduled(cron = "0 0 20 * * ?", zone = "Asia/Kolkata") // 8 PM	
+	public void runAutoAcceptFoodswingShift2() {
+		System.out.println("Shift-B Automatic Fine Accept Scheduler Started......");
+		distributionService.autoInsertForFineShift2();
+		System.out.println("Shift-B Automatic Fine Accept Scheduler Ended......");
+	}
+	
+	@Scheduled(cron = "0 0 5 * * ?", zone = "Asia/Kolkata") // 5 AM	
+	public void runAutoAcceptFoodswingShift3() {
+		System.out.println("Shift-C Automatic Fine Accept Scheduler Started......");
+		distributionService.autoInsertForFineShift3();
+		System.out.println("Shift-C Automatic Fine Accept Scheduler Ended......");
+	}
+	
+	
 }

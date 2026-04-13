@@ -90,7 +90,8 @@ public class PmcController {
 //                        q11, q12, q13, q14, q15, q16, q17, q18),
 //                image1, image2, image3, image4, image5);
 //    }
-    
+   
+    //pmc
     
     @GetMapping("/getNotFilledCategories")
     public List<Map<String, Object>> getNotFilledCategories(
@@ -148,9 +149,11 @@ public class PmcController {
     		);
     }
     
+    //foodswing
+    
     @GetMapping("/issuefoundhubs")
     public List<Map<String, Object>> getfeedbackhubdetails(
-    		@RequestParam int loginid,
+    		@RequestParam (value = "loginid", required = false) Integer loginid,
     		@RequestParam String date
     		){
     	return pmcservice.getfeedbackhubdetails(loginid, date);
@@ -186,9 +189,16 @@ public class PmcController {
     
     @GetMapping("/celoginhubs")
     public List<Map<String, Object>> getceloginhubs(
-    		@RequestParam (value = "date", required = true) String date
+    		@RequestParam (value = "date", required = false) String date
     		){
-    	return pmcservice.getceloginhubs(date);
+    	return pmcservice.getceloginhubs();
+    }
+    
+    @GetMapping("/gethubforcelogin")
+    public List<Map<String, Object>> gethubsforreport(
+    		 @RequestParam int hub_id) {
+
+        return pmcservice.getHubDateShiftDetails(hub_id);
     }
     
     
@@ -213,7 +223,7 @@ public class PmcController {
     //
     
     
-    //Report
+    //General Common Report
     @GetMapping("/gethubsforreport")
     public List<Map<String, Object>> gethubsforreport(
             @RequestParam String date,
@@ -221,6 +231,8 @@ public class PmcController {
 
         return pmcservice.gethubsforreport(date, loginId);
     }
+    
+    
     
     @GetMapping("/getcatsforhubreport")
     public List<Map<String, Object>> getcatsforhubreport(
@@ -241,8 +253,41 @@ public class PmcController {
         return pmcservice.getreportdata(shiftid, hub_id, date,qcm_id);
     }
     
+    //penalty Report
     
+    @GetMapping("/penalty/hubs")
+    public List<Map<String, Object>> getPenaltyHubSummary(@RequestParam int loginid) {
+        return pmcservice.getPenaltyHubSummary(loginid);
+    }
     
+    @GetMapping("/penalty/hubdetails")
+    public List<Map<String, Object>> getHubDetails(
+            @RequestParam int hub_id,
+            @RequestParam String type) {
+
+        return pmcservice.getHubDateShiftDetails(hub_id, type);
+    }
+    
+    @GetMapping("/penalty/category")
+    public List<Map<String, Object>> getCategoryReport(
+            @RequestParam int hub_id,
+            @RequestParam int shiftid,
+            @RequestParam String date,
+            @RequestParam String type) {
+
+        return pmcservice.getCategoryReport(hub_id, shiftid, date, type);
+    }
+    
+    @GetMapping("/penalty/questions")
+    public List<Map<String, Object>> getQuestionReport(
+            @RequestParam int hub_id,
+            @RequestParam int shiftid,
+            @RequestParam String date,
+            @RequestParam String type,
+            @RequestParam int qcm_id) {
+
+        return pmcservice.getQuestionReport(hub_id, shiftid, date, type, qcm_id);
+    }
     
     
     

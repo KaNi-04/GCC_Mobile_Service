@@ -1500,4 +1500,58 @@ private JdbcTemplate jdbcFoodTemplate;
         System.out.println("Auto inserted rows: " + inserted);
     }
 	
+	@Transactional
+	public void autoInsertForFineShift1() {
+
+	    String sql = getAutoAcceptSql();
+
+	    int updated = jdbcFoodTemplate.update(sql, 1);
+
+	    System.out.println("Shift 1 Auto Accepted: " + updated);
+	}
+
+	@Transactional
+	public void autoInsertForFineShift2() {
+
+	    String sql = getAutoAcceptSql();
+
+	    int updated = jdbcFoodTemplate.update(sql, 2);
+
+	    System.out.println("Shift 2 Auto Accepted: " + updated);
+	}
+
+	@Transactional
+	public void autoInsertForFineShift3() {
+
+	    String sql = getAutoAcceptSql();
+
+	    int updated = jdbcFoodTemplate.update(sql, 3);
+
+	    System.out.println("Shift 3 Auto Accepted: " + updated);
+	}
+	
+	
+	private String getAutoAcceptSql() {
+
+	    return "UPDATE pmc_feedback pf " +
+	           "JOIN pmc_audit pa ON pa.id = pf.pmc_audit_id " +
+	           "JOIN shift_master sm ON sm.shiftid = pa.shiftid " +
+	           "JOIN pmc_answer_master pam ON pam.aid = pf.answer " +
+
+	           "SET pf.food_swing_sts = 'accept', " +
+	           "pf.fs_cby = 303, " +
+	           "pf.fs_cdate = NOW(), " +
+	           "pf.auto_fs_accept = 1 " +
+
+	           "WHERE pf.food_swing_sts IS NULL " +
+	           "AND pf.auto_fs_accept = 0 " +
+	           "AND pam.opt_mandatory = 1 " +
+	           "AND pf.isactive = 1 " +
+	           "AND pf.isdelete = 0 " +
+
+	           "AND pa.shiftid = ? " +
+
+	           "AND TIMESTAMPDIFF(HOUR, pf.cdate, NOW()) >= sm.auto_fs_dur_hr";
+	}
+	
 }

@@ -1199,15 +1199,15 @@ public class PmcService {
                 "JOIN frequency_master fm ON fm.id = qcm.frequency_master_id " +
                 "LEFT JOIN pmc_audit pa " +
                 " ON pa.qcm_id = qcm.qcm_id " +
-                " AND pa.cby = ? " +
                 " AND pa.hub_id = ? " +
+                "AND pa.shiftid = ? "+
                 " AND pa.isactive = 1 " +
                 " AND pa.isdelete = 0 " +
                 "WHERE qcm.isactive = 1 AND qcm.isdelete = 0 " +
                 "GROUP BY qcm.qcm_id " +
                 "ORDER BY qcm.orderby";
 
-            List<Map<String, Object>> allCategories = jdbcPmcTemplate.queryForList(sql, loginid, hub_id);
+            List<Map<String, Object>> allCategories = jdbcPmcTemplate.queryForList(sql, hub_id,shiftid);
 
             List<Map<String, Object>> filteredCategories = new ArrayList<>();
 
@@ -2510,7 +2510,7 @@ public class PmcService {
 	                "FROM pmc_audit pa " +
 	                "JOIN pmc_feedback pf ON pf.pmc_audit_id = pa.id AND pf.isactive=1 AND pf.isdelete=0 AND pf.food_swing_sts is NULL " +
 	                "JOIN pmc_questions_master pq ON pq.qid = pf.questions AND pq.isactive=1 AND pq.isdelete=0 " +
-	                "JOIN challenge_answer_master cam ON cam.qid = pf.questions AND cam.isactive=1 AND cam.isdelete=0 " +
+	                "LEFT JOIN challenge_answer_master cam ON cam.qid = pf.questions AND cam.isactive=1 AND cam.isdelete=0 " +
 	                "JOIN pmc_answer_master pam ON pam.aid = pf.answer AND pam.isactive=1 AND pam.isdelete=0 AND pam.opt_mandatory=1 " +
 	                "WHERE pa.shiftid=? AND pa.hub_id=? AND pa.isactive=1 AND pa.isdelete=0 "
 	        );
@@ -2650,33 +2650,34 @@ public class PmcService {
 	    return Collections.singletonList(response);
 	}
 
-	public List<Map<String, Object>> getfeedbackhubdetails(int loginid, String date) {
+	public List<Map<String, Object>> getfeedbackhubdetails(Integer loginid, String date) {
 
 	    String formattedDate = convertDateFormat(date, 0);
 	    Map<String, Object> response = new HashMap<>();
 
 	    try {
 
-	        // (Optional) loginid check - you can keep or remove
-//	        String hubSql = "SELECT hub_id FROM driver_login WHERE loginid=? AND isactive=1 AND isdelete=0";
-//
-//	        List<Integer> hubList = jdbcPmcTemplate.query(
-//	                hubSql,
-//	                (rs, rowNum) -> rs.getInt("hub_id"),
-//	                loginid
-//	        );
-//
-//	        if (hubList.isEmpty()) {
-//	            response.put("message", "No hub mapped for login id");
-//	            response.put("status", "Failed");
-//	            return Collections.singletonList(response);
-//	        }
+	    	Integer hub_id = 0;
+	    	
+	    	if(loginid!=null && loginid!=0) {
+	    		String hubSql = "SELECT hub_id FROM driver_login WHERE loginid=? AND isactive=1 AND isdelete=0";
+
+		        List<Integer> hubList = jdbcPmcTemplate.query(
+		                hubSql,
+		                (rs, rowNum) -> rs.getInt("hub_id"),
+		                loginid
+		        );
+
+		        if (!hubList.isEmpty() && hubList.get(0) != null) {
+		            hub_id = hubList.get(0);
+		        }
+	    	}
 
 	        //   MAIN QUERY (all hubs)
 	        String sql =
 	                "SELECT hm.id AS hub_id, hm.permanent_location AS hub_name,hm.zone,hm.ward,hm.latitude,hm.longitude "
 	                + " FROM hub_master hm "
-	                + " WHERE EXISTS ( "
+	                + " WHERE hm.is_active=1 AND is_delete=0 AND EXISTS ( "
 	                + "    SELECT 1 "
 	                + "    FROM pmc_feedback pf "
 	                + "    JOIN pmc_answer_master pam ON pam.aid = pf.answer "
@@ -2686,10 +2687,21 @@ public class PmcService {
 	                + "    AND pam.opt_mandatory = 1 "
 	                + "    AND pf.isactive = 1 "
 	                + "    AND pf.isdelete = 0"
-	                + " )"; 
+	                +") ";
+	        
+	        if (hub_id != 0) {
+	            sql += " AND hm.id = ? ";
+	        }
 
-	        List<Map<String, Object>> hubdetails =
-	                jdbcPmcTemplate.queryForList(sql, formattedDate);
+	        sql += " ORDER BY hm.id";
+	        
+	        List<Map<String, Object>> hubdetails;
+
+	        if (hub_id != 0) {
+	            hubdetails = jdbcPmcTemplate.queryForList(sql, formattedDate, hub_id);
+	        } else {
+	            hubdetails = jdbcPmcTemplate.queryForList(sql, formattedDate);
+	        }
 
 	        response.put("data", hubdetails);
 
@@ -2710,38 +2722,88 @@ public class PmcService {
 	    return Collections.singletonList(response);
 	}
 
-	public List<Map<String, Object>> getceloginhubs( String date) {
-		
-		
-		String formattedDate = convertDateFormat(date, 0);
+//	public List<Map<String, Object>> getceloginhubs( String date) {
+//		
+//		
+//		String formattedDate = convertDateFormat(date, 0);
+//	    Map<String, Object> response = new HashMap<>();
+//
+//	    try {
+//	      
+//	        String sql =
+//	                "SELECT hm.id AS hub_id, hm.permanent_location AS hub_name,hm.zone,hm.ward,hm.latitude,hm.longitude "
+//	                + " FROM hub_master hm "
+//	                + " WHERE EXISTS ( "
+//	                + "    SELECT 1 "
+//	                + "    FROM pmc_feedback pf "
+//	                + "    JOIN pmc_answer_master pam ON pam.aid = pf.answer "
+//	                + "    JOIN pmc_audit pa ON pa.id = pf.pmc_audit_id "
+//	                + "    WHERE pf.hub_id = hm.id "
+//	                + "    AND pa.audit_date = ? "
+//	                + "    AND pam.opt_mandatory = 1 "
+//	                + "    AND pf.isactive = 1 "
+//	                + "    AND pf.isdelete = 0 AND pf.food_swing_sts = 'challenge' "
+//	                + " )"; 
+//
+//	        List<Map<String, Object>> hubdetails =
+//	                jdbcPmcTemplate.queryForList(sql, formattedDate);
+//
+//	        response.put("data", hubdetails);
+//
+//	        if (hubdetails.isEmpty()) {
+//	            response.put("message", "No Issue Found for any hub");
+//	        } else {
+//	            response.put("message", "Issue Found Hubs List for SE/CE");
+//	        }
+//
+//	        response.put("status", "Success");
+//
+//	    } catch (Exception e) {
+//	        e.printStackTrace();
+//	        response.put("message", "Error in getting Food Details");
+//	        response.put("status", "Failed");
+//	    }
+//
+//	    return Collections.singletonList(response);
+//		
+//	}
+	
+	
+	public List<Map<String, Object>> getceloginhubs() {
+
 	    Map<String, Object> response = new HashMap<>();
 
 	    try {
-	      
+
 	        String sql =
-	                "SELECT hm.id AS hub_id, hm.permanent_location AS hub_name,hm.zone,hm.ward,hm.latitude,hm.longitude "
-	                + " FROM hub_master hm "
-	                + " WHERE EXISTS ( "
-	                + "    SELECT 1 "
-	                + "    FROM pmc_feedback pf "
-	                + "    JOIN pmc_answer_master pam ON pam.aid = pf.answer "
-	                + "    JOIN pmc_audit pa ON pa.id = pf.pmc_audit_id "
-	                + "    WHERE pf.hub_id = hm.id "
-	                + "    AND pa.audit_date = ? "
-	                + "    AND pam.opt_mandatory = 1 "
-	                + "    AND pf.isactive = 1 "
-	                + "    AND pf.isdelete = 0 AND pf.food_swing_sts = 'challenge' "
-	                + " )"; 
+	                "SELECT hm.id AS hub_id, hm.permanent_location AS hub_name, hm.zone, hm.ward, hm.latitude, hm.longitude, " +
+	                "COUNT(DISTINCT pa.audit_date) AS date_count " +
+
+	                "FROM hub_master hm " +
+
+	                "JOIN pmc_feedback pf ON pf.hub_id = hm.id " +
+	                "JOIN pmc_audit pa ON pa.id = pf.pmc_audit_id " +
+	                "JOIN pmc_answer_master pam ON pam.aid = pf.answer " +
+
+	                "WHERE pam.opt_mandatory = 1 " +
+	                "AND pf.food_swing_sts = 'challenge' " +
+	                "AND pf.ce_sts IS NULL " +
+	                "AND pf.isactive = 1 " +
+	                "AND pf.isdelete = 0 " +
+
+	                "GROUP BY hm.id, hm.permanent_location, hm.zone, hm.ward, hm.latitude, hm.longitude " +
+
+	                "ORDER BY hm.id";
 
 	        List<Map<String, Object>> hubdetails =
-	                jdbcPmcTemplate.queryForList(sql, formattedDate);
+	                jdbcPmcTemplate.queryForList(sql);
 
 	        response.put("data", hubdetails);
 
 	        if (hubdetails.isEmpty()) {
-	            response.put("message", "No Issue Found for any hub");
+	            response.put("message", "No Pending Challenges for CE");
 	        } else {
-	            response.put("message", "Issue Found Hubs List for SE/CE");
+	            response.put("message", "Pending Challenge Hubs for CE");
 	        }
 
 	        response.put("status", "Success");
@@ -2753,7 +2815,6 @@ public class PmcService {
 	    }
 
 	    return Collections.singletonList(response);
-		
 	}
 
 	public List<Map<String, Object>> getCEDataNoCategory(int shiftid, int hub_id, String date) {
@@ -2954,7 +3015,7 @@ public class PmcService {
 	        StringBuilder sql = new StringBuilder();
 
 	        sql.append(
-	            "SELECT hm.id AS hub_id, hm.permanent_location AS hub_name, " +
+	            "SELECT hm.id AS hub_id, hm.permanent_location AS hub_name,hm.latitude,hm.longitude, " +
 	            "sm.shiftid, sm.Code AS shift_name, " +
 	            "CASE WHEN COUNT(pa.id) > 0 THEN 1 ELSE 0 END AS count " +
 
@@ -2979,7 +3040,7 @@ public class PmcService {
 	            params.add(hub_id);
 	        }
 
-	        sql.append(" GROUP BY hm.id, hm.permanent_location, sm.shiftid, sm.Code ");
+	        sql.append(" GROUP BY hm.id, hm.permanent_location,hm.latitude,hm.longitude, sm.shiftid, sm.Code ");
 	        sql.append(" ORDER BY hm.id, sm.orderby ");
 
 	        List<Map<String, Object>> raw =
@@ -3066,6 +3127,141 @@ public class PmcService {
 		    return Collections.singletonList(response);
 		}
 
+//		public List<Map<String, Object>> getreportdata(int shiftid, int hub_id, String date, int qcm_id) {
+//
+//		    Map<String, Object> response = new HashMap<>();
+//
+//		    try {
+//
+//		        String formattedDate = convertDateFormat(date, 0);
+//
+//		        String sql = "SELECT pf.id, pf.questions AS qid, pq.q_english AS question, " +
+//		                "pf.answer AS aid, pam.english_name AS answer, pam.opt_mandatory, " +
+//
+//		                "pf.remarks, pf.image, " +
+//
+//		                "pf.food_swing_sts, pf.fs_remarks, pf.fs_image, " +
+//		                "pf.ce_sts, pf.ce_remarks, " +
+//
+//		                "qcm.penalty_amt " +
+//
+//		                "FROM pmc_feedback pf " +
+//		                "JOIN pmc_audit pa ON pa.id = pf.pmc_audit_id " +
+//		                "JOIN pmc_questions_master pq ON pq.qid = pf.questions " +
+//		                "JOIN pmc_answer_master pam ON pam.aid = pf.answer " +
+//		                "JOIN questions_category_master qcm ON qcm.qcm_id = pf.qcmid " +
+//
+//		                "WHERE pa.shiftid = ? " +
+//		                "AND pa.hub_id = ? " +
+//		                "AND pa.audit_date = ? " +
+//		                "AND pa.qcm_id = ? " +
+//		                "AND pf.isactive = 1 " +
+//		                "AND pf.isdelete = 0";
+//
+//		        List<Map<String, Object>> dbData =
+//		                jdbcPmcTemplate.queryForList(sql, shiftid, hub_id, formattedDate, qcm_id);
+//
+//		        List<Map<String, Object>> finalList = new ArrayList<>();
+//
+//		        for (Map<String, Object> row : dbData) {
+//
+//		            Map<String, Object> obj = new LinkedHashMap<>();
+//
+//		            obj.put("question", row.get("question"));
+//		            obj.put("answer", row.get("answer"));
+//		            obj.put("qid", row.get("qid"));
+//		            obj.put("aid", row.get("aid"));
+//
+//		            Object optObj = row.get("opt_mandatory");
+//
+//		            int optMandatory = 0;
+//
+//		            if (optObj instanceof Number) {
+//		                optMandatory = ((Number) optObj).intValue();
+//		            } else if (optObj instanceof Boolean) {
+//		                optMandatory = (Boolean) optObj ? 1 : 0;
+//		            }
+//
+//		            //  Only for Issue Found
+//		            if (optMandatory == 1) {
+//
+//		                //  PMC DATA
+//		                Map<String, Object> pmcData = new HashMap<>();
+//		                pmcData.put("remarks", row.get("remarks"));
+//		                pmcData.put("img_full_path",
+//		                        row.get("image") != null ? fileBaseUrl + "/gccofficialapp/files" + row.get("image") : "");
+//
+//		                obj.put("pmc_data", pmcData);
+//
+//		                
+//		                Map<String, Object> fsData = new HashMap<>();
+//
+//		                String fsStatus = row.get("food_swing_sts") != null 
+//		                        ? row.get("food_swing_sts").toString() 
+//		                        : null;
+//
+//		                if (fsStatus != null) {
+//
+//		                    fsData.put("food_swing_sts", fsStatus.toUpperCase());
+//
+//		                    if ("challenge".equalsIgnoreCase(fsStatus)) {
+//		                        fsData.put("fs_remarks", row.get("fs_remarks"));
+//		                        fsData.put("fs_image",
+//		                                row.get("fs_image") != null 
+//		                                ? fileBaseUrl + "/gccofficialapp/files" + row.get("fs_image") 
+//		                                : "");
+//		                    }
+//
+//		                    obj.put("fs_data", fsData);
+//		                }
+//
+//		                // CE DATA
+//		                String ceStatus = row.get("ce_sts") != null ? row.get("ce_sts").toString() : null;
+//
+//		                if (ceStatus != null) {
+//		                    Map<String, Object> ceData = new HashMap<>();
+//		                    ceData.put("ce_sts", ceStatus.toUpperCase());
+//		                    ceData.put("ce_remarks", row.get("ce_remarks"));
+//		                    obj.put("ce_data", ceData);
+//		                }
+//
+//		                // PENALTY CALCULATION
+//		                Double penalty = (Double) row.get("penalty_amt");
+//
+//		                if ("accept".equalsIgnoreCase(fsStatus) && ceStatus == null) {
+//		                    obj.put("penalty_amt", penalty);
+//		                } else if ("challenge".equalsIgnoreCase(fsStatus) && ceStatus == null) {
+//		                    obj.put("penalty_amt", "Pending");
+//		                }
+////		                else if ("challenge".equalsIgnoreCase(fsStatus) && "accept".equalsIgnoreCase(ceStatus)) {
+////		                    obj.put("penalty_amt", 0);
+////		                }
+//		                else if ("challenge".equalsIgnoreCase(fsStatus) && "reject".equalsIgnoreCase(ceStatus)) {
+//		                    obj.put("penalty_amt", penalty);
+//		                }
+//		            }
+//
+//		            finalList.add(obj);
+//		        }
+//
+//		        response.put("data", finalList);
+//		        response.put("status", "Success");
+//		        response.put("message", "Food Feedback Details");
+//
+//		    } catch (Exception e) {
+//		        e.printStackTrace();
+//		        response.put("status", "Failed");
+//		        response.put("message", "Error in report data");
+//		    }
+//
+//		    return Collections.singletonList(response);
+//		}
+		
+		private String getSafeString(Object obj) {
+		    return obj != null ? obj.toString() : "";
+		}
+		
+		
 		public List<Map<String, Object>> getreportdata(int shiftid, int hub_id, String date, int qcm_id) {
 
 		    Map<String, Object> response = new HashMap<>();
@@ -3086,14 +3282,14 @@ public class PmcService {
 
 		                "FROM pmc_feedback pf " +
 		                "JOIN pmc_audit pa ON pa.id = pf.pmc_audit_id " +
-		                "JOIN pmc_questions_master pq ON pq.qid = pf.questions " +
-		                "JOIN pmc_answer_master pam ON pam.aid = pf.answer " +
-		                "JOIN questions_category_master qcm ON qcm.qcm_id = pf.qcmid " +
+		                "LEFT JOIN pmc_questions_master pq ON pq.qid = pf.questions " +
+		                "LEFT JOIN pmc_answer_master pam ON pam.aid = pf.answer " +
+		                "LEFT JOIN questions_category_master qcm ON qcm.qcm_id = pf.qcmid " +
 
 		                "WHERE pa.shiftid = ? " +
 		                "AND pa.hub_id = ? " +
 		                "AND pa.audit_date = ? " +
-		                "AND pa.qcm_id = ? " +
+		                "AND pf.qcmid = ? " +
 		                "AND pf.isactive = 1 " +
 		                "AND pf.isdelete = 0";
 
@@ -3106,11 +3302,43 @@ public class PmcService {
 
 		            Map<String, Object> obj = new LinkedHashMap<>();
 
-		            obj.put("question", row.get("question"));
-		            obj.put("answer", row.get("answer"));
+		            // BASIC DATA
+		            obj.put("question", getSafeString(row.get("question")));
+		            obj.put("answer", getSafeString(row.get("answer")));
 		            obj.put("qid", row.get("qid"));
 		            obj.put("aid", row.get("aid"));
 
+		            // PMC DATA (always)
+		            String pmcImg = row.get("image") != null
+		                    ? fileBaseUrl + "/gccofficialapp/files" + row.get("image")
+		                    : "";
+
+		            obj.put("pmc_img_full_path", pmcImg);
+		            obj.put("pmc_remarks", getSafeString(row.get("remarks")));
+
+		            // FS DATA (always)
+		            String fsStatus = row.get("food_swing_sts") != null
+		                    ? row.get("food_swing_sts").toString().toUpperCase()
+		                    : "";
+
+		            obj.put("food_swing_sts", fsStatus);
+
+		            String fsImage = row.get("fs_image") != null
+		                    ? fileBaseUrl + "/gccofficialapp/files" + row.get("fs_image")
+		                    : "";
+
+		            obj.put("fs_image", fsImage);
+		            obj.put("fs_remarks", getSafeString(row.get("fs_remarks")));
+
+		            // CE DATA (always)
+		            String ceStatus = row.get("ce_sts") != null
+		                    ? row.get("ce_sts").toString().toUpperCase()
+		                    : "";
+
+		            obj.put("ce_sts", ceStatus);
+		            obj.put("ce_remarks", getSafeString(row.get("ce_remarks")));
+
+		            // PENALTY (only for Issue Found)
 		            Object optObj = row.get("opt_mandatory");
 
 		            int optMandatory = 0;
@@ -3120,75 +3348,24 @@ public class PmcService {
 		            } else if (optObj instanceof Boolean) {
 		                optMandatory = (Boolean) optObj ? 1 : 0;
 		            }
+		            obj.put("penalty_amt", "");
 
-		            //  Only for Issue Found
 		            if (optMandatory == 1) {
 
-		                //  PMC DATA
-		                Map<String, Object> pmcData = new HashMap<>();
-		                pmcData.put("remarks", row.get("remarks"));
-		                pmcData.put("img_full_path",
-		                        row.get("image") != null ? fileBaseUrl + "/gccofficialapp/files" + row.get("image") : "");
+		                Double penalty = row.get("penalty_amt") != null
+		                        ? ((Number) row.get("penalty_amt")).doubleValue()
+		                        : 0;
 
-		                obj.put("pmc_data", pmcData);
-
-		                //  FS DATA
-//		                String fsStatus = row.get("food_swing_sts") != null ? row.get("food_swing_sts").toString() : null;
-//
-//		                if ("challenge".equalsIgnoreCase(fsStatus)) {
-//
-//		                    Map<String, Object> fsData = new HashMap<>();
-//		                    fsData.put("food_swing_sts", fsStatus);
-//		                    fsData.put("fs_remarks", row.get("fs_remarks"));
-//		                    fsData.put("fs_image",
-//		                            row.get("fs_image") != null ? fileBaseUrl + "/gccofficialapp/files" + row.get("fs_image") : "");
-//
-//		                    obj.put("fs_data", fsData);
-//		                }
-		                
-		                Map<String, Object> fsData = new HashMap<>();
-
-		                String fsStatus = row.get("food_swing_sts") != null 
-		                        ? row.get("food_swing_sts").toString() 
-		                        : null;
-
-		                if (fsStatus != null) {
-
-		                    fsData.put("food_swing_sts", fsStatus);
-
-		                    if ("challenge".equalsIgnoreCase(fsStatus)) {
-		                        fsData.put("fs_remarks", row.get("fs_remarks"));
-		                        fsData.put("fs_image",
-		                                row.get("fs_image") != null 
-		                                ? fileBaseUrl + "/gccofficialapp/files" + row.get("fs_image") 
-		                                : "");
-		                    }
-
-		                    obj.put("fs_data", fsData);
-		                }
-
-		                // CE DATA
-		                String ceStatus = row.get("ce_sts") != null ? row.get("ce_sts").toString() : null;
-
-		                if (ceStatus != null) {
-		                    Map<String, Object> ceData = new HashMap<>();
-		                    ceData.put("ce_sts", ceStatus);
-		                    ceData.put("ce_remarks", row.get("ce_remarks"));
-		                    obj.put("ce_data", ceData);
-		                }
-
-		                // PENALTY CALCULATION
-		                Double penalty = (Double) row.get("penalty_amt");
-
-		                if ("accept".equalsIgnoreCase(fsStatus) && ceStatus == null) {
+		                if ("accept".equalsIgnoreCase(fsStatus) && ceStatus.isEmpty()) {
 		                    obj.put("penalty_amt", penalty);
-		                } else if ("challenge".equalsIgnoreCase(fsStatus) && ceStatus == null) {
+		                }
+		                else if ("challenge".equalsIgnoreCase(fsStatus) && ceStatus.isEmpty()) {
 		                    obj.put("penalty_amt", "Pending");
-		                } else if ("challenge".equalsIgnoreCase(fsStatus) && "accept".equalsIgnoreCase(ceStatus)) {
-		                    obj.put("penalty_amt", 0);
-		                } else if ("challenge".equalsIgnoreCase(fsStatus) && "reject".equalsIgnoreCase(ceStatus)) {
+		                }
+		                else if ("challenge".equalsIgnoreCase(fsStatus) && "reject".equalsIgnoreCase(ceStatus)) {
 		                    obj.put("penalty_amt", penalty);
 		                }
+		                // challenge + accept → keep "" (default)
 		            }
 
 		            finalList.add(obj);
@@ -3202,6 +3379,401 @@ public class PmcService {
 		        e.printStackTrace();
 		        response.put("status", "Failed");
 		        response.put("message", "Error in report data");
+		    }
+
+		    return Collections.singletonList(response);
+		}
+
+		public List<Map<String, Object>> getHubDateShiftDetails(int hub_id) {
+
+		    Map<String, Object> response = new HashMap<>();
+
+		    try {
+
+		        String sql = " SELECT  "
+		        		+ "    hm.id AS hub_id, "
+		        		+ "    hm.permanent_location AS hub_name, "
+		        		+ "    hm.zone, "
+		        		+ "    hm.ward, "
+ 
+		        		+ "    DATE_FORMAT(d.audit_date, '%d/%m/%Y') AS audit_date, "
+		        		+ "    DATE_FORMAT(d.audit_date, '%d-%m-%Y') AS display_date, "
+ 
+		        		+ "    sm.shiftid, "
+		        		+ "    sm.Code AS shift_name, "
+ 
+		        		+ "    COUNT(pf.id) AS count "
+ 
+		        		+ "FROM hub_master hm "
+ 
+		        		+ "JOIN ( "
+		        		+ "    SELECT DISTINCT audit_date, hub_id "
+		        		+ "    FROM pmc_audit "
+		        		+ ") d ON d.hub_id = hm.id "
+ 
+		        		+ "CROSS JOIN shift_master sm "
+ 
+		        		+ "LEFT JOIN pmc_audit pa  "
+		        		+ "    ON pa.hub_id = hm.id "
+		        		+ "    AND pa.audit_date = d.audit_date "
+		        		+ "    AND pa.shiftid = sm.shiftid "
+ 
+		        		+ "LEFT JOIN pmc_feedback pf  "
+		        		+ "    ON pf.pmc_audit_id = pa.id "
+		        		+ "    AND pf.food_swing_sts = 'challenge' "
+		        		+ "    AND pf.ce_sts IS NULL "
+		        		+ "    AND pf.isactive = 1  "
+		        		+ "    AND pf.isdelete = 0 "
+ 
+		        		+ "LEFT JOIN pmc_answer_master pam  "
+		        		+ "    ON pam.aid = pf.answer "
+		        		+ "    AND pam.opt_mandatory = 1 "
+ 
+		        		+ "WHERE hm.id = ? "
+ 
+		        		+ "GROUP BY  "
+		        		+ "    hm.id, hm.permanent_location, hm.zone, hm.ward, "
+		        		+ "    d.audit_date, sm.shiftid, sm.Code "
+ 
+		        		+ "ORDER BY d.audit_date DESC, sm.shiftid ";
+
+		        List<Map<String, Object>> rows = jdbcPmcTemplate.queryForList(sql, hub_id);
+
+		        // 🔥 Transform to required structure
+		        Map<String, Map<String, Object>> dateMap = new LinkedHashMap<>();
+
+		        for (Map<String, Object> row : rows) {
+
+		            String date = (String) row.get("audit_date");
+
+		            if (!dateMap.containsKey(date)) {
+		                Map<String, Object> obj = new LinkedHashMap<>();
+		                obj.put("hub_id", row.get("hub_id"));
+		                obj.put("hub_name", row.get("hub_name"));
+		                obj.put("zone", row.get("zone"));
+		                obj.put("ward", row.get("ward"));
+		                //obj.put("date", date);
+		                obj.put("display_date", row.get("display_date"));
+		                obj.put("shifts", new ArrayList<>());
+		                dateMap.put(date, obj);
+		            }
+
+		            Map<String, Object> shiftObj = new HashMap<>();
+		            shiftObj.put("shiftid", row.get("shiftid"));
+		            shiftObj.put("shift_name", row.get("shift_name"));
+		            shiftObj.put("count", ((Number) row.get("count")).intValue());
+
+		            ((List<Map<String, Object>>) dateMap.get(date).get("shifts")).add(shiftObj);
+		        }
+
+		        response.put("data", new ArrayList<>(dateMap.values()));
+		        response.put("status", "Success");
+		        response.put("message", "Fetched Hub Shift Data Successfully");
+
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		        response.put("status", "Failed");
+		        response.put("message", "Error in fetching data");
+		    }
+
+		    return Collections.singletonList(response);
+		}
+		
+		//penalty report
+		
+		private int getHubIdFromLogin(int loginid) {
+
+		    String sql = "SELECT hub_id FROM driver_login WHERE loginid=? AND isactive=1 AND isdelete=0";
+
+		    List<Integer> list = jdbcPmcTemplate.query(sql,
+		            (rs, rowNum) -> rs.getInt("hub_id"),
+		            loginid);
+
+		    if (!list.isEmpty() && list.get(0) != null) {
+		        return list.get(0);
+		    }
+
+		    return 0;
+		}
+		
+		private String getTypeCondition(String type) {
+
+		    switch (type) {
+		        case "initiated":
+		            return "pf.food_swing_sts IS NULL";
+		        case "fs_accept":
+		            return "pf.food_swing_sts = 'accept'";
+		        case "ce_accept":
+		            return "pf.food_swing_sts = 'challenge' AND pf.ce_sts = 'reject'";
+		        default:
+		            return "1=1";
+		    }
+		}
+		
+		public List<Map<String, Object>> getPenaltyHubSummary(int loginid) {
+
+		    Map<String, Object> response = new HashMap<>();
+
+		    try {
+
+		        int hub_id = getHubIdFromLogin(loginid);
+
+		        String sql =
+		                "SELECT hm.id AS hub_id, hm.permanent_location AS hub_name, hm.zone, hm.ward, " +
+
+		                "SUM(CASE WHEN pf.food_swing_sts IS NULL AND pam.opt_mandatory=1 THEN 1 ELSE 0 END) AS initiated_count, " +
+		                "SUM(CASE WHEN pf.food_swing_sts IS NULL AND pam.opt_mandatory=1 THEN qcm.penalty_amt ELSE 0 END) AS initiated_amount, " +
+
+		                "SUM(CASE WHEN pf.food_swing_sts='accept' AND pam.opt_mandatory=1 THEN 1 ELSE 0 END) AS fs_accept_count, " +
+		                "SUM(CASE WHEN pf.food_swing_sts='accept' AND pam.opt_mandatory=1 THEN qcm.penalty_amt ELSE 0 END) AS fs_accept_amount, " +
+
+		                "SUM(CASE WHEN pf.food_swing_sts='challenge' AND pf.ce_sts='reject' AND pam.opt_mandatory=1 THEN 1 ELSE 0 END) AS ce_accept_count, " +
+		                "SUM(CASE WHEN pf.food_swing_sts='challenge' AND pf.ce_sts='reject' AND pam.opt_mandatory=1 THEN qcm.penalty_amt ELSE 0 END) AS ce_accept_amount " +
+
+		                "FROM hub_master hm " +
+
+		                // ✅ FIXED LEFT JOIN
+		                "LEFT JOIN pmc_feedback pf ON pf.hub_id = hm.id " +
+		                "   AND pf.isactive = 1 " +
+		                "   AND pf.isdelete = 0 " +
+
+		                "LEFT JOIN pmc_answer_master pam ON pam.aid = pf.answer " +
+		                "LEFT JOIN questions_category_master qcm ON qcm.qcm_id = pf.qcmid " +
+
+		                "WHERE hm.is_active=1 AND hm.is_delete=0 " +
+		                "AND (? = 0 OR hm.id = ?) " +
+
+		                "GROUP BY hm.id ORDER BY hm.id";
+
+		        List<Map<String, Object>> data =
+		                jdbcPmcTemplate.queryForList(sql, hub_id, hub_id);
+
+		        // ✅ Convert 0 → "" (important for UI)
+		        for (Map<String, Object> row : data) {
+		        	
+		        	
+		            row.put("type1", "initiated");
+		            row.put("type2", "fs_accept");
+		            row.put("type3", "ce_accept");
+
+		            convertEmpty(row, "initiated_count");
+		            convertEmpty(row, "initiated_amount");
+
+		            convertEmpty(row, "fs_accept_count");
+		            convertEmpty(row, "fs_accept_amount");
+
+		            convertEmpty(row, "ce_accept_count");
+		            convertEmpty(row, "ce_accept_amount");
+		        }
+
+		        response.put("data", data);
+		        response.put("status", "Success");
+		        response.put("message", "Hub Details Fetched Successfully");
+
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		        response.put("status", "Failed");
+		        response.put("message", "Error fetching hub summary");
+		    }
+
+		    return Collections.singletonList(response);
+		}
+		
+		private void convertEmpty(Map<String, Object> row, String key) {
+
+		    Object val = row.get(key);
+
+		    if (val == null) {
+		        row.put(key, "");
+		        return;
+		    }
+
+		    if (val instanceof Number) {
+		        double num = ((Number) val).doubleValue();
+
+		        if (num == 0) {
+		            row.put(key, "");
+		        }
+		    }
+		}
+		
+		
+		public List<Map<String, Object>> getHubDateShiftDetails(int hub_id, String type) {
+
+		    Map<String, Object> response = new HashMap<>();
+
+		    try {
+
+		        String condition = getTypeCondition(type);
+
+		        String sql =
+		                "SELECT d.audit_date, sm.shiftid, sm.Code AS shift_name, " +
+		                "COUNT(pf.id) AS count, IFNULL(SUM(qcm.penalty_amt),0) AS amount " +
+
+		                "FROM (SELECT DISTINCT audit_date FROM pmc_audit WHERE hub_id=?) d " +
+
+		                "CROSS JOIN shift_master sm " +
+
+		                "LEFT JOIN pmc_audit pa ON pa.audit_date=d.audit_date " +
+		                "AND pa.shiftid=sm.shiftid AND pa.hub_id=? " +
+
+		                "LEFT JOIN pmc_feedback pf ON pf.pmc_audit_id=pa.id " +
+		                "AND pf.isactive=1 AND pf.isdelete=0 " +
+		                "AND " + condition + " " +
+
+		                "LEFT JOIN pmc_answer_master pam ON pam.aid=pf.answer " +
+		                "AND pam.opt_mandatory=1 " +
+
+		                "LEFT JOIN questions_category_master qcm ON qcm.qcm_id=pf.qcmid " +
+
+		                "WHERE sm.isactive=1 AND sm.isdelete=0 " +
+		                
+
+		                " GROUP BY d.audit_date, sm.shiftid " +
+		                " ORDER BY d.audit_date ASC, sm.shiftid";
+
+		        List<Map<String, Object>> rows =
+		                jdbcPmcTemplate.queryForList(sql, hub_id, hub_id);
+
+		        // ✅ Transform to required structure (group by date)
+		        Map<String, Map<String, Object>> dateMap = new LinkedHashMap<>();
+
+		        for (Map<String, Object> row : rows) {
+
+		        	Date sqlDate = (Date) row.get("audit_date");
+		        	LocalDate localDate = sqlDate.toLocalDate();
+		        	String date = localDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+
+		            if (!dateMap.containsKey(date)) {
+		                Map<String, Object> obj = new LinkedHashMap<>();
+		                obj.put("hub_id", hub_id);
+		                obj.put("date", date);
+		                obj.put("type", type);
+		                obj.put("shifts", new ArrayList<>());
+		                dateMap.put(date, obj);
+		            }
+
+		            Map<String, Object> shiftObj = new LinkedHashMap<>();
+		            shiftObj.put("shiftid", row.get("shiftid"));
+		            shiftObj.put("shift_name", row.get("shift_name"));
+		            shiftObj.put("count", ((Number) row.get("count")).intValue());
+		            shiftObj.put("amount", ((Number) row.get("amount")).doubleValue());
+
+		            ((List<Map<String, Object>>) dateMap.get(date).get("shifts")).add(shiftObj);
+		        }
+
+		        response.put("data", new ArrayList<>(dateMap.values()));
+		        response.put("status", "Success");
+		        response.put("message", "Fetched Hub Detail Successfully");
+
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		        response.put("status", "Failed");
+		    }
+
+		    return Collections.singletonList(response);
+		}
+		
+		public List<Map<String, Object>> getCategoryReport(int hub_id, int shiftid, String date, String type) {
+
+		    Map<String, Object> response = new HashMap<>();
+
+		    try {
+
+		        String formattedDate = convertDateFormat(date, 0);
+		        String condition = getTypeCondition(type);
+
+		        String sql =
+		                "SELECT qcm.qcm_id,qcm.code, qcm.audit_category, qcm.img_url, " +
+		                "COUNT(pf.id) AS count, SUM(qcm.penalty_amt) AS amount " +
+
+		                "FROM pmc_feedback pf " +
+		                "JOIN pmc_audit pa ON pa.id = pf.pmc_audit_id " +
+		                "JOIN pmc_answer_master pam ON pam.aid = pf.answer " +
+		                "JOIN questions_category_master qcm ON qcm.qcm_id = pf.qcmid " +
+
+		                "WHERE pa.hub_id=? AND pa.shiftid=? AND pa.audit_date=? " +
+		                "AND pam.opt_mandatory=1 AND " + condition +
+
+		                " GROUP BY qcm.qcm_id"
+		                + " ORDER BY  qcm.qcm_id";
+
+		        List<Map<String, Object>> data =
+		                jdbcPmcTemplate.queryForList(sql, hub_id, shiftid, formattedDate);
+
+		        response.put("data", data);
+		        response.put("status", "Success");
+		        response.put("message", "Fetched Category Report");
+
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		        response.put("status", "Failed");
+		    }
+
+		    return Collections.singletonList(response);
+		}
+		
+		
+		public List<Map<String, Object>> getQuestionReport(int hub_id, int shiftid, String date, String type, int qcm_id) {
+
+		    Map<String, Object> response = new HashMap<>();
+
+		    try {
+
+		        String formattedDate = convertDateFormat(date, 0);
+		        String condition = getTypeCondition(type);
+
+		        String sql =
+		                "SELECT pf.*, pq.q_english AS question, pam.english_name AS answer_name,pf.answer AS answer_id, pam.opt_mandatory, qcm.penalty_amt as amount_penalty " +
+
+		                "FROM pmc_feedback pf " +
+		                "JOIN pmc_audit pa ON pa.id = pf.pmc_audit_id " +
+		                "LEFT JOIN pmc_questions_master pq ON pq.qid = pf.questions " +
+		                "LEFT JOIN pmc_answer_master pam ON pam.aid = pf.answer " +
+		                "LEFT JOIN questions_category_master qcm ON qcm.qcm_id = pf.qcmid " +
+
+		                "WHERE pa.hub_id=? AND pa.shiftid=? AND pa.audit_date=? AND pf.qcmid=? " +
+		                "AND pam.opt_mandatory=1 AND " + condition + " " +
+		                "ORDER BY pq.qid";
+
+		        List<Map<String, Object>> dbData =
+		                jdbcPmcTemplate.queryForList(sql, hub_id, shiftid, formattedDate, qcm_id);
+
+		        List<Map<String, Object>> finalList = new ArrayList<>();
+
+		        for (Map<String, Object> row : dbData) {
+		        	
+		        	String pmcImage = row.get("image") != null
+		                    ? fileBaseUrl + "/gccofficialapp/files" + row.get("image")
+		                    : "";
+		        	
+		        	String fsImage = row.get("fs_image") != null
+		                    ? fileBaseUrl + "/gccofficialapp/files" + row.get("fs_image")
+		                    : "";
+
+		            Map<String, Object> obj = new LinkedHashMap<>();
+
+		            obj.put("question", getSafeString(row.get("question")));
+		            obj.put("answer", getSafeString(row.get("answer_name")));
+
+		            obj.put("pmc_img_full_path",pmcImage );
+		            obj.put("pmc_remarks", getSafeString(row.get("remarks")));
+		            obj.put("food_swing_sts", getSafeString(row.get("food_swing_sts")).toUpperCase());
+		            obj.put("fs_image", fsImage);
+		            obj.put("fs_remarks", getSafeString(row.get("fs_remarks")));
+		            obj.put("ce_sts", getSafeString(row.get("ce_sts")).toUpperCase());
+		            obj.put("ce_remarks", getSafeString(row.get("ce_remarks")));
+		            obj.put("penalty_amt", row.get("amount_penalty"));
+
+		            finalList.add(obj);
+		        }
+
+		        response.put("data", finalList);
+		        response.put("status", "Success");
+
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		        response.put("status", "Failed");
 		    }
 
 		    return Collections.singletonList(response);
