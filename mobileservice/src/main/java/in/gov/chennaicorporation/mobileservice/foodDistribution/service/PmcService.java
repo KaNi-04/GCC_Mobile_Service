@@ -3521,14 +3521,20 @@ public class PmcService {
 		        String sql =
 		                "SELECT hm.id AS hub_id, hm.permanent_location AS hub_name, hm.zone, hm.ward, " +
 
-		                "SUM(CASE WHEN pf.food_swing_sts IS NULL AND pam.opt_mandatory=1 THEN 1 ELSE 0 END) AS initiated_count, " +
-		                "SUM(CASE WHEN pf.food_swing_sts IS NULL AND pam.opt_mandatory=1 THEN qcm.penalty_amt ELSE 0 END) AS initiated_amount, " +
+		                "SUM(CASE WHEN  pam.opt_mandatory=1 THEN 1 ELSE 0 END) AS initiated_count, " +
+		                "SUM(CASE WHEN  pam.opt_mandatory=1 THEN qcm.penalty_amt ELSE 0 END) AS initiated_amount, " +
 
 		                "SUM(CASE WHEN pf.food_swing_sts='accept' AND pam.opt_mandatory=1 THEN 1 ELSE 0 END) AS fs_accept_count, " +
 		                "SUM(CASE WHEN pf.food_swing_sts='accept' AND pam.opt_mandatory=1 THEN qcm.penalty_amt ELSE 0 END) AS fs_accept_amount, " +
+		                
+						"SUM(CASE WHEN pf.food_swing_sts='challenge' AND pf.ce_sts='accept' AND pam.opt_mandatory=1 THEN 1 ELSE 0 END) AS ce_reject_count, " +
+						"SUM(CASE WHEN pf.food_swing_sts='challenge' AND pf.ce_sts='accept' AND pam.opt_mandatory=1 THEN qcm.penalty_amt ELSE 0 END) AS ce_reject_amount, " +
 
 		                "SUM(CASE WHEN pf.food_swing_sts='challenge' AND pf.ce_sts='reject' AND pam.opt_mandatory=1 THEN 1 ELSE 0 END) AS ce_accept_count, " +
-		                "SUM(CASE WHEN pf.food_swing_sts='challenge' AND pf.ce_sts='reject' AND pam.opt_mandatory=1 THEN qcm.penalty_amt ELSE 0 END) AS ce_accept_amount " +
+		                "SUM(CASE WHEN pf.food_swing_sts='challenge' AND pf.ce_sts='reject' AND pam.opt_mandatory=1 THEN qcm.penalty_amt ELSE 0 END) AS ce_accept_amount, " +
+		                
+						"SUM(CASE WHEN pf.food_swing_sts='challenge' AND pf.ce_sts IS NULL AND pam.opt_mandatory=1 THEN 1 ELSE 0 END) AS officer_pending_count, " +
+						"SUM(CASE WHEN pf.food_swing_sts='challenge' AND pf.ce_sts IS NULL AND pam.opt_mandatory=1 THEN qcm.penalty_amt ELSE 0 END) AS officer_pending_amount " +
 
 		                "FROM hub_master hm " +
 
