@@ -3500,15 +3500,21 @@ public class PmcService {
 
 		    switch (type) {
 		        case "initiated":
-		            return "pf.food_swing_sts IS NULL";
+		            return "pf.remarks is not null";
 		        case "fs_accept":
 		            return "pf.food_swing_sts = 'accept'";
 		        case "ce_accept":
 		            return "pf.food_swing_sts = 'challenge' AND pf.ce_sts = 'reject'";
+		        case "ce_reject":
+		            return "pf.food_swing_sts = 'challenge' AND pf.ce_sts = 'accept'";
+		        case "officer_pending":
+		            return "pf.food_swing_sts = 'challenge' AND pf.ce_sts IS NULL";
 		        default:
 		            return "1=1";
 		    }
 		}
+		
+		
 		
 		public List<Map<String, Object>> getPenaltyHubSummary(int loginid) {
 
@@ -3561,6 +3567,8 @@ public class PmcService {
 		            row.put("type1", "initiated");
 		            row.put("type2", "fs_accept");
 		            row.put("type3", "ce_accept");
+		            row.put("type4", "ce_reject");
+		            row.put("type5", "officer_pending");
 
 		            convertEmpty(row, "initiated_count");
 		            convertEmpty(row, "initiated_amount");
@@ -3570,6 +3578,13 @@ public class PmcService {
 
 		            convertEmpty(row, "ce_accept_count");
 		            convertEmpty(row, "ce_accept_amount");
+		            
+		            convertEmpty(row, "ce_reject_count");
+		            convertEmpty(row, "ce_reject_amount");
+		            
+
+		            convertEmpty(row, "officer_pending_count");
+		            convertEmpty(row, "officer_pending_amount");
 		        }
 
 		        response.put("data", data);
