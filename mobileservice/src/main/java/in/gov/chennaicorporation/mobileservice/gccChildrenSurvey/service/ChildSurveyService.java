@@ -255,18 +255,77 @@ public class ChildSurveyService {
 
     public String saveSurveyFromParams(Map<String, String> params) {
 
-        String insertSql = "INSERT INTO child_survey_response " +
-                "(qid, answer, others_answer,cby, parent_answer_id, cdate, isactive, isdelete) " +
-                "VALUES (?, ?, ?, ?, ?, NOW(), 1, 0)";
-
         String cby = params.getOrDefault("cby", "1");
+        String timeStr = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("ddMMyyHHmmss"));
+        String surveyId = "GCC_CS_" + timeStr;
+
+        // Save surveyor location details first
+        String zone = params.get("zone");
+        String ward = params.get("ward");
+        String lat = params.get("latitude");
+        if (lat == null)
+            lat = params.get("lat");
+        String lng = params.get("longitude");
+        if (lng == null)
+            lng = params.get("long");
+        String address = params.get("address");
+
+        if (zone != null || lat != null || lng != null) {
+            try {
+                // 1. Insert without survey_id using KeyHolder
+                String logindetailsSql = "INSERT INTO surveyor_location_details " +
+                        "(loginId, zone, ward, latitude, longitude, address, is_active, is_delete, cdate) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, 1, 0, NOW())";
+
+                org.springframework.jdbc.support.KeyHolder keyHolder = new org.springframework.jdbc.support.GeneratedKeyHolder();
+
+                final String finalLat = lat;
+                final String finalLng = lng;
+
+                jdbcChildSurveyTemplate.update(
+                        connection -> {
+                            java.sql.PreparedStatement ps = connection.prepareStatement(logindetailsSql,
+                                    java.sql.Statement.RETURN_GENERATED_KEYS);
+                            ps.setString(1, cby);
+                            ps.setString(2, zone);
+                            ps.setString(3, ward);
+                            ps.setString(4, finalLat);
+                            ps.setString(5, finalLng);
+                            ps.setString(6, address);
+                            return ps;
+                        },
+                        keyHolder);
+
+                // 2. Fetch the generated location id
+                Number key = keyHolder.getKey();
+                if (key != null) {
+                    Integer locationId = key.intValue();
+
+                    // 3. Append to surveyId
+                    surveyId = surveyId + locationId;
+
+                    // 4. Update the location record with the final surveyId
+                    String updateSql = "UPDATE surveyor_location_details SET survey_id = ? WHERE id = ?";
+                    jdbcChildSurveyTemplate.update(updateSql, surveyId, locationId);
+                }
+
+            } catch (Exception e) {
+                // System.out.println("❌ Error saving surveyor location details: " +
+                // e.getMessage());
+            }
+        }
+
+        String insertSql = "INSERT INTO child_survey_response " +
+                "(survey_id, qid, answer, others_answer, cby, parent_answer_id, cdate, isactive, isdelete) " +
+                "VALUES (?, ?, ?, ?, ?, ?, NOW(), 1, 0)";
 
         for (Map.Entry<String, String> entry : params.entrySet()) {
 
             String fieldName = entry.getKey().trim(); // q1, q2...
             String answer = entry.getValue() == null ? "" : entry.getValue().trim();
 
-            System.out.println("👉 Processing: " + fieldName);
+            // System.out.println("👉 Processing: " + fieldName);
 
             // =====================================================
             // 🔥 HANDLE DURATION (q3 assumed)
@@ -291,7 +350,7 @@ public class ChildSurveyService {
                 String finalAnswer = value + " " + typeName;
 
                 // 👉 q3 = duration
-                jdbcChildSurveyTemplate.update(insertSql, 3, finalAnswer, cby, null);
+                jdbcChildSurveyTemplate.update(insertSql, surveyId, 3, finalAnswer, "", cby, null);
 
                 continue;
             }
@@ -323,7 +382,7 @@ public class ChildSurveyService {
                 String finalAnswer = value + " " + typeName;
 
                 // 👉 q30 = dropout_year
-                jdbcChildSurveyTemplate.update(insertSql, 30, finalAnswer, cby, null);
+                jdbcChildSurveyTemplate.update(insertSql, surveyId, 30, finalAnswer, "", cby, null);
 
                 continue;
             }
@@ -343,12 +402,12 @@ public class ChildSurveyService {
                     String othersKey = fieldName + "_other";
                     String othersValue = params.getOrDefault(othersKey, "");
 
-                    System.out.println("✔ QID: " + qid);
+                    // System.out.println("✔ QID: " + qid);
 
                     // DOB → AGE
                     if (qid == 9) { // q9 = dob
 
-                        jdbcChildSurveyTemplate.update(insertSql, qid, answer, cby, null);
+                        jdbcChildSurveyTemplate.update(insertSql, surveyId, qid, answer, "", cby, null);
 
                         Integer parentId = jdbcChildSurveyTemplate.queryForObject(
                                 "SELECT LAST_INSERT_ID()", Integer.class);
@@ -356,37 +415,15 @@ public class ChildSurveyService {
                         String age = calculateAge(answer);
 
                         // 👉 q10 = age
-                        jdbcChildSurveyTemplate.update(insertSql, 10, age, cby, parentId);
+                        jdbcChildSurveyTemplate.update(insertSql, surveyId, 10, age, "", cby, parentId);
 
                     } else {
-                        jdbcChildSurveyTemplate.update(insertSql, qid, answer, othersValue, cby, null);
+                        jdbcChildSurveyTemplate.update(insertSql, surveyId, qid, answer, othersValue, cby, null);
                     }
 
                 } catch (Exception e) {
                     System.out.println("❌ Invalid field: " + fieldName);
                 }
-            }
-        }
-
-        // Save surveyor location details single time after loop
-        String zone = params.get("zone");
-        String ward = params.get("ward");
-        String lat = params.get("latitude");
-        if (lat == null)
-            lat = params.get("lat");
-        String lng = params.get("longitude");
-        if (lng == null)
-            lng = params.get("long");
-        String address = params.get("address");
-
-        if (zone != null || lat != null || lng != null) {
-            try {
-                String logindetailsSql = "INSERT INTO surveyor_location_details " +
-                        "(loginId, zone, ward, latitude, longitude, address, is_active, is_delete, cdate) " +
-                        "VALUES (?, ?, ?, ?, ?, ?, 1, 0, NOW())";
-                jdbcChildSurveyTemplate.update(logindetailsSql, cby, zone, ward, lat, lng, address);
-            } catch (Exception e) {
-                System.out.println("❌ Error saving surveyor location details: " + e.getMessage());
             }
         }
 
