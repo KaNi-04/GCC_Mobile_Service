@@ -1,7 +1,5 @@
 package in.gov.chennaicorporation.mobileservice.gccChildrenSurvey.service;
 
-import java.time.LocalDate;
-import java.time.Period;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -56,6 +54,56 @@ public class ChildSurveyService {
         }
 
         return finalList;
+    }
+
+    public List<Map<String, Object>> getParticipateSurveyQuestions() {
+
+        String questionSql = "SELECT * FROM child_survey_participate_master " +
+                "WHERE isactive=1 AND isdelete=0 ORDER BY orderby";
+
+        List<Map<String, Object>> questions = jdbcChildSurveyTemplate.queryForList(questionSql);
+
+        List<Map<String, Object>> finalList = new ArrayList<>();
+
+        for (Map<String, Object> q : questions) {
+            Map<String, Object> fullQuestion = buildParticipateQuestionWithOptions(q);
+            finalList.add(fullQuestion);
+        }
+
+        return finalList;
+    }
+
+    private Map<String, Object> buildParticipateQuestionWithOptions(Map<String, Object> q) {
+
+        Integer qid = (Integer) q.get("qid");
+        String masterTable = (String) safe(q.get("master_table_name"));
+
+        // Maintain order
+        Map<String, Object> questionMap = new LinkedHashMap<>();
+
+        questionMap.put("qid", q.get("qid"));
+        questionMap.put("q_english", q.get("q_english"));
+        questionMap.put("q_tamil", safe(q.get("q_tamil")));
+        questionMap.put("field_name", q.get("field_name"));
+        questionMap.put("cdate", q.get("cdate"));
+        questionMap.put("question_type", q.get("question_type"));
+        questionMap.put("isactive", q.get("isactive"));
+        questionMap.put("isdelete", q.get("isdelete"));
+        questionMap.put("orderby", q.get("orderby"));
+        questionMap.put("is_mandatory", q.get("is_mandatory"));
+        questionMap.put("is_dropdown", q.get("is_dropdown"));
+        questionMap.put("flag", q.get("flag"));
+        questionMap.put("master_table_name", masterTable);
+
+        List<Map<String, Object>> options = new ArrayList<>();
+
+        if (masterTable != null && !masterTable.isEmpty()) {
+            options = getOptionsFromMaster(masterTable, qid);
+        } 
+
+        questionMap.put("options", options);
+
+        return questionMap;
     }
 
     private Object safe(Object value) {
@@ -218,8 +266,12 @@ public class ChildSurveyService {
 
             List<Map<String, Object>> childQuestions = new ArrayList<>();
 
+            boolean isOthers = englishName != null && englishName.equalsIgnoreCase("Others");
+            optionMap.put("is_others", isOthers);
+            optionMap.put("text", isOthers);
+
             // 🔥 HANDLE "OTHERS"
-            if (englishName != null && englishName.equalsIgnoreCase("Others")) {
+            if (isOthers) {
 
                 Map<String, Object> child = new LinkedHashMap<>();
 
@@ -240,17 +292,6 @@ public class ChildSurveyService {
         }
 
         return options;
-    }
-
-    private String calculateAge(String dobStr) {
-        try {
-            LocalDate dob = LocalDate.parse(dobStr); // format: yyyy-MM-dd
-            LocalDate today = LocalDate.now();
-            Period age = Period.between(dob, today);
-            return String.valueOf(age.getYears());
-        } catch (Exception e) {
-            return "";
-        }
     }
 
     public String saveSurveyFromParams(Map<String, String> params) {
@@ -404,22 +445,96 @@ public class ChildSurveyService {
 
                     // System.out.println("✔ QID: " + qid);
 
-                    // DOB → AGE
-                    if (qid == 9) { // q9 = dob
+                    jdbcChildSurveyTemplate.update(insertSql, surveyId, qid, answer, othersValue, cby, null);
 
-                        jdbcChildSurveyTemplate.update(insertSql, surveyId, qid, answer, "", cby, null);
+                } catch (Exception e) {
+                    System.out.println("❌ Invalid field: " + fieldName);
+                }
+            }
+        }
 
-                        Integer parentId = jdbcChildSurveyTemplate.queryForObject(
-                                "SELECT LAST_INSERT_ID()", Integer.class);
+        return "Saved Successfully";
+    }
 
-                        String age = calculateAge(answer);
+    public String saveParticipateSurveyFromParams(Map<String, String> params) {
 
-                        // 👉 q10 = age
-                        jdbcChildSurveyTemplate.update(insertSql, surveyId, 10, age, "", cby, parentId);
+        String cby = params.getOrDefault("cby", "1");
+        String timeStr = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("ddMMyyHHmmss"));
+        String surveyId = "GCC_CSP_" + timeStr;
 
-                    } else {
-                        jdbcChildSurveyTemplate.update(insertSql, surveyId, qid, answer, othersValue, cby, null);
-                    }
+        // Save surveyor location details first
+        String zone = params.get("zone");
+        String ward = params.get("ward");
+        String lat = params.get("latitude");
+        if (lat == null)
+            lat = params.get("lat");
+        String lng = params.get("longitude");
+        if (lng == null)
+            lng = params.get("long");
+        String address = params.get("address");
+
+        if (zone != null || lat != null || lng != null) {
+            try {
+                // 1. Insert without survey_id using KeyHolder
+                String logindetailsSql = "INSERT INTO surveyor_location_details " +
+                        "(loginId, zone, ward, latitude, longitude, address, is_active, is_delete, cdate) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, 1, 0, NOW())";
+
+                org.springframework.jdbc.support.KeyHolder keyHolder = new org.springframework.jdbc.support.GeneratedKeyHolder();
+
+                final String finalLat = lat;
+                final String finalLng = lng;
+
+                jdbcChildSurveyTemplate.update(
+                        connection -> {
+                            java.sql.PreparedStatement ps = connection.prepareStatement(logindetailsSql,
+                                    java.sql.Statement.RETURN_GENERATED_KEYS);
+                            ps.setString(1, cby);
+                            ps.setString(2, zone);
+                            ps.setString(3, ward);
+                            ps.setString(4, finalLat);
+                            ps.setString(5, finalLng);
+                            ps.setString(6, address);
+                            return ps;
+                        },
+                        keyHolder);
+
+                // 2. Fetch the generated location id
+                Number key = keyHolder.getKey();
+                if (key != null) {
+                    Integer locationId = key.intValue();
+
+                    // 3. Append to surveyId
+                    surveyId = surveyId + locationId;
+
+                    // 4. Update the location record with the final surveyId
+                    String updateSql = "UPDATE surveyor_location_details SET survey_id = ? WHERE id = ?";
+                    jdbcChildSurveyTemplate.update(updateSql, surveyId, locationId);
+                }
+
+            } catch (Exception e) {
+            }
+        }
+
+        String insertSql = "INSERT INTO child_survey_participate_response " +
+                "(survey_id, qid, answer, others_answer, cby, parent_answer_id, cdate, isactive, isdelete) " +
+                "VALUES (?, ?, ?, ?, ?, ?, NOW(), 1, 0)";
+
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+
+            String fieldName = entry.getKey().trim(); // q1, q2...
+            String answer = entry.getValue() == null ? "" : entry.getValue().trim();
+
+            if (fieldName.startsWith("q")) {
+
+                try {
+                    Integer qid = Integer.parseInt(fieldName.substring(1));
+
+                    String othersKey = fieldName + "_other";
+                    String othersValue = params.getOrDefault(othersKey, "");
+
+                    jdbcChildSurveyTemplate.update(insertSql, surveyId, qid, answer, othersValue, cby, null);
 
                 } catch (Exception e) {
                     System.out.println("❌ Invalid field: " + fieldName);

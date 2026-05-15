@@ -37,6 +37,18 @@ public class ChildSurveyApiController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/questions_1")
+    public ResponseEntity<?> getQuestions1() {
+
+        List<Map<String, Object>> data = childSurveyService.getParticipateSurveyQuestions();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", true);
+        response.put("data", data);
+
+        return ResponseEntity.ok(response);
+    }
+
     // @PostMapping("/save")
     // public ResponseEntity<?> saveSurvey(@RequestBody Map<String, Object> request)
     // {
@@ -58,6 +70,17 @@ public class ChildSurveyApiController {
     public ResponseEntity<?> saveSurvey(@RequestParam Map<String, String> params) {
 
         String result = childSurveyService.saveSurveyFromParams(params);
+
+        return ResponseEntity.ok(Map.of(
+                "status", true,
+                "message", result));
+    }
+
+    @PostMapping(value = "/save_1", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            MediaType.MULTIPART_FORM_DATA_VALUE })
+    public ResponseEntity<?> saveParticipateSurvey(@RequestParam Map<String, String> params) {
+
+        String result = childSurveyService.saveParticipateSurveyFromParams(params);
 
         return ResponseEntity.ok(Map.of(
                 "status", true,
