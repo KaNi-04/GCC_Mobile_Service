@@ -640,6 +640,17 @@ public class DataSourceConfig {
 		return dataSource;
 	}
 
+	////////// Tenements//////////////////////
+	@Bean(name = "mysqlTenementDataSource")
+	public DataSource mysqlTenementDataSource() {
+		DriverManagerDataSource dataSource = new DriverManagerDataSource();
+		dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+		dataSource.setUrl("jdbc:mysql://" + host + "/gcc_tenements");
+		dataSource.setUsername("root");
+		dataSource.setPassword(dbpassword);
+		return dataSource;
+	}
+
 	////////////////////////////// ORACLE ////////////////////////
 	@Bean(name = "oracleERPDataSource")
 	public DataSource oracleERPDataSource() {
