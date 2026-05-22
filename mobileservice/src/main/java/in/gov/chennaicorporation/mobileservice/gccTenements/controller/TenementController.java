@@ -1,5 +1,7 @@
 package in.gov.chennaicorporation.mobileservice.gccTenements.controller;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -143,7 +145,8 @@ public class TenementController {
                         @RequestParam String remarks,
                         @RequestParam String radius,
                         @RequestParam String am_id,
-                        @RequestParam MultipartFile verify_image,
+                        @RequestParam(required = false) MultipartFile verify_image,
+
                         @RequestParam String cby) {
 
                 return ResponseEntity.ok(
@@ -156,7 +159,7 @@ public class TenementController {
                                                 longitude,
                                                 assetlist_id,
                                                 remarks,
-                                                verify_image,
+
                                                 radius,
                                                 am_id,
                                                 cby));
@@ -174,6 +177,135 @@ public class TenementController {
                         @RequestParam String loginid) {
 
                 return tenementService.getIssueVerificationList(loginid);
+        }
+
+        @GetMapping("/getZoneWiseReport")
+        public Map<String, Object> getZoneWiseReport(
+
+                        @RequestParam String fromDate,
+                        @RequestParam String toDate) {
+
+                // ✅ convert dd-MM-yyyy → yyyy-MM-dd
+                DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+                DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+                String formattedFromDate = LocalDate.parse(fromDate, inputFormatter)
+                                .format(outputFormatter);
+
+                String formattedToDate = LocalDate.parse(toDate, inputFormatter)
+                                .format(outputFormatter);
+
+                return tenementService.getZoneWiseReport(
+                                formattedFromDate,
+                                formattedToDate);
+        }
+
+        @GetMapping("/getWardWiseReport")
+        public Map<String, Object> getWardWiseReport(
+
+                        @RequestParam String zone,
+                        @RequestParam String fromDate,
+                        @RequestParam String toDate) {
+
+                // ✅ convert dd-MM-yyyy to yyyy-MM-dd
+                DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+                DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+                String formattedFromDate = LocalDate.parse(fromDate, inputFormatter)
+                                .format(outputFormatter);
+
+                String formattedToDate = LocalDate.parse(toDate, inputFormatter)
+                                .format(outputFormatter);
+
+                return tenementService.getWardWiseReport(
+                                zone,
+                                formattedFromDate,
+                                formattedToDate);
+        }
+
+        @GetMapping("/getSchemeWiseReport")
+        public Map<String, Object> getSchemeWiseReport(
+
+                        @RequestParam String ward,
+                        @RequestParam String fromDate,
+                        @RequestParam String toDate) {
+
+                // ✅ dd-MM-yyyy → yyyy-MM-dd
+                DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+                DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+                String formattedFromDate = LocalDate.parse(fromDate, inputFormatter)
+                                .format(outputFormatter);
+
+                String formattedToDate = LocalDate.parse(toDate, inputFormatter)
+                                .format(outputFormatter);
+
+                return tenementService.getSchemeWiseReport(
+                                ward,
+                                formattedFromDate,
+                                formattedToDate);
+        }
+
+        /*
+         * @GetMapping("/getComplaintDetails")
+         * public Map<String, Object> getComplaintDetails(
+         * 
+         * @RequestParam String ward,
+         * 
+         * @RequestParam String status,
+         * 
+         * @RequestParam String fromDate,
+         * 
+         * @RequestParam String toDate) {
+         * 
+         * // ✅ convert dd-MM-yyyy → yyyy-MM-dd
+         * DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+         * 
+         * DateTimeFormatter outputFormatter =
+         * DateTimeFormatter.ofPattern("yyyy-MM-dd");
+         * 
+         * String formattedFromDate = LocalDate.parse(fromDate, inputFormatter)
+         * .format(outputFormatter);
+         * 
+         * String formattedToDate = LocalDate.parse(toDate, inputFormatter)
+         * .format(outputFormatter);
+         * 
+         * return tenementService.getComplaintDetails(
+         * ward,
+         * status,
+         * formattedFromDate,
+         * formattedToDate);
+         * }
+         */
+        @GetMapping("/getComplaintDetails")
+        public Map<String, Object> getComplaintDetails(
+
+                        @RequestParam String ward,
+                        @RequestParam String schemeid,
+                        @RequestParam String status,
+                        @RequestParam String fromDate,
+                        @RequestParam String toDate) {
+
+                // ✅ convert dd-MM-yyyy → yyyy-MM-dd
+                DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+                DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+                String formattedFromDate = LocalDate.parse(fromDate, inputFormatter)
+                                .format(outputFormatter);
+
+                String formattedToDate = LocalDate.parse(toDate, inputFormatter)
+                                .format(outputFormatter);
+
+                return tenementService.getComplaintDetails(
+                                ward,
+                                schemeid,
+                                status,
+                                formattedFromDate,
+                                formattedToDate);
         }
 
 }
