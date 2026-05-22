@@ -265,4 +265,13 @@ public class ieComplaintsController {
                                 iecomplaintservice.getComplaintMaster());
         }
 
+        @GetMapping("/getvendorPendingList")
+        public ResponseEntity<Map<String, Object>> getVendorPendingList(
+                        @RequestParam("loginId") String loginId) {
+
+                Map<String, Object> result = iecomplaintservice.getvendorPendingList(loginId);
+
+                return ResponseEntity.ok(result);
+        }
+
 }
