@@ -162,21 +162,22 @@ public class TenementController {
 
                                                 radius,
                                                 am_id,
+                                                verify_image,
                                                 cby));
         }
 
         @GetMapping("/getCreatedIssueList")
         public Map<String, Object> getCreatedIssueList(
-                        @RequestParam String loginid) {
+                        @RequestParam(required = false) String loginid, String ward) {
 
-                return tenementService.getCreatedIssueList(loginid);
+                return tenementService.getCreatedIssueList(loginid, ward);
         }
 
         @GetMapping("/getIssueVerificationList")
         public Map<String, Object> getIssueVerificationList(
-                        @RequestParam String loginid) {
+                        @RequestParam(required = false) String loginid, @RequestParam(required = false) String ward) {
 
-                return tenementService.getIssueVerificationList(loginid);
+                return tenementService.getIssueVerificationList(loginid, ward);
         }
 
         @GetMapping("/getZoneWiseReport")

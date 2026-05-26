@@ -886,11 +886,22 @@ public class TenementService {
 
             String radius,
             String am_id,
+            MultipartFile verify_image,
             String cby) {
 
         Map<String, Object> response = new HashMap<>();
 
         try {
+
+            String imagePath = "";
+
+            // ✅ upload image
+            if (verify_image != null && !verify_image.isEmpty()) {
+
+                imagePath = fileUpload("issue_verify", "0", verify_image);
+            }
+
+            final String finalImagePath = imagePath;
 
             // ✅ insert into issue_list3
             String insertSql = """
@@ -906,10 +917,11 @@ public class TenementService {
                         final_status,
 
                         remarks,
+                        verify_image,
                         cby
                     )
                     VALUES
-                    (?,?,?,?,?,?,?,?,?,?)
+                    (?,?,?,?,?,?,?,?,?,?,?)
                     """;
 
             KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -932,7 +944,8 @@ public class TenementService {
                 ps.setString(8, "verified");
 
                 ps.setString(9, remarks);
-                ps.setString(10, cby);
+                ps.setString(10, finalImagePath);
+                ps.setString(11, cby);
 
                 return ps;
 
@@ -965,7 +978,87 @@ public class TenementService {
         return response;
     }
 
-    public Map<String, Object> getCreatedIssueList(String loginid) {
+    public Map<String, Object> getCreatedIssueList(String loginid, String ward) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+
+            // ✅ issue + asset details
+            String sql = "SELECT " +
+
+                    "il1.id AS issuelist1_id, " +
+                    "il1.zone, " +
+                    "il1.ward, " +
+
+                    // issue lat/lng
+                    "il1.latitide, " +
+                    "il1.longitude, " +
+
+                    "il1.assetlist_id, " +
+                    "il1.final_status, " +
+                    "il1.cby, " +
+                    "il1.cdate, " +
+                    "il1.remarks, " +
+                    "am.scheme_name, " +
+
+                    "al.radius, " +
+                    "al.am_id, " +
+
+                    // ✅ registered asset lat/lng
+                    "al.latitude AS registered_latitude, " +
+                    "al.longitude AS registered_longitude, " +
+                    "al.name, " +
+
+                    // ✅ registered asset image
+                    "CASE " +
+                    "WHEN al.image_path IS NOT NULL " +
+                    "THEN CONCAT('" + fileBaseUrl + "/gccofficialapp/files', al.image_path) " +
+                    "ELSE '' " +
+                    "END AS registered_image, " +
+
+                    // ✅ before image
+                    "CASE " +
+                    "WHEN il1.before_image IS NOT NULL " +
+                    "THEN CONCAT('" + fileBaseUrl + "/gccofficialapp/files', il1.before_image) " +
+                    "ELSE '' " +
+                    "END AS before_image, " +
+                    "il1.cdate as creation_date " +
+
+                    "FROM issue_list1 il1 " +
+
+                    // ✅ join asset_list
+                    "LEFT JOIN asset_list al " +
+                    "ON al.id = il1.assetlist_id " +
+
+                    // ✅ join asset_master
+                    "LEFT JOIN asset_master am " +
+                    "ON am.id = al.am_id " +
+
+                    "WHERE il1.ward = ? " +
+                    "AND il1.final_status = 'created' " +
+
+                    "ORDER BY il1.id DESC";
+
+            List<Map<String, Object>> result = jdbcTemplate.queryForList(sql, ward);
+
+            response.put("status", "success");
+            response.put("ward", ward);
+            response.put("count", result.size());
+            response.put("data", result);
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+        }
+
+        return response;
+    }
+
+    public Map<String, Object> getCreatedIssueList1(String loginid) {
 
         Map<String, Object> response = new HashMap<>();
 
@@ -1066,7 +1159,103 @@ public class TenementService {
         return response;
     }
 
-    public Map<String, Object> getIssueVerificationList(String loginid) {
+    public Map<String, Object> getIssueVerificationList(String loginid, String ward) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+
+            // ✅ fetch ward
+
+            // ✅ issue_list1 + asset_list + issue_list2
+            String sql = "SELECT " +
+
+            // issue_list1
+                    "il1.id AS issuelist1_id, " +
+                    "il1.zone, " +
+                    "il1.ward, " +
+                    "il1.latitide, " +
+                    "il1.longitude, " +
+                    "il1.assetlist_id, " +
+                    "il1.final_status, " +
+                    "il1.cby, " +
+                    "il1.cdate, " +
+                    "am.scheme_name, " +
+
+                    "al.radius, " +
+                    "al.am_id, " +
+                    "al.name, " +
+
+                    "il1.remarks as before_remarks, " +
+                    "il1.cdate as creation_date, " +
+                    // registered asset
+                    "al.latitude AS registered_latitude, " +
+                    "al.longitude AS registered_longitude, " +
+                    "il2.remarks as after_remarks, " +
+
+                    "CASE " +
+                    "WHEN al.image_path IS NOT NULL " +
+                    "THEN CONCAT('" + fileBaseUrl + "/gccofficialapp/files', al.image_path) " +
+                    "ELSE '' " +
+                    "END AS registered_image, " +
+
+                    // before image
+                    "CASE " +
+                    "WHEN il1.before_image IS NOT NULL " +
+                    "THEN CONCAT('" + fileBaseUrl + "/gccofficialapp/files', il1.before_image) " +
+                    "ELSE '' " +
+                    "END AS before_image, " +
+
+                    // issue_list2
+                    "il2.id AS issuelist2_id, " +
+                    "il2.final_status AS completed_status, " +
+                    "il2.latitide AS completed_latitude, " +
+                    "il2.longitude AS completed_longitude, " +
+                    "il2.cdate as completion_date, " +
+
+                    "CASE " +
+                    "WHEN il2.after_image IS NOT NULL " +
+                    "THEN CONCAT('" + fileBaseUrl + "/gccofficialapp/files', il2.after_image) " +
+                    "ELSE '' " +
+                    "END AS after_image " +
+
+                    "FROM issue_list1 il1 " +
+
+                    "LEFT JOIN asset_list al " +
+                    "ON al.id = il1.assetlist_id " +
+
+                    "LEFT JOIN issue_list2 il2 " +
+                    "ON il2.issuelist1_id = il1.id " +
+
+                    // ✅ join asset_master
+                    "LEFT JOIN asset_master am " +
+                    "ON am.id = al.am_id " +
+
+                    "WHERE il2.ward = ? " +
+                    "AND il2.final_status = 'completed' " +
+                    "And il1.final_status= 'completed' " +
+
+                    "ORDER BY il2.id DESC";
+
+            List<Map<String, Object>> result = jdbcTemplate.queryForList(sql, ward);
+
+            response.put("status", "success");
+            response.put("ward", ward);
+            response.put("count", result.size());
+            response.put("data", result);
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+        }
+
+        return response;
+    }
+
+    public Map<String, Object> getIssueVerificationList1(String loginid) {
 
         Map<String, Object> response = new HashMap<>();
 
