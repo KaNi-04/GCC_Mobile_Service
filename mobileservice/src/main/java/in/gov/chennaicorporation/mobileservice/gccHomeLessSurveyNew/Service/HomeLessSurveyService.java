@@ -798,7 +798,8 @@ public class HomeLessSurveyService {
                 }
 
                 // Fetch Answers from both tables
-                String ansSql = "SELECT q.field_name, q.question_type, r.answer, r.others_answer " +
+                String ansSql = "SELECT q.qid, q.field_name, q.question_type, q.q_english, q.master_table_name, r.answer, r.others_answer "
+                        +
                         "FROM (" +
                         "  SELECT qid, answer, others_answer FROM homeless_survey_response WHERE survey_id = ? AND cid = '1' AND isactive = 1 AND isdelete = 0 "
                         +
@@ -809,33 +810,72 @@ public class HomeLessSurveyService {
                         "JOIN homeless_survey_questions_master q ON r.qid = q.qid";
 
                 List<Map<String, Object>> ansData = jdbcHomeLessSurveyTemplate.queryForList(ansSql, surveyId, surveyId);
-                Map<String, Object> answersMap = new LinkedHashMap<>();
+                List<Map<String, Object>> answersList = new ArrayList<>();
 
                 String fileBaseUrlVal = environment.getProperty("fileBaseUrl");
                 if (fileBaseUrlVal == null) {
                     fileBaseUrlVal = "";
                 }
 
+                List<String> allowedFields = java.util.Arrays.asList("q2", "q78", "q11", "q8", "q9", "q10", "q77");
+
                 for (Map<String, Object> ans : ansData) {
                     String fieldName = (String) ans.get("field_name");
-                    if (fieldName != null) {
-                        String answerVal = (String) ans.get("answer");
+                    if (fieldName != null && allowedFields.contains(fieldName)) {
+                        Integer qid = (Integer) ans.get("qid");
+                        String qEnglish = (String) ans.get("q_english");
+                        String masterTable = (String) ans.get("master_table_name");
                         String questionType = (String) ans.get("question_type");
+                        String answerVal = (String) ans.get("answer");
 
-                        if (answerVal != null && !answerVal.isEmpty() && questionType != null &&
-                                (questionType.equalsIgnoreCase("image") || questionType.equalsIgnoreCase("file"))) {
-                            answerVal = fileBaseUrlVal + "/gccofficialapp/files" + answerVal;
+                        String resolvedValue = answerVal != null ? answerVal : "";
+
+                        if (answerVal != null && !answerVal.trim().isEmpty()) {
+                            // Try to resolve the option ID to its english name
+                            try {
+                                int optionId = Integer.parseInt(answerVal.trim());
+                                if (masterTable != null && !masterTable.trim().isEmpty()) {
+                                    String query = "SELECT english_name FROM " + masterTable + " WHERE id = ? LIMIT 1";
+                                    List<String> names = jdbcHomeLessSurveyTemplate.queryForList(query, String.class,
+                                            optionId);
+                                    if (!names.isEmpty()) {
+                                        resolvedValue = names.get(0);
+                                    }
+                                } else {
+                                    String query = "SELECT answer FROM homeless_survey_answer_master WHERE qid = ? AND id = ? LIMIT 1";
+                                    List<String> names = jdbcHomeLessSurveyTemplate.queryForList(query, String.class,
+                                            qid, optionId);
+                                    if (!names.isEmpty()) {
+                                        resolvedValue = names.get(0);
+                                    }
+                                }
+                            } catch (NumberFormatException e) {
+                                // Keep original value if not a valid number ID
+                            }
                         }
 
-                        answersMap.put(fieldName, answerVal != null ? answerVal : "");
+                        if (resolvedValue != null && !resolvedValue.isEmpty() && questionType != null &&
+                                (questionType.equalsIgnoreCase("image") || questionType.equalsIgnoreCase("file"))) {
+                            resolvedValue = fileBaseUrlVal + "/gccofficialapp/files" + resolvedValue;
+                        }
+
+                        Map<String, Object> ansMap = new LinkedHashMap<>();
+                        ansMap.put("question", qEnglish != null ? qEnglish : "");
+                        ansMap.put("field_name", fieldName);
+                        ansMap.put("field_value", resolvedValue != null ? resolvedValue : "");
+                        answersList.add(ansMap);
 
                         String othersVal = (String) ans.get("others_answer");
                         if (othersVal != null && !othersVal.isEmpty()) {
-                            answersMap.put(fieldName + "_other", othersVal);
+                            Map<String, Object> othersMap = new LinkedHashMap<>();
+                            othersMap.put("question", "Please specify");
+                            othersMap.put("field_name", fieldName + "_other");
+                            othersMap.put("field_value", othersVal);
+                            answersList.add(othersMap);
                         }
                     }
                 }
-                profileMap.put("answers", answersMap);
+                profileMap.put("answers", answersList);
                 resultList.add(profileMap);
             }
         } catch (Exception ex) {
