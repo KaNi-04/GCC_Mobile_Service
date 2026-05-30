@@ -445,7 +445,8 @@ public class HomeLessSurveyService {
                     +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 1, 0)";
 
-            String qSql = "SELECT qid, question_type, field_name, q_english FROM homeless_survey_questions_master WHERE cid = ? AND isactive = 1 AND isdelete = 0";
+            String qSql = "SELECT qid, question_type, field_name, q_english FROM homeless_survey_questions_master "
+                    + "WHERE cid = ? AND (isactive = 1 AND isdelete = 0 OR (cid = '1' AND field_name IN ('q2', 'q78', 'q11', 'q8', 'q9', 'q10', 'q77')))";
             List<Map<String, Object>> questions = jdbcHomeLessSurveyTemplate.queryForList(qSql, cid);
 
             boolean hasNotWillingResponse = false;
@@ -477,9 +478,22 @@ public class HomeLessSurveyService {
 
                 // Check if the param exists or has a file upload
                 boolean hasParam = params.containsKey(fieldName);
-                boolean hasFile = fileRequest != null && (fileRequest.getFileMap().containsKey(fieldName) ||
-                        fileRequest.getFileMap().containsKey("q_" + qid) ||
-                        fileRequest.getFileMap().containsKey("file_" + qid));
+                boolean hasFile = false;
+                if (fileRequest != null) {
+                    if (fileRequest.getFileMap().containsKey(fieldName) ||
+                            fileRequest.getFileMap().containsKey("q_" + qid) ||
+                            fileRequest.getFileMap().containsKey("file_" + qid)) {
+                        hasFile = true;
+                    } else if (questionType != null
+                            && (questionType.equalsIgnoreCase("image") || questionType.equalsIgnoreCase("file"))) {
+                        if (fileRequest.getFileMap().containsKey("files") ||
+                                fileRequest.getFileMap().containsKey("file") ||
+                                fileRequest.getFileMap().containsKey("image") ||
+                                fileRequest.getFileMap().size() == 1) {
+                            hasFile = true;
+                        }
+                    }
+                }
 
                 if (hasParam || hasFile) {
                     String answer = params.getOrDefault(fieldName, "");
@@ -514,6 +528,16 @@ public class HomeLessSurveyService {
                             if (file == null || file.isEmpty()) {
                                 file = fileRequest.getFile("file_" + qid);
                             }
+                            // Fallback generic scan
+                            if (file == null || file.isEmpty()) {
+                                file = fileRequest.getFile("files");
+                            }
+                            if (file == null || file.isEmpty()) {
+                                file = fileRequest.getFile("file");
+                            }
+                            if (file == null || file.isEmpty()) {
+                                file = fileRequest.getFile("image");
+                            }
                             // Fallback scan
                             if (file == null || file.isEmpty()) {
                                 for (String name : fileRequest.getFileMap().keySet()) {
@@ -523,6 +547,10 @@ public class HomeLessSurveyService {
                                         break;
                                     }
                                 }
+                            }
+                            // Ultimate fallback: if only 1 file exists in the request, use it
+                            if ((file == null || file.isEmpty()) && fileRequest.getFileMap().size() == 1) {
+                                file = fileRequest.getFileMap().values().iterator().next();
                             }
                         }
 
@@ -807,7 +835,8 @@ public class HomeLessSurveyService {
                         "  SELECT qid, answer, others_answer FROM homeless_survey_participate_response WHERE survey_id = ? AND cid = '1' AND isactive = 1 AND isdelete = 0"
                         +
                         ") r " +
-                        "JOIN homeless_survey_questions_master q ON r.qid = q.qid";
+                        "JOIN homeless_survey_questions_master q ON r.qid = q.qid " +
+                        "WHERE (q.isactive = 1 AND q.isdelete = 0) OR (q.cid = '1' AND q.field_name IN ('q2', 'q78', 'q11', 'q8', 'q9', 'q10', 'q77'))";
 
                 List<Map<String, Object>> ansData = jdbcHomeLessSurveyTemplate.queryForList(ansSql, surveyId, surveyId);
                 List<Map<String, Object>> answersList = new ArrayList<>();
