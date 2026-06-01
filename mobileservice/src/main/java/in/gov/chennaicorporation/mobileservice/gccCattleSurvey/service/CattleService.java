@@ -435,8 +435,25 @@ public class CattleService {
 				
 				try {
 					
-					String sql="SELECT *,CONCAT('" + fileBaseUrl + "/gccofficialapp/files',owner_photo) AS img_full_path FROM owner_details WHERE isactive=1 AND isdelete=0 AND cby=?";
+					//String sql="SELECT *,CONCAT('" + fileBaseUrl + "/gccofficialapp/files',owner_photo) AS img_full_path FROM owner_details WHERE isactive=1 AND isdelete=0 AND cby=?";
 		
+					
+					String sql =
+						    "SELECT od.*, " +
+						    " CONCAT('" + fileBaseUrl + "/gccofficialapp/files',od.owner_photo) AS img_full_path, " +
+						    " COALESCE(cd.cattle_count,0) AS completed_count, " +
+						    " GREATEST(0,(od.no_of_cattles - COALESCE(cd.cattle_count,0))) AS pending_count " +
+						    " FROM owner_details od " +
+						    " LEFT JOIN ( " +
+						    "   SELECT owner_ref_id, COUNT(*) AS cattle_count " +
+						    "   FROM cattle_details " +
+						    "   WHERE isactive=1 AND isdelete=0 " +
+						    "   GROUP BY owner_ref_id " +
+						    " ) cd ON od.owner_ref_id = cd.owner_ref_id " +
+						    " WHERE od.isactive=1 " +
+						    " AND od.isdelete=0 " +
+						    " AND od.cby=?";
+					
 		    		List<Map<String, Object>> owner_details=jdbcTemplate.queryForList(sql,userid);
 		
 		    		response.put("data",owner_details);

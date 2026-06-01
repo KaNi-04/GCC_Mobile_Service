@@ -20,13 +20,13 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableTransactionManagement
 public class DataSourceConfig {
 
-	 private static String host = "localhost:3306";
-	 private static String dbpassword = "root";
+//	 private static String host = "localhost:3306";
+//	 private static String dbpassword = "root";
 	// private static String dbpassword = "gccroot";
 
 	// AWS
-//	private static String host = "gcc-facial-db-instance-1.cf48eqcciziq.ap-south-1.rds.amazonaws.com:3306";
-//	private static String dbpassword = "gcc-facial-password";
+	private static String host = "gcc-facial-db-instance-1.cf48eqcciziq.ap-south-1.rds.amazonaws.com:3306";
+	private static String dbpassword = "gcc-facial-password";
 
 	////////////////////////////// (For GCC APP) ////////////////////////
 	@Configuration
@@ -651,12 +651,23 @@ public class DataSourceConfig {
 		return dataSource;
 	}
 	
-	////////// Tenements//////////////////////
+	////////// Cattle Survey//////////////////////
 	@Bean(name = "mysqlCattleSurveyGccDataSource")
 	public DataSource mysqlCattleSurveyGccDataSource() {
 		DriverManagerDataSource dataSource = new DriverManagerDataSource();
 		dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
 		dataSource.setUrl("jdbc:mysql://" + host + "/gcc_cattle_survey");
+		dataSource.setUsername("root");
+		dataSource.setPassword(dbpassword);
+		return dataSource;
+	}
+	
+	////////// GCC Mobile Menu //////////////////////
+	@Bean(name = "mysqlGccMobileMenuDataSource")
+	public DataSource mysqlGccMobileMenuDataSource() {
+		DriverManagerDataSource dataSource = new DriverManagerDataSource();
+		dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+		dataSource.setUrl("jdbc:mysql://" + host + "/gcc_mobile_menus");
 		dataSource.setUsername("root");
 		dataSource.setPassword(dbpassword);
 		return dataSource;

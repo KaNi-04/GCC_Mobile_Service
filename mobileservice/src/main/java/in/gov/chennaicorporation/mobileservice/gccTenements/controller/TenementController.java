@@ -147,7 +147,8 @@ public class TenementController {
                         @RequestParam String am_id,
                         @RequestParam(required = false) MultipartFile verify_image,
 
-                        @RequestParam String cby) {
+                        @RequestParam String cby,
+                        @RequestParam(required = false) String status) {
 
                 return ResponseEntity.ok(
                                 tenementService.saveIssueVerification(
@@ -163,7 +164,7 @@ public class TenementController {
                                                 radius,
                                                 am_id,
                                                 verify_image,
-                                                cby));
+                                                cby,status));
         }
 
         @GetMapping("/getCreatedIssueList")

@@ -887,85 +887,119 @@ public class TenementService {
             String radius,
             String am_id,
             MultipartFile verify_image,
-            String cby) {
+            String cby,
+            String status) {
 
         Map<String, Object> response = new HashMap<>();
 
         try {
 
-            String imagePath = "";
+            //  REJECT / REOPEN FLOW
+            if ("r".equalsIgnoreCase(status)) {
 
-            // ✅ upload image
-            if (verify_image != null && !verify_image.isEmpty()) {
+                String updateSql = """
+                        UPDATE issue_list1
+                        SET final_status = 'created'
+                        WHERE id = ?
+                        """;
 
-                imagePath = fileUpload("issue_verify", "0", verify_image);
+                jdbcTemplate.update(updateSql, issuelist1_id);
+
+                response.put("status", "success");
+                response.put("message",
+                        "Status reverted to pending successfully");
+
+                return response;
             }
 
-            final String finalImagePath = imagePath;
+            //  COMPLETED / VERIFIED FLOW
+            else if ("c".equalsIgnoreCase(status)) {
 
-            // ✅ insert into issue_list3
-            String insertSql = """
-                    INSERT INTO issue_list3
-                    (
-                        issuelist1_id,
-                        issuelist2_id,
-                        zone,
-                        ward,
-                        latitide,
-                        longitude,
-                        assetlist_id,
-                        final_status,
+                String imagePath = "";
 
-                        remarks,
-                        verify_image,
-                        cby
-                    )
-                    VALUES
-                    (?,?,?,?,?,?,?,?,?,?,?)
-                    """;
+                // upload image
+                if (verify_image != null &&
+                        !verify_image.isEmpty()) {
 
-            KeyHolder keyHolder = new GeneratedKeyHolder();
+                    imagePath = fileUpload(
+                            "issue_verify",
+                            "0",
+                            verify_image);
+                }
 
-            int affectedRows = jdbcTemplate.update(connection -> {
+                final String finalImagePath = imagePath;
 
-                PreparedStatement ps = connection.prepareStatement(
-                        insertSql,
-                        new String[] { "id" });
+                // insert issue_list3
+                String insertSql = """
+                        INSERT INTO issue_list3
+                        (
+                            issuelist1_id,
+                            issuelist2_id,
+                            zone,
+                            ward,
+                            latitide,
+                            longitude,
+                            assetlist_id,
+                            final_status,
+                            remarks,
+                            verify_image,
+                            cby
+                        )
+                        VALUES
+                        (?,?,?,?,?,?,?,?,?,?,?)
+                        """;
 
-                ps.setString(1, issuelist1_id);
-                ps.setString(2, issuelist2_id);
-                ps.setString(3, zone);
-                ps.setString(4, ward);
-                ps.setString(5, latitude);
-                ps.setString(6, longitude);
-                ps.setString(7, assetlist_id);
+                KeyHolder keyHolder = new GeneratedKeyHolder();
 
-                // ✅ verified status
-                ps.setString(8, "verified");
+                jdbcTemplate.update(connection -> {
 
-                ps.setString(9, remarks);
-                ps.setString(10, finalImagePath);
-                ps.setString(11, cby);
+                    PreparedStatement ps = connection.prepareStatement(
+                            insertSql,
+                            new String[] { "id" });
 
-                return ps;
+                    ps.setString(1, issuelist1_id);
+                    ps.setString(2, issuelist2_id);
+                    ps.setString(3, zone);
+                    ps.setString(4, ward);
+                    ps.setString(5, latitude);
+                    ps.setString(6, longitude);
+                    ps.setString(7, assetlist_id);
 
-            }, keyHolder);
+                    // verified
+                    ps.setString(8, "verified");
 
-            // ✅ update issue_list1
-            String updateSql1 = """
-                    UPDATE issue_list1
-                    SET final_status = 'verified'
-                    WHERE id = ?
-                    """;
+                    ps.setString(9, remarks);
+                    ps.setString(10, finalImagePath);
+                    ps.setString(11, cby);
 
-            jdbcTemplate.update(updateSql1, issuelist1_id);
+                    return ps;
 
-            response.put("status", "success");
-            response.put("message",
-                    "Issue verified successfully");
+                }, keyHolder);
 
-            response.put("issue_list3_id",
-                    keyHolder.getKey().intValue());
+                // update issue_list1
+                String updateSql1 = """
+                        UPDATE issue_list1
+                        SET final_status = 'verified'
+                        WHERE id = ?
+                        """;
+
+                jdbcTemplate.update(
+                        updateSql1,
+                        issuelist1_id);
+
+                response.put("status", "success");
+                response.put("message",
+                        "Issue verified successfully");
+
+                response.put(
+                        "issue_list3_id",
+                        keyHolder.getKey().intValue());
+
+                return response;
+            }
+
+            response.put("status", "error");
+            response.put("message", "Invalid flag");
 
         } catch (Exception e) {
 
