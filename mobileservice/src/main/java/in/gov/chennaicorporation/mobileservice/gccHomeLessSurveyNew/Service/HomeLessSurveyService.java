@@ -330,6 +330,15 @@ public class HomeLessSurveyService {
             String longitude = params.get("longitude");
             String address = params.get("address");
 
+            System.out.println(" surveyId: " + surveyId);
+            System.out.println(" cid: " + cid);
+            System.out.println(" cby: " + cby);
+            System.out.println(" zone: " + zone);
+            System.out.println(" ward: " + ward);
+            System.out.println(" latitude: " + latitude);
+            System.out.println(" longitude: " + longitude);
+            System.out.println(" address: " + address);
+
             // If it is NOT the Profile category, verify that the profile is already created
             if (cid == null || !cid.equals("1")) {
                 if (surveyId == null || surveyId.trim().isEmpty() || surveyId.equalsIgnoreCase("null")) {
@@ -453,6 +462,7 @@ public class HomeLessSurveyService {
             // First pass: check if qid = 1 is answered with "38" or "Not willing to respond
             // (mark them)"
             for (Map<String, Object> q : questions) {
+
                 Integer qid = (Integer) q.get("qid");
                 String fieldName = (String) q.get("field_name");
                 if (qid != null && qid == 1 && fieldName != null && params.containsKey(fieldName)) {
@@ -472,6 +482,11 @@ public class HomeLessSurveyService {
                 String questionType = (String) q.get("question_type");
                 String qEnglish = (String) q.get("q_english");
 
+                System.out.println("qid: " + qid);
+                System.out.println("fieldName: " + fieldName);
+                System.out.println("questionType: " + questionType);
+                System.out.println("qEnglish: " + qEnglish);
+
                 if (fieldName == null || fieldName.trim().isEmpty()) {
                     continue;
                 }
@@ -480,16 +495,43 @@ public class HomeLessSurveyService {
                 boolean hasParam = params.containsKey(fieldName);
                 boolean hasFile = false;
                 if (fileRequest != null) {
+
+                    System.out.println(
+                            "fieldName: " + fieldName + " - " + fileRequest.getFileMap().containsKey(fieldName));
+                    System.out.println("q_" + qid + " - " + fileRequest.getFileMap().containsKey("q_" + qid));
+
                     if (fileRequest.getFileMap().containsKey(fieldName) ||
                             fileRequest.getFileMap().containsKey("q_" + qid) ||
-                            fileRequest.getFileMap().containsKey("file_" + qid)) {
+                            fileRequest.getFileMap().containsKey("file_" + qid) ||
+                            fileRequest.getFileMap().containsKey("file" + qid) ||
+                            fileRequest.getFileMap().containsKey("f_" + qid) ||
+                            fileRequest.getFileMap().containsKey("f" + qid) ||
+                            fileRequest.getFileMap().containsKey("q" + qid)) {
                         hasFile = true;
                     } else if (questionType != null
                             && (questionType.equalsIgnoreCase("image") || questionType.equalsIgnoreCase("file"))) {
+                        boolean matchesOrGeneric = false;
+                        if (fileRequest.getFileMap().size() == 1) {
+                            String singleKey = fileRequest.getFileMap().keySet().iterator().next();
+                            if (singleKey != null && (
+                                singleKey.equalsIgnoreCase(fieldName) ||
+                                singleKey.contains("q_" + qid) ||
+                                singleKey.contains("file_" + qid) ||
+                                singleKey.contains("file" + qid) ||
+                                singleKey.contains("f_" + qid) ||
+                                singleKey.contains("f" + qid) ||
+                                singleKey.contains("q" + qid) ||
+                                singleKey.equalsIgnoreCase("files") ||
+                                singleKey.equalsIgnoreCase("file") ||
+                                singleKey.equalsIgnoreCase("image")
+                            )) {
+                                matchesOrGeneric = true;
+                            }
+                        }
                         if (fileRequest.getFileMap().containsKey("files") ||
                                 fileRequest.getFileMap().containsKey("file") ||
                                 fileRequest.getFileMap().containsKey("image") ||
-                                fileRequest.getFileMap().size() == 1) {
+                                matchesOrGeneric) {
                             hasFile = true;
                         }
                     }
@@ -528,6 +570,18 @@ public class HomeLessSurveyService {
                             if (file == null || file.isEmpty()) {
                                 file = fileRequest.getFile("file_" + qid);
                             }
+                            if (file == null || file.isEmpty()) {
+                                file = fileRequest.getFile("file" + qid);
+                            }
+                            if (file == null || file.isEmpty()) {
+                                file = fileRequest.getFile("f_" + qid);
+                            }
+                            if (file == null || file.isEmpty()) {
+                                file = fileRequest.getFile("f" + qid);
+                            }
+                            if (file == null || file.isEmpty()) {
+                                file = fileRequest.getFile("q" + qid);
+                            }
                             // Fallback generic scan
                             if (file == null || file.isEmpty()) {
                                 file = fileRequest.getFile("files");
@@ -541,8 +595,13 @@ public class HomeLessSurveyService {
                             // Fallback scan
                             if (file == null || file.isEmpty()) {
                                 for (String name : fileRequest.getFileMap().keySet()) {
-                                    if (name.equalsIgnoreCase(fieldName) || name.contains("q_" + qid)
-                                            || name.contains("file_" + qid)) {
+                                    if (name.equalsIgnoreCase(fieldName)
+                                            || name.contains("q_" + qid)
+                                            || name.contains("file_" + qid)
+                                            || name.contains("file" + qid)
+                                            || name.contains("f_" + qid)
+                                            || name.contains("f" + qid)
+                                            || name.contains("q" + qid)) {
                                         file = fileRequest.getFile(name);
                                         break;
                                     }
@@ -550,7 +609,21 @@ public class HomeLessSurveyService {
                             }
                             // Ultimate fallback: if only 1 file exists in the request, use it
                             if ((file == null || file.isEmpty()) && fileRequest.getFileMap().size() == 1) {
-                                file = fileRequest.getFileMap().values().iterator().next();
+                                String singleKey = fileRequest.getFileMap().keySet().iterator().next();
+                                if (singleKey != null && (
+                                    singleKey.equalsIgnoreCase(fieldName) ||
+                                    singleKey.contains("q_" + qid) ||
+                                    singleKey.contains("file_" + qid) ||
+                                    singleKey.contains("file" + qid) ||
+                                    singleKey.contains("f_" + qid) ||
+                                    singleKey.contains("f" + qid) ||
+                                    singleKey.contains("q" + qid) ||
+                                    singleKey.equalsIgnoreCase("files") ||
+                                    singleKey.equalsIgnoreCase("file") ||
+                                    singleKey.equalsIgnoreCase("image")
+                                )) {
+                                    file = fileRequest.getFileMap().values().iterator().next();
+                                }
                             }
                         }
 
@@ -558,6 +631,7 @@ public class HomeLessSurveyService {
                             String uploadedPath = uploadSurveyFile(file, qEnglish, surveyId);
                             if (uploadedPath != null && !uploadedPath.startsWith("Failed")) {
                                 answer = uploadedPath;
+                                System.out.println("--- Image Uploaded --- QID: " + qid + " | FieldName: " + fieldName + " | File: " + file.getOriginalFilename() + " | Path: " + uploadedPath);
                             }
                         }
                     }
@@ -574,10 +648,12 @@ public class HomeLessSurveyService {
                         jdbcHomeLessSurveyTemplate.update(insertparticipateSql, qid, answer, othersAnswer, surveyId,
                                 cid, cby,
                                 parentAnswerId);
+                        System.out.println("--- DB SAVE (Participate) --- QID: " + qid + " | FieldName: " + fieldName + " | Answer: " + answer + " | OthersAnswer: " + othersAnswer);
                     } else {
                         if (!hasNotWillingResponse) {
                             jdbcHomeLessSurveyTemplate.update(insertSql, qid, answer, othersAnswer, surveyId, cid, cby,
                                     parentAnswerId);
+                            System.out.println("--- DB SAVE (Response) --- QID: " + qid + " | FieldName: " + fieldName + " | Answer: " + answer + " | OthersAnswer: " + othersAnswer);
                         }
                     }
                 }
