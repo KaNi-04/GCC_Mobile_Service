@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -77,16 +78,76 @@ public class HomeLessSurveyApiController {
         return ResponseEntity.ok(response);
     }
 
+    // @PostMapping("/save")
+    // public ResponseEntity<?> saveResponses(
+    // @RequestParam Map<String, String> params,
+    // HttpServletRequest request) {
+    // MultipartHttpServletRequest multipartRequest = null;
+    // if (request instanceof MultipartHttpServletRequest) {
+    // multipartRequest = (MultipartHttpServletRequest) request;
+    // }
+
+    // Map<String, Object> result =
+    // homeLessSurveyService.saveSurveyResponses(params, multipartRequest);
+    // System.out.println("params ----------------------------------------->" +
+    // params);
+    // System.out.println("request-------------" + request);
+    // System.out.println("multipartRequest --------------------------------->" +
+    // multipartRequest);
+    // System.out.println("result ----------------------------------------->" +
+    // result);
+    // return ResponseEntity.ok(result);
+    // }
+
     @PostMapping("/save")
     public ResponseEntity<?> saveResponses(
             @RequestParam Map<String, String> params,
-            HttpServletRequest request) {
-        MultipartHttpServletRequest multipartRequest = null;
-        if (request instanceof MultipartHttpServletRequest) {
-            multipartRequest = (MultipartHttpServletRequest) request;
+            HttpServletRequest request,
+            MultipartHttpServletRequest multipartRequest) {
+
+        Map<String, MultipartFile> files = multipartRequest.getFileMap();
+
+        // System.out.println("===== FORM PARAMETERS =====");
+
+        request.getParameterMap().forEach((key, values) -> {
+
+            for (String value : values) {
+                // System.out.println(key + " = " + value);
+            }
+        });
+
+        // System.out.println("\n===== FILES ====");
+
+        // multipartRequest.getFileMap().forEach((key, file) -> {
+
+        // System.out.println("Field Name : " + key);
+
+        // System.out.println("File Name : " + file.getOriginalFilename());
+
+        // System.out.println("Size : " + file.getSize());
+
+        // System.out.println("ContentType: " + file.getContentType());
+
+        // System.out.println("---------------------------");
+
+        // });
+
+        // System.out.println("\n===== FILES FINAL ====");
+        for (Map.Entry<String, MultipartFile> entry : files.entrySet()) {
+
+            String fieldName = entry.getKey();
+            MultipartFile file = entry.getValue();
+            // System.out.println("params :" + params);
+            // System.out.println("request :" + request);
+            // System.out.println("multipartRequest :" + multipartRequest);
+            // System.out.println("Field Name : " + fieldName);
+            // System.out.println("File Name : " + file.getOriginalFilename());
+            // System.out.println("Size : " + file.getSize());
         }
 
+        // Existing service call
         Map<String, Object> result = homeLessSurveyService.saveSurveyResponses(params, multipartRequest);
+
         return ResponseEntity.ok(result);
     }
 
