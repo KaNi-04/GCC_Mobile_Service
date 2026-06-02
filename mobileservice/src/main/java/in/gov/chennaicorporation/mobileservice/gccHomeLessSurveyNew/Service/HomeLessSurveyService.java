@@ -56,6 +56,14 @@ public class HomeLessSurveyService {
         return result.toString();
     }
 
+    private JdbcTemplate jdbcGccMobileMenuTemplate;
+
+    @Autowired
+    public void setGccMobileMenuDataSource(
+            @Qualifier("mysqlGccMobileMenuDataSource") DataSource gccMobileMenuDataSource) {
+        this.jdbcGccMobileMenuTemplate = new JdbcTemplate(gccMobileMenuDataSource);
+    }
+
     @Autowired
     public void setDataSource(@Qualifier("mysqlHomeLessSurveyDataSource") DataSource homeLessSurveyDataSource) {
         this.jdbcHomeLessSurveyTemplate = new JdbcTemplate(homeLessSurveyDataSource);
@@ -248,7 +256,87 @@ public class HomeLessSurveyService {
 
     public List<Map<String, Object>> getQuestionsCategory() {
         String sql = "SELECT * FROM question_category_master where isactive=1 and isdelete=0 order by orderby";
-        return jdbcHomeLessSurveyTemplate.queryForList(sql);
+        List<Map<String, Object>> categories = jdbcHomeLessSurveyTemplate.queryForList(sql);
+
+        Map<String, String> iconMap = new HashMap<>();
+        try {
+            if (jdbcGccMobileMenuTemplate != null) {
+                // First get menu_id for 'Homeless Survey'
+                String menuSql = "SELECT menu_id FROM menu_master WHERE (menu_name = 'Homeless Survey' OR menu_name LIKE '%Homeless%') AND isactive = 1 AND isdelete = 0 LIMIT 1";
+                List<Integer> menuIds = jdbcGccMobileMenuTemplate.queryForList(menuSql, Integer.class);
+                if (!menuIds.isEmpty()) {
+                    Integer menuId = menuIds.get(0);
+                    String submenuSql = "SELECT submenu_name, submenu_icon FROM submenu_master WHERE menu_id = ? AND isactive = 1 AND isdelete = 0";
+                    List<Map<String, Object>> submenus = jdbcGccMobileMenuTemplate.queryForList(submenuSql, menuId);
+                    for (Map<String, Object> submenu : submenus) {
+                        String name = (String) submenu.get("submenu_name");
+                        String iconPath = (String) submenu.get("submenu_icon");
+                        if (name != null) {
+                            iconMap.put(name.toLowerCase().trim(), iconPath);
+                        }
+                    }
+                }
+
+                // Fallback: If iconMap is empty, search across all active submenus as a
+                // fallback match
+                if (iconMap.isEmpty()) {
+                    String fallbackSubmenuSql = "SELECT submenu_name, submenu_icon FROM submenu_master WHERE isactive = 1 AND isdelete = 0";
+                    List<Map<String, Object>> submenus = jdbcGccMobileMenuTemplate.queryForList(fallbackSubmenuSql);
+                    for (Map<String, Object> submenu : submenus) {
+                        String name = (String) submenu.get("submenu_name");
+                        String iconPath = (String) submenu.get("submenu_icon");
+                        if (name != null) {
+                            iconMap.put(name.toLowerCase().trim(), iconPath);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Error fetching icons from menu database: " + e.getMessage());
+        }
+
+        List<Map<String, Object>> resultList = new ArrayList<>();
+        for (Map<String, Object> cat : categories) {
+            Map<String, Object> updatedCat = new LinkedHashMap<>(cat);
+            String englishName = (String) cat.get("english_name");
+            String icon = "";
+            if (englishName != null) {
+                String searchKey = englishName.toLowerCase().trim();
+                // 1. Exact match
+                if (iconMap.containsKey(searchKey)) {
+                    icon = iconMap.get(searchKey);
+                } else {
+                    // 2. Substring match (e.g. "Profile" matches "Profile Creation")
+                    for (Map.Entry<String, String> entry : iconMap.entrySet()) {
+                        String dbKey = entry.getKey();
+                        if (dbKey.contains(searchKey) || searchKey.contains(dbKey)) {
+                            icon = entry.getValue();
+                            break;
+                        }
+                    }
+                    // 3. First-word prefix match
+                    if (icon == null || icon.isEmpty()) {
+                        String[] words = searchKey.split("\\s+");
+                        if (words.length > 0 && words[0].length() > 2) {
+                            String firstWord = words[0];
+                            for (Map.Entry<String, String> entry : iconMap.entrySet()) {
+                                String dbKey = entry.getKey();
+                                String[] dbWords = dbKey.split("\\s+");
+                                if (dbWords.length > 0 && dbWords[0].equals(firstWord)) {
+                                    icon = entry.getValue();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            updatedCat.put("icon", icon != null ? icon : "");
+            resultList.add(updatedCat);
+        }
+
+        return resultList;
     }
 
     public List<Map<String, Object>> getDistricts(String sid) {
@@ -843,23 +931,10 @@ public class HomeLessSurveyService {
             String sql;
             List<Object> args = new ArrayList<>();
             if (cby != null && !cby.trim().isEmpty() && !cby.equalsIgnoreCase("null")) {
-                sql = "SELECT DISTINCT survey_id FROM (" +
-                        "  SELECT survey_id FROM homeless_survey_response WHERE cid = '1' AND cby = ? AND isactive = 1 AND isdelete = 0 "
-                        +
-                        "  UNION " +
-                        "  SELECT survey_id FROM homeless_survey_participate_response WHERE cid = '1' AND cby = ? AND isactive = 1 AND isdelete = 0"
-                        +
-                        ") t";
-                args.add(cby);
+                sql = "SELECT DISTINCT survey_id FROM homeless_survey_response WHERE cid = '1' AND cby = ? AND isactive = 1 AND isdelete = 0";
                 args.add(cby);
             } else {
-                sql = "SELECT DISTINCT survey_id FROM (" +
-                        "  SELECT survey_id FROM homeless_survey_response WHERE cid = '1' AND isactive = 1 AND isdelete = 0 "
-                        +
-                        "  UNION " +
-                        "  SELECT survey_id FROM homeless_survey_participate_response WHERE cid = '1' AND isactive = 1 AND isdelete = 0"
-                        +
-                        ") t";
+                sql = "SELECT DISTINCT survey_id FROM homeless_survey_response WHERE cid = '1' AND isactive = 1 AND isdelete = 0";
             }
 
             List<String> surveyIds = jdbcHomeLessSurveyTemplate.queryForList(sql, args.toArray(), String.class);
@@ -891,10 +966,6 @@ public class HomeLessSurveyService {
                     String fallbackSql = "SELECT cby, cdate FROM homeless_survey_response WHERE survey_id = ? AND cid = '1' AND isactive = 1 AND isdelete = 0 LIMIT 1";
                     List<Map<String, Object>> fallbackData = jdbcHomeLessSurveyTemplate.queryForList(fallbackSql,
                             surveyId);
-                    if (fallbackData.isEmpty()) {
-                        fallbackSql = "SELECT cby, cdate FROM homeless_survey_participate_response WHERE survey_id = ? AND cid = '1' AND isactive = 1 AND isdelete = 0 LIMIT 1";
-                        fallbackData = jdbcHomeLessSurveyTemplate.queryForList(fallbackSql, surveyId);
-                    }
                     if (!fallbackData.isEmpty()) {
                         profileMap.put("cby", fallbackData.get(0).get("cby"));
                         profileMap.put("cdate", fallbackData.get(0).get("cdate"));
@@ -904,20 +975,15 @@ public class HomeLessSurveyService {
                     }
                 }
 
-                // Fetch Answers from both tables
+                // Fetch Answers
                 String ansSql = "SELECT q.qid, q.field_name, q.question_type, q.q_english, q.master_table_name, r.answer, r.others_answer "
                         +
-                        "FROM (" +
-                        "  SELECT qid, answer, others_answer FROM homeless_survey_response WHERE survey_id = ? AND cid = '1' AND isactive = 1 AND isdelete = 0 "
-                        +
-                        "  UNION ALL " +
-                        "  SELECT qid, answer, others_answer FROM homeless_survey_participate_response WHERE survey_id = ? AND cid = '1' AND isactive = 1 AND isdelete = 0"
-                        +
-                        ") r " +
+                        "FROM homeless_survey_response r " +
                         "JOIN homeless_survey_questions_master q ON r.qid = q.qid " +
-                        "WHERE (q.isactive = 1 AND q.isdelete = 0) OR (q.cid = '1' AND q.field_name IN ('q2', 'q78', 'q11', 'q8', 'q9', 'q10', 'q77'))";
+                        "WHERE r.survey_id = ? AND r.cid = '1' AND r.isactive = 1 AND r.isdelete = 0 " +
+                        "AND ((q.isactive = 1 AND q.isdelete = 0) OR (q.cid = '1' AND q.field_name IN ('q2', 'q78', 'q11', 'q8', 'q9', 'q10', 'q77')))";
 
-                List<Map<String, Object>> ansData = jdbcHomeLessSurveyTemplate.queryForList(ansSql, surveyId, surveyId);
+                List<Map<String, Object>> ansData = jdbcHomeLessSurveyTemplate.queryForList(ansSql, surveyId);
                 List<Map<String, Object>> answersList = new ArrayList<>();
 
                 String fileBaseUrlVal = environment.getProperty("fileBaseUrl");
