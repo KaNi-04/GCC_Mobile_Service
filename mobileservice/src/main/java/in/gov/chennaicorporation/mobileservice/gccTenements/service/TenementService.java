@@ -702,19 +702,61 @@ public class TenementService {
                 return ps;
 
             }, keyHolder);
-
             if (affectedRows > 0) {
 
+                Integer issueId = keyHolder.getKey().intValue();
+
+                // ✅ INSERT ISSUE LOG
+                String logSql = """
+                        INSERT INTO issue_log
+                        (
+                            issuelist1_id,
+                            cby,
+
+                            status
+                        )
+                        VALUES
+                        (?, ?, ?)
+                        """;
+
+                jdbcTemplate.update(
+
+                        logSql,
+
+                        issueId,
+                        cby,
+                        "created");
+
                 response.put("status", "success");
-                response.put("message", "Issue saved successfully");
+
+                response.put("message",
+                        "Issue saved successfully");
+
                 response.put("issue_id",
-                        keyHolder.getKey().intValue());
+                        issueId);
 
             } else {
 
                 response.put("status", "failed");
-                response.put("message", "Insert failed");
+
+                response.put("message",
+                        "Insert failed");
             }
+
+            /*
+             * if (affectedRows > 0) {
+             * 
+             * response.put("status", "success");
+             * response.put("message", "Issue saved successfully");
+             * response.put("issue_id",
+             * keyHolder.getKey().intValue());
+             * 
+             * } else {
+             * 
+             * response.put("status", "failed");
+             * response.put("message", "Insert failed");
+             * }
+             */
 
         } catch (Exception e) {
 
@@ -855,6 +897,29 @@ public class TenementService {
                 response.put("issue_list2_id",
                         keyHolder.getKey().intValue());
 
+                // ✅ INSERT ISSUE LOG
+                String logSql = """
+                        INSERT INTO issue_log
+                        (
+                            issuelist1_id,
+
+                            cby,
+
+                            status
+                        )
+                        VALUES
+                        (?, ?, ?)
+                        """;
+
+                jdbcTemplate.update(
+
+                        logSql,
+
+                        issuelist1_id,
+
+                        cby,
+                        "completed");
+
             } else {
 
                 response.put("status", "failed");
@@ -894,25 +959,56 @@ public class TenementService {
 
         try {
 
-            //  REJECT / REOPEN FLOW
+            // REJECT / REOPEN FLOW
             if ("r".equalsIgnoreCase(status)) {
 
                 String updateSql = """
                         UPDATE issue_list1
-                        SET final_status = 'created'
+                        SET final_status = 'created', remarks = ?
                         WHERE id = ?
                         """;
 
-                jdbcTemplate.update(updateSql, issuelist1_id);
+                jdbcTemplate.update(updateSql, remarks, issuelist1_id);
+
+                String updateSql1 = """
+                        UPDATE issue_list2
+                        SET final_status = 'rejected'
+                        WHERE issuelist1_id = ?
+                        """;
+
+                jdbcTemplate.update(updateSql1, issuelist1_id);
 
                 response.put("status", "success");
                 response.put("message",
                         "Status reverted to pending successfully");
 
+                // ✅ INSERT ISSUE LOG
+                String logSql = """
+                        INSERT INTO issue_log
+                        (
+                            issuelist1_id,
+
+                            cby,
+
+                            status
+                        )
+                        VALUES
+                        (?, ?, ?)
+                        """;
+
+                jdbcTemplate.update(
+
+                        logSql,
+
+                        issuelist1_id,
+
+                        cby,
+                        "rejected");
+
                 return response;
             }
 
-            //  COMPLETED / VERIFIED FLOW
+            // COMPLETED / VERIFIED FLOW
             else if ("c".equalsIgnoreCase(status)) {
 
                 String imagePath = "";
@@ -995,7 +1091,32 @@ public class TenementService {
                         "issue_list3_id",
                         keyHolder.getKey().intValue());
 
+                // return response;
+
+                // ✅ INSERT ISSUE LOG
+                String logSql = """
+                        INSERT INTO issue_log
+                        (
+                            issuelist1_id,
+
+                            cby,
+
+                            status
+                        )
+                        VALUES
+                        (?, ?, ?)
+                        """;
+
+                jdbcTemplate.update(
+
+                        logSql,
+
+                        issuelist1_id,
+
+                        cby,
+                        "verified");
                 return response;
+
             }
 
             response.put("status", "error");
