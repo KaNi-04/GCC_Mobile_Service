@@ -56,14 +56,6 @@ public class HomeLessSurveyService {
         return result.toString();
     }
 
-    private JdbcTemplate jdbcGccMobileMenuTemplate;
-
-    @Autowired
-    public void setGccMobileMenuDataSource(
-            @Qualifier("mysqlGccMobileMenuDataSource") DataSource gccMobileMenuDataSource) {
-        this.jdbcGccMobileMenuTemplate = new JdbcTemplate(gccMobileMenuDataSource);
-    }
-
     @Autowired
     public void setDataSource(@Qualifier("mysqlHomeLessSurveyDataSource") DataSource homeLessSurveyDataSource) {
         this.jdbcHomeLessSurveyTemplate = new JdbcTemplate(homeLessSurveyDataSource);
@@ -256,87 +248,8 @@ public class HomeLessSurveyService {
 
     public List<Map<String, Object>> getQuestionsCategory() {
         String sql = "SELECT * FROM question_category_master where isactive=1 and isdelete=0 order by orderby";
-        List<Map<String, Object>> categories = jdbcHomeLessSurveyTemplate.queryForList(sql);
+        return jdbcHomeLessSurveyTemplate.queryForList(sql);
 
-        Map<String, String> iconMap = new HashMap<>();
-        try {
-            if (jdbcGccMobileMenuTemplate != null) {
-                // First get menu_id for 'Homeless Survey'
-                String menuSql = "SELECT menu_id FROM menu_master WHERE (menu_name = 'Homeless Survey' OR menu_name LIKE '%Homeless%') AND isactive = 1 AND isdelete = 0 LIMIT 1";
-                List<Integer> menuIds = jdbcGccMobileMenuTemplate.queryForList(menuSql, Integer.class);
-                if (!menuIds.isEmpty()) {
-                    Integer menuId = menuIds.get(0);
-                    String submenuSql = "SELECT submenu_name, submenu_icon FROM submenu_master WHERE menu_id = ? AND isactive = 1 AND isdelete = 0";
-                    List<Map<String, Object>> submenus = jdbcGccMobileMenuTemplate.queryForList(submenuSql, menuId);
-                    for (Map<String, Object> submenu : submenus) {
-                        String name = (String) submenu.get("submenu_name");
-                        String iconPath = (String) submenu.get("submenu_icon");
-                        if (name != null) {
-                            iconMap.put(name.toLowerCase().trim(), iconPath);
-                        }
-                    }
-                }
-
-                // Fallback: If iconMap is empty, search across all active submenus as a
-                // fallback match
-                if (iconMap.isEmpty()) {
-                    String fallbackSubmenuSql = "SELECT submenu_name, submenu_icon FROM submenu_master WHERE isactive = 1 AND isdelete = 0";
-                    List<Map<String, Object>> submenus = jdbcGccMobileMenuTemplate.queryForList(fallbackSubmenuSql);
-                    for (Map<String, Object> submenu : submenus) {
-                        String name = (String) submenu.get("submenu_name");
-                        String iconPath = (String) submenu.get("submenu_icon");
-                        if (name != null) {
-                            iconMap.put(name.toLowerCase().trim(), iconPath);
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Error fetching icons from menu database: " + e.getMessage());
-        }
-
-        List<Map<String, Object>> resultList = new ArrayList<>();
-        for (Map<String, Object> cat : categories) {
-            Map<String, Object> updatedCat = new LinkedHashMap<>(cat);
-            String englishName = (String) cat.get("english_name");
-            String icon = "";
-            if (englishName != null) {
-                String searchKey = englishName.toLowerCase().trim();
-                // 1. Exact match
-                if (iconMap.containsKey(searchKey)) {
-                    icon = iconMap.get(searchKey);
-                } else {
-                    // 2. Substring match (e.g. "Profile" matches "Profile Creation")
-                    for (Map.Entry<String, String> entry : iconMap.entrySet()) {
-                        String dbKey = entry.getKey();
-                        if (dbKey.contains(searchKey) || searchKey.contains(dbKey)) {
-                            icon = entry.getValue();
-                            break;
-                        }
-                    }
-                    // 3. First-word prefix match
-                    if (icon == null || icon.isEmpty()) {
-                        String[] words = searchKey.split("\\s+");
-                        if (words.length > 0 && words[0].length() > 2) {
-                            String firstWord = words[0];
-                            for (Map.Entry<String, String> entry : iconMap.entrySet()) {
-                                String dbKey = entry.getKey();
-                                String[] dbWords = dbKey.split("\\s+");
-                                if (dbWords.length > 0 && dbWords[0].equals(firstWord)) {
-                                    icon = entry.getValue();
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            updatedCat.put("icon", icon != null ? icon : "");
-            resultList.add(updatedCat);
-        }
-
-        return resultList;
     }
 
     public List<Map<String, Object>> getDistricts(String sid) {
