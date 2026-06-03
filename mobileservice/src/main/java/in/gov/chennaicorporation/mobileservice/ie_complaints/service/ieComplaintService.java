@@ -132,7 +132,7 @@ public class ieComplaintService {
 		var date = DateTimeUtil.getCurrentDay();
 
 		uploadDirectory = uploadDirectory + serviceFolderName + year +
-				"/" + month;
+				"/" + month + "/" + date;
 
 		try {
 			// Create directory if it doesn't exist
@@ -151,7 +151,8 @@ public class ieComplaintService {
 			String filePath = uploadDirectory + "/" + fileName;
 
 			String filepath_txt = "/" + serviceFolderName + year + "/" +
-					month + "/"
+					month + "/" +
+					date + "/"
 					+ fileName;
 
 			// Create a new Path object
@@ -750,6 +751,27 @@ public class ieComplaintService {
 					generatedId);
 
 			// =========================
+
+			// =========================
+
+			String logSql = """
+					INSERT INTO issue_log
+					(
+					    ref_id,
+					    cby,
+					    status
+					)
+					VALUES
+					(?,?,?)
+					""";
+
+			jdbcTemplate.update(
+					logSql,
+					refId,
+					cby,
+					"pending");
+
+			// =========================
 			// 2️⃣ INSERT QUESTION ANSWERS
 			// =========================
 
@@ -902,7 +924,8 @@ public class ieComplaintService {
 					"LEFT JOIN answer a ON FIND_IN_SET(a.answer_id, r.answer_id) " +
 					" JOIN complaint_master cm on cm.complaint_id = cd.complaint_id " +
 					"WHERE cd.ward = ? " +
-					"AND cd.ref_id NOT IN (SELECT ref_id FROM completion) " +
+					"AND cd.status='pending' " +
+
 					"GROUP BY " +
 					"  cd.zone, cd.ward, cd.street_name,cd.street_id, " +
 					" cd.latitude, cd.longitude, cd.image_path, " +
@@ -913,6 +936,7 @@ public class ieComplaintService {
 					"ORDER BY cd.ref_id, q.question_id";
 
 			List<Map<String, Object>> rows = jdbcTemplate.queryForList(sqlQuery, ward);
+			/* "AND cd.ref_id NOT IN (SELECT ref_id FROM completion) " + */
 
 			// ✅ NO DATA CASE
 			if (rows == null || rows.isEmpty()) {
@@ -1081,6 +1105,24 @@ public class ieComplaintService {
 			// 5️⃣ RESPONSE
 			// =========================
 			if (updateRows > 0) {
+
+				String logSql = """
+						INSERT INTO issue_log
+						(
+						    ref_id,
+						    cby,
+						    status
+						)
+						VALUES
+						(?,?,?)
+						""";
+
+				jdbcTemplate.update(
+						logSql,
+						refId,
+						cby,
+						"completed");
+
 				response.put("status", "Success");
 				response.put("message", "Completion saved and status updated");
 			} else {
@@ -1899,6 +1941,621 @@ public class ieComplaintService {
 			response.put("status", "Error");
 			response.put("message", "Something went wrong");
 			response.put("data", null);
+		}
+
+		return response;
+	}
+	// vendor verify list
+
+	public Map<String, Object> getvendorCompletedList(String loginid) {
+
+		Map<String, Object> response = new HashMap<>();
+
+		try {
+
+			String ward = getWardByLoginId(loginid);
+
+			String sqlQuery = "SELECT " +
+
+					" cd.zone, " +
+					" cd.ward, " +
+					" cd.street_name, " +
+					" cd.latitude, " +
+					" cd.longitude, " +
+
+					"CASE WHEN cd.image_path IS NOT NULL " +
+					"THEN CONCAT('" + fileBaseUrl + "/gccofficialapp/files', cd.image_path) " +
+					"ELSE '' " +
+					"END AS before_image, " +
+
+					"comp.remarks AS completion_remarks, " +
+
+					"CASE WHEN comp.image_path IS NOT NULL " +
+					"THEN CONCAT('" + fileBaseUrl + "/gccofficialapp/files', comp.image_path) " +
+					"ELSE '' " +
+					"END AS after_image, " +
+
+					"cd.remarks, " +
+					"cd.street_id, " +
+
+					"cd.cby, " +
+
+					"cm.complaint_name, " +
+
+					"cd.ref_id, " +
+					"cd.complaint_id, " +
+
+					"q.q_english AS question_name, " +
+
+					"CASE " +
+					"WHEN q.input_type = 'text' " +
+					"THEN r.answer_text " +
+					"ELSE GROUP_CONCAT(DISTINCT a.english_name " +
+					"ORDER BY a.answer_id SEPARATOR ', ') " +
+					"END AS answer_value " +
+
+					"FROM complaint_details cd " +
+
+					"LEFT JOIN completion comp " +
+					"ON comp.ref_id = cd.ref_id " +
+
+					"LEFT JOIN response r " +
+					"ON r.ref_id = cd.ref_id " +
+
+					"LEFT JOIN questionmaster q " +
+					"ON q.question_id = r.q_id " +
+
+					"LEFT JOIN answer a " +
+					"ON FIND_IN_SET(a.answer_id, r.answer_id) " +
+
+					"JOIN complaint_master cm " +
+					"ON cm.complaint_id = cd.complaint_id " +
+
+					"WHERE cd.ward = ? " +
+
+					// ✅ completed only
+					"AND comp.ref_id IS NOT NULL " +
+
+					// ✅ not verified
+					"AND cd.ref_id NOT IN " +
+					"(SELECT ref_id FROM verification) " +
+
+					// vendor complaints
+					"AND cd.complaint_id IN (4,6,12) " +
+
+					"GROUP BY " +
+
+					"cd.zone, cd.ward, cd.street_name, cd.street_id, " +
+					"cd.latitude, cd.longitude, cd.image_path, " +
+					"comp.image_path, comp.remarks, " +
+					"cd.remarks, cd.cby, " +
+					"cd.ref_id, cd.complaint_id, " +
+					"q.question_id, r.answer_text " +
+
+					"ORDER BY cd.ref_id, q.question_id";
+
+			List<Map<String, Object>> rows = jdbcTemplate.queryForList(sqlQuery, ward);
+
+			// NO DATA
+			if (rows == null || rows.isEmpty()) {
+
+				response.put("status", "Failed");
+				response.put("message", "No data available");
+				response.put("data", new ArrayList<>());
+
+				return response;
+			}
+
+			// GROUPING
+			Map<String, Map<String, Object>> complaintMap = new LinkedHashMap<>();
+
+			for (Map<String, Object> row : rows) {
+
+				String refId = String.valueOf(row.get("ref_id"));
+
+				if (!complaintMap.containsKey(refId)) {
+
+					Map<String, Object> complaint = new LinkedHashMap<>();
+
+					complaint.put("zone", row.get("zone"));
+					complaint.put("ward", row.get("ward"));
+
+					complaint.put(
+							"street_name",
+							row.get("street_name"));
+
+					complaint.put(
+							"street_id",
+							row.get("street_id"));
+
+					complaint.put(
+							"latitude",
+							row.get("latitude"));
+
+					complaint.put(
+							"longitude",
+							row.get("longitude"));
+
+					complaint.put(
+							"before_image",
+							row.get("before_image"));
+
+					complaint.put(
+							"after_image",
+							row.get("after_image"));
+
+					complaint.put(
+							"remarks",
+							row.get("remarks"));
+
+					complaint.put(
+							"completion_remarks",
+							row.get("completion_remarks"));
+
+					complaint.put(
+							"complaint_name",
+							row.get("complaint_name"));
+
+					complaint.put("cby", row.get("cby"));
+
+					complaint.put("ref_id", refId);
+
+					complaint.put(
+							"questions",
+							new ArrayList<>());
+
+					complaintMap.put(refId, complaint);
+				}
+
+				Map<String, Object> question = new LinkedHashMap<>();
+
+				question.put(
+						"question_name",
+
+						row.get("question_name") == null
+								? ""
+								: row.get("question_name")
+										.toString());
+
+				question.put(
+						"answer_value",
+
+						row.get("answer_value") == null
+								? ""
+								: row.get("answer_value")
+										.toString());
+
+				List<Map<String, Object>> questions = (List<Map<String, Object>>) complaintMap
+						.get(refId)
+						.get("questions");
+
+				questions.add(question);
+			}
+
+			List<Map<String, Object>> result = new ArrayList<>(complaintMap.values());
+
+			response.put("status", "Success");
+			response.put("message", "Verification List");
+			response.put("data", result);
+
+		} catch (Exception e) {
+
+			e.printStackTrace();
+
+			response.put("status", "Error");
+			response.put("message", "Something went wrong");
+			response.put("data", null);
+		}
+
+		return response;
+	}
+
+	public Map<String, Object> getVerificationList(String loginid) {
+
+		Map<String, Object> response = new HashMap<>();
+
+		try {
+
+			String ward = getWardByLoginId(loginid);
+
+			String sqlQuery = "SELECT " +
+
+					" cd.zone, " +
+					" cd.ward, " +
+					" cd.street_name, " +
+					" cd.latitude, " +
+					" cd.longitude, " +
+
+					"CASE WHEN cd.image_path IS NOT NULL " +
+					"THEN CONCAT('" + fileBaseUrl + "/gccofficialapp/files', cd.image_path) " +
+					"ELSE '' " +
+					"END AS before_image, " +
+
+					"comp.remarks AS completion_remarks, " +
+
+					"CASE WHEN comp.image_path IS NOT NULL " +
+					"THEN CONCAT('" + fileBaseUrl + "/gccofficialapp/files', comp.image_path) " +
+					"ELSE '' " +
+					"END AS after_image, " +
+
+					"cd.remarks, " +
+					"cd.street_id, " +
+
+					"cd.cby, " +
+
+					"cm.complaint_name, " +
+
+					"cd.ref_id, " +
+					"cd.complaint_id, " +
+
+					"q.q_english AS question_name, " +
+
+					"CASE " +
+					"WHEN q.input_type = 'text' " +
+					"THEN r.answer_text " +
+					"ELSE GROUP_CONCAT(DISTINCT a.english_name " +
+					"ORDER BY a.answer_id SEPARATOR ', ') " +
+					"END AS answer_value " +
+
+					"FROM complaint_details cd " +
+
+					"LEFT JOIN completion comp " +
+					"ON comp.ref_id = cd.ref_id " +
+
+					"LEFT JOIN response r " +
+					"ON r.ref_id = cd.ref_id " +
+
+					"LEFT JOIN questionmaster q " +
+					"ON q.question_id = r.q_id " +
+
+					"LEFT JOIN answer a " +
+					"ON FIND_IN_SET(a.answer_id, r.answer_id) " +
+
+					"JOIN complaint_master cm " +
+					"ON cm.complaint_id = cd.complaint_id " +
+
+					"WHERE cd.ward = ? " +
+					"AND cd.status='completed' " +
+
+					"GROUP BY " +
+
+					"cd.zone, cd.ward, cd.street_name, cd.street_id, " +
+					"cd.latitude, cd.longitude, cd.image_path, " +
+					"comp.image_path, comp.remarks, " +
+					"cd.remarks, cd.cby, " +
+					"cd.ref_id, cd.complaint_id, " +
+					"q.question_id, r.answer_text " +
+
+					"ORDER BY cd.ref_id, q.question_id";
+
+			List<Map<String, Object>> rows = jdbcTemplate.queryForList(sqlQuery, ward);
+			/*
+			 * // ✅ completed only
+			 * "AND comp.ref_id IS NOT NULL " +
+			 * 
+			 * // ✅ not verified
+			 * "AND cd.ref_id NOT IN " +
+			 * "(SELECT ref_id FROM verification) " +
+			 */
+
+			// NO DATA
+			if (rows == null || rows.isEmpty()) {
+
+				response.put("status", "Failed");
+				response.put("message", "No data available");
+				response.put("data", new ArrayList<>());
+
+				return response;
+			}
+
+			// GROUPING
+			Map<String, Map<String, Object>> complaintMap = new LinkedHashMap<>();
+
+			for (Map<String, Object> row : rows) {
+
+				String refId = String.valueOf(row.get("ref_id"));
+
+				if (!complaintMap.containsKey(refId)) {
+
+					Map<String, Object> complaint = new LinkedHashMap<>();
+
+					complaint.put("zone", row.get("zone"));
+					complaint.put("ward", row.get("ward"));
+
+					complaint.put(
+							"street_name",
+							row.get("street_name"));
+
+					complaint.put(
+							"street_id",
+							row.get("street_id"));
+
+					complaint.put(
+							"latitude",
+							row.get("latitude"));
+
+					complaint.put(
+							"longitude",
+							row.get("longitude"));
+
+					complaint.put(
+							"before_image",
+							row.get("before_image"));
+
+					complaint.put(
+							"after_image",
+							row.get("after_image"));
+
+					complaint.put(
+							"remarks",
+							row.get("remarks"));
+
+					complaint.put(
+							"completion_remarks",
+							row.get("completion_remarks"));
+
+					complaint.put(
+							"complaint_name",
+							row.get("complaint_name"));
+
+					complaint.put("cby", row.get("cby"));
+
+					complaint.put("ref_id", refId);
+
+					complaint.put(
+							"questions",
+							new ArrayList<>());
+
+					complaintMap.put(refId, complaint);
+				}
+
+				Map<String, Object> question = new LinkedHashMap<>();
+
+				question.put(
+						"question_name",
+
+						row.get("question_name") == null
+								? ""
+								: row.get("question_name")
+										.toString());
+
+				question.put(
+						"answer_value",
+
+						row.get("answer_value") == null
+								? ""
+								: row.get("answer_value")
+										.toString());
+
+				List<Map<String, Object>> questions = (List<Map<String, Object>>) complaintMap
+						.get(refId)
+						.get("questions");
+
+				questions.add(question);
+			}
+
+			List<Map<String, Object>> result = new ArrayList<>(complaintMap.values());
+
+			response.put("status", "Success");
+			response.put("message", "Verification List");
+			response.put("data", result);
+
+		} catch (Exception e) {
+
+			e.printStackTrace();
+
+			response.put("status", "Error");
+			response.put("message", "Something went wrong");
+			response.put("data", null);
+		}
+
+		return response;
+	}
+
+	@Transactional
+	public Map<String, Object> saveVerification(
+
+			String refId,
+			String remarks,
+			MultipartFile image,
+			String cby,
+			String zone,
+			String ward,
+			String street_name,
+			Integer street_id,
+			String latitude,
+			String longitude,
+			String status,
+			String address) {
+
+		Map<String, Object> response = new HashMap<>();
+
+		try {
+
+			// =========================
+			// ✅ REJECT FLOW
+			// =========================
+
+			if ("r".equalsIgnoreCase(status)) {
+
+				// revert back to pending
+
+				jdbcTemplate.update(
+
+						"UPDATE complaint_details SET status=?, remarks=? WHERE ref_id=?",
+
+						"pending",
+						remarks,
+						refId);
+
+				// issue log
+				String logSql = """
+
+						INSERT INTO issue_log
+						(
+						    ref_id,
+						    cby,
+						    status
+						)
+
+						VALUES
+						(?,?,?)
+
+						""";
+
+				jdbcTemplate.update(
+
+						logSql,
+
+						refId,
+						cby,
+						"pending");
+
+				response.put("status", "Success");
+
+				response.put("message",
+						"Complaint reverted to pending");
+
+				return response;
+			}
+
+			// =========================
+
+			// =========================
+
+			else if ("c".equalsIgnoreCase(status)) {
+
+				// already verified check
+				Integer count = jdbcTemplate.queryForObject(
+
+						"SELECT COUNT(*) FROM verification WHERE ref_id=?",
+
+						Integer.class,
+
+						refId);
+
+				if (count != null && count > 0) {
+
+					response.put("status", "Failed");
+
+					response.put("message",
+							"Verification already exists");
+
+					return response;
+				}
+
+				// image upload
+				String imagePath = "";
+
+				if (image != null && !image.isEmpty()) {
+
+					imagePath = fileUpload(
+							"verification",
+							"0",
+							image);
+				}
+
+				// insert verification
+				String insertSql = """
+
+						INSERT INTO verification
+						(
+						    ref_id,
+						    remarks,
+						    imagepath,
+						    cby,
+						    street_id,
+						    street_name,
+						    zone,
+						    ward,
+						    latitude,
+						    longitude,
+						    address
+						)
+
+						VALUES
+						(?,?,?,?,?,?,?,?,?,?,?)
+
+						""";
+
+				int insertRows = jdbcTemplate.update(
+
+						insertSql,
+
+						refId,
+						remarks,
+						imagePath,
+						cby,
+						street_id,
+						street_name,
+						zone,
+						ward,
+						latitude,
+						longitude, address);
+
+				if (insertRows == 0) {
+
+					response.put("status", "Failed");
+
+					response.put("message",
+							"Verification insert failed");
+
+					return response;
+				}
+
+				// update status
+				jdbcTemplate.update(
+
+						"UPDATE complaint_details SET status=? WHERE ref_id=?",
+
+						"verified",
+
+						refId);
+
+				// issue log
+				String logSql = """
+
+						INSERT INTO issue_log
+						(
+						    ref_id,
+						    cby,
+						    status
+						)
+
+						VALUES
+						(?,?,?)
+
+						""";
+
+				jdbcTemplate.update(
+
+						logSql,
+
+						refId,
+						cby,
+						"verified");
+
+				response.put("status", "Success");
+
+				response.put("message",
+						"Verification saved successfully");
+
+				response.put("ref_id", refId);
+
+				return response;
+			}
+
+			response.put("status", "Failed");
+
+			response.put("message", "Invalid flag");
+
+		} catch (Exception e) {
+
+			e.printStackTrace();
+
+			response.put("status", "Error");
+
+			response.put("message", e.getMessage());
 		}
 
 		return response;

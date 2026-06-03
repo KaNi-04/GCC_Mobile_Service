@@ -274,4 +274,70 @@ public class ieComplaintsController {
                 return ResponseEntity.ok(result);
         }
 
+        @GetMapping("/getvendorCompletedList")
+        public ResponseEntity<Map<String, Object>> getVendorCompletedList(
+                        @RequestParam("loginId") String loginId) {
+
+                Map<String, Object> result = iecomplaintservice.getvendorCompletedList(loginId);
+
+                return ResponseEntity.ok(result);
+        }
+
+        @GetMapping("/getVerificationList")
+        public ResponseEntity<Map<String, Object>> getVerificationList(
+
+                        @RequestParam String loginid
+
+        ) {
+
+                return ResponseEntity.ok(
+                                iecomplaintservice.getVerificationList(loginid));
+        }
+
+        @PostMapping("/saveVerification")
+        public ResponseEntity<Map<String, Object>> saveVerification(
+
+                        @RequestParam("ref_id") String refId,
+
+                        @RequestParam("remarks") String remarks,
+
+                        @RequestParam(value = "image", required = false) MultipartFile image,
+
+                        @RequestParam("zone") String zone,
+
+                        @RequestParam("ward") String ward,
+
+                        @RequestParam(value = "street_name", required = false) String street_name,
+
+                        @RequestParam(value = "street_id", required = false) Integer street_id,
+
+                        @RequestParam("latitude") String latitude,
+
+                        @RequestParam("longitude") String longitude,
+
+                        @RequestParam("cby") String cby,
+
+                        @RequestParam("status") String status,
+                        @RequestParam(value = "address", required = false) String address
+
+        ) {
+
+                Map<String, Object> response = iecomplaintservice.saveVerification(
+
+                                refId,
+                                remarks,
+                                image,
+                                cby,
+                                zone,
+                                ward,
+                                street_name,
+                                street_id,
+                                latitude,
+                                longitude,
+                                status,
+                                address);
+
+                return ResponseEntity.ok(response);
+        }
+
 }
