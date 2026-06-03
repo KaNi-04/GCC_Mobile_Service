@@ -799,7 +799,7 @@ public class HomeLessSurveyService {
                 return result;
             }
 
-            String catSql = "SELECT id, english_name, orderby FROM question_category_master WHERE isactive=1 AND isdelete=0 ORDER BY orderby";
+            String catSql = "SELECT id, english_name, icon, orderby FROM question_category_master WHERE isactive=1 AND isdelete=0 ORDER BY orderby";
             List<Map<String, Object>> categories = jdbcHomeLessSurveyTemplate.queryForList(catSql);
 
             List<Map<String, Object>> dataList = new ArrayList<>();
@@ -822,6 +822,7 @@ public class HomeLessSurveyService {
                 statusMap.put("cid", cidObj);
                 statusMap.put("english_name", cat.get("english_name"));
                 statusMap.put("orderby", cat.get("orderby"));
+                statusMap.put("icon", cat.get("icon"));
                 statusMap.put("status", (count != null && count > 0) ? "Completed" : "Pending");
 
                 dataList.add(statusMap);
