@@ -205,7 +205,7 @@ public class TenementService {
         var date = DateTimeUtil.getCurrentDay();
 
         uploadDirectory = uploadDirectory + serviceFolderName + year +
-                "/" + month;
+                "/" + month + "/" + date;
 
         try {
             // Create directory if it doesn't exist
@@ -224,8 +224,7 @@ public class TenementService {
             String filePath = uploadDirectory + "/" + fileName;
 
             String filepath_txt = "/" + serviceFolderName + year + "/" +
-                    month + "/"
-                    + fileName;
+                    month + "/" + date + "/" + fileName;
 
             // Create a new Path object
             Path path = Paths.get(filePath);

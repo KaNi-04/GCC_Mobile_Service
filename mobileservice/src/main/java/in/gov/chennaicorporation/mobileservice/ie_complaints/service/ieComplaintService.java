@@ -1053,16 +1053,18 @@ public class ieComplaintService {
 			// =========================
 			// 1️⃣ CHECK ALREADY COMPLETED
 			// =========================
-			Integer count = jdbcTemplate.queryForObject(
-					"SELECT COUNT(*) FROM completion WHERE ref_id=?",
-					Integer.class,
-					refId);
-
-			if (count != null && count > 0) {
-				response.put("status", "Failed");
-				response.put("message", "Completion already exists");
-				return response;
-			}
+			/*
+			 * Integer count = jdbcTemplate.queryForObject(
+			 * "SELECT COUNT(*) FROM completion WHERE ref_id=?",
+			 * Integer.class,
+			 * refId);
+			 * 
+			 * if (count != null && count > 0) {
+			 * response.put("status", "Failed");
+			 * response.put("message", "Completion already exists");
+			 * return response;
+			 * }
+			 */
 
 			// =========================
 			// 2️⃣ FILE UPLOAD
@@ -2199,8 +2201,14 @@ public class ieComplaintService {
 
 					"FROM complaint_details cd " +
 
-					"LEFT JOIN completion comp " +
-					"ON comp.ref_id = cd.ref_id " +
+					/*
+					 * "LEFT JOIN completion comp " +
+					 * "ON comp.ref_id = cd.ref_id " +
+					 */
+
+					"LEFT JOIN completion comp ON comp.id = (SELECT MAX(c2.id) FROM completion c2 WHERE c2.ref_id = cd.ref_id)"
+
+					+
 
 					"LEFT JOIN response r " +
 					"ON r.ref_id = cd.ref_id " +
@@ -2426,23 +2434,25 @@ public class ieComplaintService {
 			else if ("c".equalsIgnoreCase(status)) {
 
 				// already verified check
-				Integer count = jdbcTemplate.queryForObject(
-
-						"SELECT COUNT(*) FROM verification WHERE ref_id=?",
-
-						Integer.class,
-
-						refId);
-
-				if (count != null && count > 0) {
-
-					response.put("status", "Failed");
-
-					response.put("message",
-							"Verification already exists");
-
-					return response;
-				}
+				/*
+				 * Integer count = jdbcTemplate.queryForObject(
+				 * 
+				 * "SELECT COUNT(*) FROM verification WHERE ref_id=?",
+				 * 
+				 * Integer.class,
+				 * 
+				 * refId);
+				 * 
+				 * if (count != null && count > 0) {
+				 * 
+				 * response.put("status", "Failed");
+				 * 
+				 * response.put("message",
+				 * "Verification already exists");
+				 * 
+				 * return response;
+				 * }
+				 */
 
 				// image upload
 				String imagePath = "";
