@@ -334,6 +334,30 @@ public class CattleService {
 		return Collections.singletonList(response);
 		
 	}
+	
+//	public List<Map<String, Object>> getcattle_housed() {
+//		
+//		Map<String, Object> response = new HashMap<>();
+//		
+//		try {
+//			
+//			String sql="SELECT * FROM cattle_housed_master WHERE isactive=1 AND isdelete=0";
+//
+//    		List<Map<String, Object>> cattle_housed_details=jdbcTemplate.queryForList(sql);
+//
+//    		response.put("data",cattle_housed_details);
+//			
+//    		response.put("message", "Cattle Housed Types");
+//            response.put("status", "Success");
+//			
+//		} catch (Exception e) {
+//			 response.put("message", "Error in getting Cattle Housed Types");
+//	            response.put("status", "Failed");
+//	            e.printStackTrace();
+//		}
+//		
+//		return Collections.singletonList(response);
+//	}
 
 	public List<Map<String, Object>> saveownerdetails(String owner_name, String mobile_no, String address, int id_proof,
 			String id_details, String house_type, int cattle_space, Double  cattle_space_area, int no_of_cattles,
@@ -434,10 +458,7 @@ public class CattleService {
 		Map<String, Object> response = new HashMap<>();
 				
 				try {
-					
-					//String sql="SELECT *,CONCAT('" + fileBaseUrl + "/gccofficialapp/files',owner_photo) AS img_full_path FROM owner_details WHERE isactive=1 AND isdelete=0 AND cby=?";
-		
-					
+										
 					String sql =
 						    "SELECT od.*, " +
 						    " CONCAT('" + fileBaseUrl + "/gccofficialapp/files',od.owner_photo) AS img_full_path, " +
@@ -452,6 +473,7 @@ public class CattleService {
 						    " ) cd ON od.owner_ref_id = cd.owner_ref_id " +
 						    " WHERE od.isactive=1 " +
 						    " AND od.isdelete=0 " +
+						    " AND od.is_completed=0 " +
 						    " AND od.cby=?";
 					
 		    		List<Map<String, Object>> owner_details=jdbcTemplate.queryForList(sql,userid);
@@ -511,7 +533,7 @@ public class CattleService {
 			String animal_name, Integer animal_age, String animal_gender, String microchip_flag, String microchip_no,
 			String license_flag, String licenese_no, String vaccination_flag, Integer vaccination_type,
 			String vaccination_date, String userid, MultipartFile image, String latitude, String longitude, String zone,
-			String ward, String location) {
+			String ward, String location,String cattle_maintained,Integer cattle_space_gcc_shed,String insurance_flag,String insurance_no,MultipartFile ipimage) {
 		
 		
 		Map<String, Object> response = new HashMap<>();
@@ -519,10 +541,11 @@ public class CattleService {
 		try {
 			
 			String imagePath = "";
+			String ipimagePath = "";
             if (image == null || image.isEmpty()) {
 
                 response.put("status", "Failed");
-                response.put("message", "image is required");
+                response.put("message", "cattle image is required");
 
                 return Collections.singletonList(response);
             }
@@ -531,7 +554,12 @@ public class CattleService {
 
                 imagePath = fileUpload("cattle", image);
             }
+            if (ipimage != null && !ipimage.isEmpty()) {
+
+            	ipimagePath = fileUpload("cattle_insurance_photo", ipimage);
+            }
             final String finalImagePath = imagePath;
+            final String finalipimagePath=ipimagePath;
             final String vDate =
                     (vaccination_date != null && !vaccination_date.isEmpty())
                             ? convertDateFormat(vaccination_date, 0)
@@ -539,8 +567,8 @@ public class CattleService {
             
             String ownerSql="INSERT INTO cattle_details (owner_ref_id,cattle_type,breed_type,animal_name,animal_age,animal_gender,"
             		+ " microchip_flag,microchip_no,license_flag,licenese_no,vaccination_flag,vaccination_type,vaccination_date,cattle_photo,latitude,longitude,zone,"
-            		+ " ward,location,cby)"
-            		+ " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            		+ " ward,location,cby,cattle_maintained,cattle_space_gcc_shed,insurance_flag,insurance_no,insurance_photo)"
+            		+ " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
             
             KeyHolder keyHolder = new GeneratedKeyHolder();
             
@@ -571,10 +599,32 @@ public class CattleService {
 				ps.setString(18, ward);
 				ps.setString(19, location);
 				ps.setString(20,userid);
+				ps.setString(21,cattle_maintained);
+				if (cattle_space_gcc_shed != null) ps.setInt(22, cattle_space_gcc_shed);
+				else ps.setNull(22, java.sql.Types.INTEGER);
+				ps.setString(23,insurance_flag);
+				ps.setString(24,insurance_no);
+				ps.setString(25,finalipimagePath);				
 				return ps;
             }, keyHolder);
             
             if (result > 0) {
+            	
+            	String updateSql =
+            		    "UPDATE owner_details od " +
+            		    "SET od.is_completed = 1 " +
+            		    "WHERE od.owner_ref_id = ? " +
+            		    "AND od.isactive = 1 " +
+            		    "AND od.isdelete = 0 " +
+            		    "AND od.no_of_cattles = ( " +
+            		    "    SELECT COUNT(*) " +
+            		    "    FROM cattle_details cd " +
+            		    "    WHERE cd.owner_ref_id = od.owner_ref_id " +
+            		    "    AND cd.isactive = 1 " +
+            		    "    AND cd.isdelete = 0 " +
+            		    ")";
+            	
+            	jdbcTemplate.update(updateSql, owner_ref_id);
 	            
 	            response.put("status", "Success");
 	            response.put("message", "Cattle Details Saved for REF ID: "+owner_ref_id+" Owner Successfully");
@@ -590,6 +640,8 @@ public class CattleService {
 		return Collections.singletonList(response);
 		
 	}
+
+	
     
     
 	

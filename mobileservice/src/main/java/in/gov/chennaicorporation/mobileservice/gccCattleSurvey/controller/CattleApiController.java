@@ -59,6 +59,12 @@ public class CattleApiController {
         return cattleService.getvaccination_type();
     }
 	
+//	@GetMapping("/getcattle_housed")
+//    public List<Map<String, Object>> getcattle_housed() {
+//
+//        return cattleService.getcattle_housed();
+//    }
+	
 	@PostMapping("/saveownerdetails")
 	public List<Map<String, Object>> saveownerdetails(
 			@RequestParam (required = false) String owner_name,
@@ -99,15 +105,20 @@ public class CattleApiController {
     }
 	
 	@PostMapping("/savecattledetails")
-	public List<Map<String, Object>> saveownerdetails(
+	public List<Map<String, Object>> savecattledetails(
 			@RequestParam (required = false) String owner_ref_id,
 			@RequestParam (required = false) int cattle_type,
 			@RequestParam (required = false) int breed_type,
 			@RequestParam (required = false) String animal_name,
 			@RequestParam (required = false) Integer animal_age,
 			@RequestParam (required = false) String animal_gender,
+			@RequestParam (required = false) String cattle_maintained,
+			@RequestParam (required = false) Integer cattle_space_gcc_shed,
+			@RequestParam (required = false) String insurance_flag,
+			@RequestParam (required = false) String insurance_no,
 			@RequestParam (required = false) String microchip_flag,
 			@RequestParam (required = false) String microchip_no,
+			@RequestParam(value = "insurance_photo", required = false) MultipartFile ipimage,			
 			@RequestParam (required = false) String license_flag,
 			@RequestParam (required = false) String licenese_no,
 			@RequestParam (required = false) String vaccination_flag,
@@ -123,7 +134,7 @@ public class CattleApiController {
 			){
 				return cattleService.savecattledetails(owner_ref_id,cattle_type,breed_type,animal_name,animal_age,animal_gender,
 						microchip_flag,microchip_no,license_flag,licenese_no,vaccination_flag,vaccination_type,vaccination_date,userid,image,latitude,
-						longitude,zone,ward,location);
+						longitude,zone,ward,location,cattle_maintained,cattle_space_gcc_shed,insurance_flag,insurance_no,ipimage);
 		
 		
 	}
