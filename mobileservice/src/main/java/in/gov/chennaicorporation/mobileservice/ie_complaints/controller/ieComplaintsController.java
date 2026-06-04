@@ -147,7 +147,7 @@ public class ieComplaintsController {
                         @RequestParam("zone") String zone,
                         @RequestParam("ward") String ward,
                         @RequestParam(value = "street_name") String street_name,
-                        @RequestParam("street_id") Integer street_id,
+                        @RequestParam("street_id") String street_id,
                         @RequestParam("latitude") String latitude,
                         @RequestParam("longitude") String longitude,
                         @RequestParam("cby") String cby,
@@ -198,7 +198,7 @@ public class ieComplaintsController {
                         @RequestParam("zone") String zone,
                         @RequestParam("ward") String ward,
                         @RequestParam(value = "street_name") String street_name,
-                        @RequestParam("street_id") Integer street_id,
+                        @RequestParam("street_id") String street_id,
                         @RequestParam("latitude") String latitude,
                         @RequestParam("longitude") String longitude,
                         @RequestParam("cby") String cby) {
@@ -309,7 +309,7 @@ public class ieComplaintsController {
 
                         @RequestParam(value = "street_name", required = false) String street_name,
 
-                        @RequestParam(value = "street_id", required = false) Integer street_id,
+                        @RequestParam(value = "street_id") String street_id,
 
                         @RequestParam("latitude") String latitude,
 

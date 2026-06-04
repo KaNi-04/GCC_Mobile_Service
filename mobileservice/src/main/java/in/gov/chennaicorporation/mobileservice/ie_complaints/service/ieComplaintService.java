@@ -690,7 +690,7 @@ public class ieComplaintService {
 			String zone,
 			String ward,
 			String street_name,
-			Integer street_id,
+			String street_id,
 			String latitude,
 			String longitude,
 			String cby,
@@ -728,7 +728,7 @@ public class ieComplaintService {
 				ps.setString(2, zone);
 				ps.setString(3, ward);
 				ps.setString(4, street_name);
-				ps.setInt(5, street_id);
+				ps.setString(5, street_id);
 				ps.setString(6, latitude);
 				ps.setString(7, longitude);
 				ps.setString(8, finalImagePath);
@@ -1042,7 +1042,7 @@ public class ieComplaintService {
 			String zone,
 			String ward,
 			String street_name,
-			Integer street_id,
+			String street_id,
 			String latitude,
 			String longitude) {
 
@@ -2370,7 +2370,7 @@ public class ieComplaintService {
 			String zone,
 			String ward,
 			String street_name,
-			Integer street_id,
+			String street_id,
 			String latitude,
 			String longitude,
 			String status,
