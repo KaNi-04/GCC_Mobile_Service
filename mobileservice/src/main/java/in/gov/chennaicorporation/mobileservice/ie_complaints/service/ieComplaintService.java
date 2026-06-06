@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -889,6 +890,29 @@ public class ieComplaintService {
 
 			// String ward = getWardByLoginId(loginid, "si_so");
 			String ward = getWardByLoginId(loginid);
+			String zone = getZoneByLoginId(loginid);
+			System.out.println("ward.....12" + ward);
+			System.out.println("zone.....12" + zone);
+			// Zone 04 and Zone 08
+			if (!"04".equals(zone) && !"08".equals(zone)) {
+
+				response.put("status", "Failed");
+				response.put("message", "No data available");
+				response.put("data", new ArrayList<>());
+
+				return response;
+			}
+
+			// Zone 07 - allow only wards 082,083,085
+			if ("07".equals(zone)
+					&& Arrays.asList("082", "083", "085").contains(ward)) {
+
+				response.put("status", "Failed");
+				response.put("message", "No data available");
+				response.put("data", new ArrayList<>());
+
+				return response;
+			}
 
 			String sqlQuery = "SELECT " +
 
@@ -1031,7 +1055,7 @@ public class ieComplaintService {
 		}
 
 		// Handle the case where no result is found
-		return "00"; // or return null based on your needs
+		return "000"; // or return null based on your needs
 	}
 
 	public Map<String, Object> saveCompletion(
@@ -1859,8 +1883,9 @@ public class ieComplaintService {
 					"LEFT JOIN answer a ON FIND_IN_SET(a.answer_id, r.answer_id) " +
 					" JOIN complaint_master cm on cm.complaint_id = cd.complaint_id " +
 					"WHERE cd.ward = ? " +
-					"AND cd.ref_id NOT IN (SELECT ref_id FROM completion) " +
-					" AND cd.complaint_id in (4,6,12)" + // added for vendor pending list
+
+					"AND cd.status='pending' " +
+					" AND cd.complaint_id in (3,4,6,12)" + // added for vendor pending list
 					"GROUP BY " +
 					"  cd.zone, cd.ward, cd.street_name,cd.street_id, " +
 					" cd.latitude, cd.longitude, cd.image_path, " +
@@ -1871,7 +1896,7 @@ public class ieComplaintService {
 					"ORDER BY cd.ref_id, q.question_id";
 
 			List<Map<String, Object>> rows = jdbcTemplate.queryForList(sqlQuery, ward);
-
+			// "AND cd.ref_id NOT IN (SELECT ref_id FROM completion) " +
 			// ✅ NO DATA CASE
 			if (rows == null || rows.isEmpty()) {
 				response.put("status", "Failed");
