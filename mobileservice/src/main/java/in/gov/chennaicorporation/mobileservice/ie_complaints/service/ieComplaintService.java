@@ -2183,7 +2183,7 @@ public class ieComplaintService {
 
 		try {
 
-			String ward = getWardByLoginId(loginid);
+			// String ward = getWardByLoginId(loginid);
 
 			String sqlQuery = "SELECT " +
 
@@ -2247,7 +2247,7 @@ public class ieComplaintService {
 					"JOIN complaint_master cm " +
 					"ON cm.complaint_id = cd.complaint_id " +
 
-					"WHERE cd.ward = ? " +
+					"WHERE cd.cby = ? " +
 					"AND cd.status='completed' " +
 
 					"GROUP BY " +
@@ -2261,7 +2261,7 @@ public class ieComplaintService {
 
 					"ORDER BY cd.ref_id, q.question_id";
 
-			List<Map<String, Object>> rows = jdbcTemplate.queryForList(sqlQuery, ward);
+			List<Map<String, Object>> rows = jdbcTemplate.queryForList(sqlQuery, loginid);
 			/*
 			 * // ✅ completed only
 			 * "AND comp.ref_id IS NOT NULL " +
