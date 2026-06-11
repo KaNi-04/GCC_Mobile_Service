@@ -140,4 +140,29 @@ public class CattleApiController {
 	}
 	
 	
+	@GetMapping("/getzonereport")
+    public List<Map<String, Object>> getzonereport() {
+
+        return cattleService.getzonereport();
+    }
+	
+	@GetMapping("/getwardreport")
+    public List<Map<String, Object>> getwardreport(@RequestParam String zone) {
+
+        return cattleService.getwardreport(zone);
+    }
+	
+	@GetMapping("/getwardowners")
+	public List<Map<String, Object>> getwardowners(@RequestParam String ward) {
+
+        return cattleService.getwardowners(ward);
+    }
+	
+	@GetMapping("/getcattledetails")
+	public List<Map<String, Object>> getcattledetails(@RequestParam String owner_ref_id,@RequestParam String cattle_maintained) {
+
+        return cattleService.getcattledetails(owner_ref_id,cattle_maintained);
+    }
+	
+	
 }

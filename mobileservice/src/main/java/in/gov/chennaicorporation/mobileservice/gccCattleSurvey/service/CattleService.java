@@ -540,6 +540,65 @@ public class CattleService {
 		
 		try {
 			
+			
+			// Check duplicate microchip number
+			if (microchip_no != null && !microchip_no.trim().isEmpty()) {
+
+			    String sql = "SELECT COUNT(*) FROM cattle_details " +
+			                 "WHERE microchip_no = ? " +
+			                 "AND isactive = 1 AND isdelete = 0";
+
+			    Integer count = jdbcTemplate.queryForObject(
+			            sql,
+			            Integer.class,
+			            microchip_no.trim());
+
+			    if (count != null && count > 0) {
+			        response.put("status", "Failed");
+			        response.put("message", microchip_no+" Microchip Number already exists");
+			        return Collections.singletonList(response);
+			    }
+			}
+
+			// Check duplicate license number
+			if (licenese_no != null && !licenese_no.trim().isEmpty()) {
+
+			    String sql = "SELECT COUNT(*) FROM cattle_details " +
+			                 "WHERE licenese_no = ? " +
+			                 "AND isactive = 1 AND isdelete = 0";
+
+			    Integer count = jdbcTemplate.queryForObject(
+			            sql,
+			            Integer.class,
+			            licenese_no.trim());
+
+			    if (count != null && count > 0) {
+			        response.put("status", "Failed");
+			        response.put("message", licenese_no+" License Number already exists");
+			        return Collections.singletonList(response);
+			    }
+			}
+
+			// Check duplicate insurance number
+			if (insurance_no != null && !insurance_no.trim().isEmpty()) {
+
+			    String sql = "SELECT COUNT(*) FROM cattle_details " +
+			                 "WHERE insurance_no = ? " +
+			                 "AND isactive = 1 AND isdelete = 0";
+
+			    Integer count = jdbcTemplate.queryForObject(
+			            sql,
+			            Integer.class,
+			            insurance_no.trim());
+
+			    if (count != null && count > 0) {
+			        response.put("status", "Failed");
+			        response.put("message", insurance_no +" Insurance Number already exists");
+			        return Collections.singletonList(response);
+			    }
+			}
+			
+			
 			String imagePath = "";
 			String ipimagePath = "";
             if (image == null || image.isEmpty()) {
@@ -639,6 +698,248 @@ public class CattleService {
 		
 		return Collections.singletonList(response);
 		
+	}
+
+	public List<Map<String, Object>> getzonereport() {
+		
+		Map<String, Object> response = new HashMap<>();
+		
+		try {
+			
+			
+			String sql = " SELECT "
+		    		+ "	            od.zone, "
+
+		    		+ "	            COUNT(DISTINCT od.owner_ref_id) AS owner_count, "
+
+		    		+ "	            ( "
+		    		+ "	                SELECT COALESCE(SUM(o2.no_of_cattles), 0) "
+		    		+ "	                FROM owner_details o2 "
+		    		+ "	                WHERE o2.zone = od.zone "
+		    		+ "	                  AND o2.isactive = 1 "
+		    		+ "	                  AND o2.isdelete = 0 "
+		    		+ "	            ) AS total_cattlecount, "
+
+		    		+ "	            COUNT(DISTINCT CASE "
+		    		+ "	                WHEN od.is_completed = 0 THEN od.owner_ref_id "
+		    		+ "	            END) AS cattle_not_submitted, "
+
+		    		+ "	            COUNT(DISTINCT CASE "
+		    		+ "	                WHEN od.is_completed = 1 THEN od.owner_ref_id "
+		    		+ "	            END) AS cattle_submitted, "
+
+		    		+ "	            COUNT(CASE "
+		    		+ "	                WHEN cd.cattle_maintained = 'Home' THEN 1 "
+		    		+ "	            END) AS home_count, "
+
+		    		+ "	            COUNT(CASE "
+		    		+ "	                WHEN cd.cattle_maintained = 'GCC' THEN 1 "
+		    		+ "	            END) AS gcc_count "
+
+		    		+ "	        FROM owner_details od "
+		    		+ "	        LEFT JOIN cattle_details cd "
+		    		+ "	            ON od.owner_ref_id = cd.owner_ref_id "
+		    		+ "	           AND cd.isactive = 1 "
+		    		+ "	           AND cd.isdelete = 0 "
+
+		    		+ "	        WHERE od.isactive = 1 "
+		    		+ "	          AND od.isdelete = 0 "
+
+		    		+ "	        GROUP BY od.zone "
+		    		+ "	        ORDER BY CAST(od.zone AS UNSIGNED) ";
+			
+    		List<Map<String, Object>> zone_details=jdbcTemplate.queryForList(sql);
+
+    		response.put("data",zone_details);
+			
+    		response.put("message", "Zonewise Report for Cattle Survey");
+            response.put("status", "Success");
+			
+		} catch (Exception e) {
+			 response.put("message", "Error in getting Zonewise Report for Cattle Survey");
+	            response.put("status", "Failed");
+	            e.printStackTrace();
+		}
+		
+		return Collections.singletonList(response);
+	}
+
+	public List<Map<String, Object>> getwardreport(String zone) {
+		
+		Map<String, Object> response = new HashMap<>();
+		
+		try {
+			
+			
+			String sql = " SELECT "
+		    		+ "	            od.ward, "
+
+		    		+ "	            COUNT(DISTINCT od.owner_ref_id) AS owner_count, "
+
+		    		+ "	            ( "
+		    		+ "	                SELECT COALESCE(SUM(o2.no_of_cattles), 0) "
+		    		+ "	                FROM owner_details o2 "
+		    		+ "	                WHERE o2.zone = od.zone "
+		    		+ "	                  AND o2.isactive = 1 "
+		    		+ "	                  AND o2.isdelete = 0 "
+		    		+ "	            ) AS total_cattlecount, "
+
+		    		+ "	            COUNT(DISTINCT CASE "
+		    		+ "	                WHEN od.is_completed = 0 THEN od.owner_ref_id "
+		    		+ "	            END) AS cattle_not_submitted, "
+
+		    		+ "	            COUNT(DISTINCT CASE "
+		    		+ "	                WHEN od.is_completed = 1 THEN od.owner_ref_id "
+		    		+ "	            END) AS cattle_submitted, "
+
+		    		+ "	            COUNT(CASE "
+		    		+ "	                WHEN cd.cattle_maintained = 'Home' THEN 1 "
+		    		+ "	            END) AS home_count, "
+
+		    		+ "	            COUNT(CASE "
+		    		+ "	                WHEN cd.cattle_maintained = 'GCC' THEN 1 "
+		    		+ "	            END) AS gcc_count "
+
+		    		+ "	        FROM owner_details od "
+		    		+ "	        LEFT JOIN cattle_details cd "
+		    		+ "	            ON od.owner_ref_id = cd.owner_ref_id "
+		    		+ "	           AND cd.isactive = 1 "
+		    		+ "	           AND cd.isdelete = 0 "
+
+		    		+ "	        WHERE od.isactive = 1 "
+		    		+ "	          AND od.isdelete = 0  AND od.zone=? "
+
+		    		+ "	        GROUP BY od.ward "
+		    		+ "	        ORDER BY CAST(od.ward AS UNSIGNED) ";
+			
+    		List<Map<String, Object>> ward_details=jdbcTemplate.queryForList(sql,zone);
+
+    		response.put("data",ward_details);
+			
+    		response.put("message", "Zone -"+zone+" Wardwise Report for Cattle Survey");
+            response.put("status", "Success");
+			
+		} catch (Exception e) {
+			 response.put("message", "Error in getting Zone-"+zone+" Wardwise Report for Cattle Survey");
+	            response.put("status", "Failed");
+	            e.printStackTrace();
+		}
+		
+		return Collections.singletonList(response);
+	}
+
+	public List<Map<String, Object>> getwardowners(String ward) {
+		
+		Map<String, Object> response = new HashMap<>();
+		try {
+			
+			String sql =
+		            "SELECT " +
+		            "    od.owner_ref_id, " +
+		            "    od.owner_name, " +  
+		            "    od.mobile_no, " +
+		            "    od.address, " +
+		            "    COALESCE(od.no_of_cattles,0) AS total_cattlecount, " +
+		            "	 COUNT(od.owner_ref_id) AS cattle_submitted, "+
+		            "    (COALESCE(od.no_of_cattles,0) - COUNT(od.owner_ref_id)) AS cattle_not_submitted, "+
+		            "    SUM(CASE WHEN cd.cattle_maintained='Home' THEN 1 ELSE 0 END) AS home_count, " +
+		            "    SUM(CASE WHEN cd.cattle_maintained='GCC' THEN 1 ELSE 0 END) AS gcc_count " +
+		            "FROM owner_details od " +
+		            "LEFT JOIN cattle_details cd " +
+		            "    ON od.owner_ref_id = cd.owner_ref_id " +
+		            "   AND cd.isactive = 1 " +
+		            "   AND cd.isdelete = 0 " +
+		            "WHERE od.isactive = 1 " +
+		            "  AND od.isdelete = 0 " +
+		            "  AND od.ward = ? " +
+		            "GROUP BY od.owner_ref_id, od.owner_name,od.mobile_no,od.address, od.no_of_cattles " +
+		            "ORDER BY od.owner_ref_id";
+			
+			List<Map<String, Object>> owner_details=jdbcTemplate.queryForList(sql,ward);
+
+    		response.put("data",owner_details);
+			
+    		response.put("message", ward+" owners Report for Cattle Survey");
+            response.put("status", "Success");
+			
+		} catch (Exception e) {
+			 response.put("message", "Error in getting"+ward+" owners Report for Cattle Survey");
+	         response.put("status", "Failed");
+	         e.printStackTrace();
+		}
+		return Collections.singletonList(response);
+	}
+
+	public List<Map<String, Object>> getcattledetails(String owner_ref_id, String cattle_maintained) {
+		
+		Map<String, Object> response = new HashMap<>();
+		try {
+			
+			String sql =
+				    "SELECT cd.*, " +
+
+				    // Master Names
+				    "IFNULL(ctm.cattle_name,'') AS cattle_type_name, " +
+				    "IFNULL(bm.breed_name,'') AS breed_name, " +
+				    "IFNULL(gsm.shed_name,'') AS gcc_shed_name, " +
+				    "IFNULL(vtm.vaccination_name,'') AS vaccination_name, " +
+
+				    // Insurance Image
+				    "CASE " +
+				    "   WHEN cd.insurance_photo IS NULL OR cd.insurance_photo='' " +
+				    "   THEN '' " +
+				    "   ELSE CONCAT('" + fileBaseUrl + "/gccofficialapp/files', cd.insurance_photo) " +
+				    "END AS insurance_fullimg, " +
+
+				    // Cattle Image
+				    "CASE " +
+				    "   WHEN cd.cattle_photo IS NULL OR cd.cattle_photo='' " +
+				    "   THEN '' " +
+				    "   ELSE CONCAT('" + fileBaseUrl + "/gccofficialapp/files', cd.cattle_photo) " +
+				    "END AS cattle_fullimg " +
+
+				    "FROM cattle_details cd " +
+
+				    "LEFT JOIN cattle_type_master ctm " +
+				    "       ON cd.cattle_type = ctm.id " +
+				    "      AND ctm.isactive = 1 " +
+				    "      AND ctm.isdelete = 0 " +
+
+				    "LEFT JOIN breed_master bm " +
+				    "       ON cd.breed_type = bm.id " +
+				    "      AND bm.isactive = 1 " +
+				    "      AND bm.isdelete = 0 " +
+
+				    "LEFT JOIN gcc_shed_master gsm " +
+				    "       ON cd.cattle_space_gcc_shed = gsm.id " +
+				    "      AND gsm.isactive = 1 " +
+				    "      AND gsm.isdelete = 0 " +
+
+				    "LEFT JOIN vaccination_type_master vtm " +
+				    "       ON cd.vaccination_type = vtm.id " +
+				    "      AND vtm.isactive = 1 " +
+				    "      AND vtm.isdelete = 0 " +
+
+				    "WHERE cd.isactive = 1 " +
+				    "  AND cd.isdelete = 0 " +
+				    "  AND cd.owner_ref_id = ? " +
+				    "  AND UPPER(cd.cattle_maintained) = UPPER(?)";
+			
+			List<Map<String, Object>> cattle_details=jdbcTemplate.queryForList(sql,owner_ref_id,cattle_maintained);
+			for (Map<String, Object> row : cattle_details) {
+			    row.replaceAll((key, value) -> value == null ? "" : value);
+			}
+    		response.put("data",cattle_details);
+			
+    		response.put("message", owner_ref_id+" owner "+cattle_maintained+" -Cattle Report for Cattle Survey");
+            response.put("status", "Success");
+			
+		} catch (Exception e) {
+			 response.put("message", "Error in getting"+owner_ref_id+" owner "+cattle_maintained+" -Cattle Report for Cattle Survey");
+	         response.put("status", "Failed");
+	         e.printStackTrace();
+		}
+		return Collections.singletonList(response);
 	}
 
 	
