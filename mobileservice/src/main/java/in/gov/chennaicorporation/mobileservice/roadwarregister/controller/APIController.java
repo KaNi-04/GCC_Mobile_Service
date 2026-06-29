@@ -13,103 +13,140 @@ import java.util.Map;
 @RequestMapping("/gccofficialapp/api/roadwar/")
 @RestController("gccofficialappsroadwar")
 public class APIController {
-	@Autowired
-	private RoadWarAPIService apiService;
-	
-	
-	@GetMapping(value="/road-types")
-	public List<?> getRoadTypes(){
-		return apiService.getRoadTypes();
-	}
-	
-	@GetMapping(value="/lay-types")
-	public List<?> getRoadLayTypes(){
-		return apiService.getRoadLayTypes();
-	}
-	
-	/**
-     * Save Start Street details
-     */
-    @PostMapping("/street/start")
-    public ResponseEntity<Map<String, Object>> saveStartStreet(
-            @RequestParam String roadName,
-            @RequestParam String roadZone,
-            @RequestParam String roadWard,
-            @RequestParam String roadId,
-            @RequestParam String roadType,
-            @RequestParam String manualZone,
-            @RequestParam String manualWard,
-            @RequestParam String manualroadType,
-            @RequestParam String roadLayType,
-            @RequestParam(required = false) String lastLayOn,
-            @RequestParam String roadLength,
-            @RequestParam String carriagewayWidth,
-            @RequestParam String walltowallWidth,
-            @RequestParam String footpath,
-            @RequestParam String median,
-            @RequestParam String swd,
-            @RequestParam String inby,
-            @RequestParam String latitude,
-            @RequestParam String longitude,
-            @RequestParam String streetboard,
-            @RequestParam(required = false) MultipartFile roadImage
-    ) {
-        Map<String, Object> result = apiService.saveStreetDetails(
-                "START", roadName, roadZone, roadWard, roadId, roadType,
-                manualZone, manualWard, manualroadType,
-                roadLayType, lastLayOn, roadLength, carriagewayWidth,
-                walltowallWidth, footpath, median, swd, inby, latitude,
-                longitude, streetboard, roadImage, null
-        );
-        return ResponseEntity.ok(result);
-    }
-    
-    @GetMapping(value="/street/startlist")
-	public List<?> getStartRoadList(@RequestParam String inby){
-		return apiService.getStartRoadList(inby);
-	}
+        @Autowired
+        private RoadWarAPIService apiService;
 
-    /**
-     * Save End Street details (linked with Start Street)
-     */
-    @PostMapping("/street/end")
-    public ResponseEntity<Map<String, Object>> saveEndStreet(
-            @RequestParam String roadName,
-            @RequestParam String roadZone,
-            @RequestParam String roadWard,
-            @RequestParam String roadId,
-            @RequestParam String roadType,
-            @RequestParam String manualZone,
-            @RequestParam String manualWard,
-            @RequestParam String manualroadType,
-            @RequestParam String roadLayType,
-            @RequestParam(required = false) String lastLayOn,
-            @RequestParam String roadLength,
-            @RequestParam String carriagewayWidth,
-            @RequestParam String walltowallWidth,
-            @RequestParam String footpath,
-            @RequestParam String median,
-            @RequestParam String swd,
-            @RequestParam String inby,
-            @RequestParam String latitude,
-            @RequestParam String longitude,
-            @RequestParam String streetboard,
-            @RequestParam(required = false) MultipartFile roadImage,
-            @RequestParam Integer startId   // required for END street
-    ) {
-        Map<String, Object> result = apiService.saveStreetDetails(
-                "END", roadName, roadZone, roadWard, roadId, roadType,
-                manualZone, manualWard, manualroadType,
-                roadLayType, lastLayOn, roadLength, carriagewayWidth,
-                walltowallWidth, footpath, median, swd, inby, latitude,
-                longitude, streetboard, roadImage, startId
-        );
-        return ResponseEntity.ok(result);
-    }
-    
-    
-    @GetMapping(value="/getCompletedRoadLists")
-	public List<?> getCompletedRoadLists(){
-		return apiService.getCompletedRoadLists();
-	}
+        @GetMapping(value = "/road-types")
+        public List<?> getRoadTypes() {
+                return apiService.getRoadTypes();
+        }
+
+        @GetMapping(value = "/lay-types")
+        public List<?> getRoadLayTypes() {
+                return apiService.getRoadLayTypes();
+        }
+
+        /**
+         * Save Start Street details
+         */
+        @PostMapping("/street/start")
+        public ResponseEntity<Map<String, Object>> saveStartStreet(
+                        @RequestParam String roadName,
+                        @RequestParam String roadZone,
+                        @RequestParam String roadWard,
+                        @RequestParam String roadId,
+                        @RequestParam String roadType,
+                        @RequestParam String manualZone,
+                        @RequestParam String manualWard,
+                        @RequestParam String manualroadType,
+                        @RequestParam String roadLayType,
+                        @RequestParam(required = false) String lastLayOn,
+                        @RequestParam String roadLength,
+                        @RequestParam String carriagewayWidth,
+                        @RequestParam String walltowallWidth,
+                        @RequestParam String footpath,
+                        @RequestParam String median,
+                        @RequestParam String swd,
+                        @RequestParam String inby,
+                        @RequestParam String latitude,
+                        @RequestParam String longitude,
+                        @RequestParam String streetboard,
+                        @RequestParam(required = false) MultipartFile roadImage) {
+                Map<String, Object> result = apiService.saveStreetDetails(
+                                "START", roadName, roadZone, roadWard, roadId, roadType,
+                                manualZone, manualWard, manualroadType,
+                                roadLayType, lastLayOn, roadLength, carriagewayWidth,
+                                walltowallWidth, footpath, median, swd, inby, latitude,
+                                longitude, streetboard, roadImage, null);
+                return ResponseEntity.ok(result);
+        }
+
+        @GetMapping(value = "/street/startlist")
+        public List<?> getStartRoadList(@RequestParam String inby) {
+                return apiService.getStartRoadList(inby);
+        }
+
+        /**
+         * Save End Street details (linked with Start and centre Street)
+         */
+        @PostMapping("/street/end")
+        public ResponseEntity<Map<String, Object>> saveEndStreet(
+                        @RequestParam String roadName,
+                        @RequestParam String roadZone,
+                        @RequestParam String roadWard,
+                        @RequestParam String roadId,
+                        @RequestParam String roadType,
+                        @RequestParam String manualZone,
+                        @RequestParam String manualWard,
+                        @RequestParam(required = false) String manualroadType,
+                        @RequestParam(required = false) String roadLayType,
+                        @RequestParam(required = false) String lastLayOn,
+                        @RequestParam(required = false) String roadLength,
+                        @RequestParam(required = false) String carriagewayWidth,
+                        @RequestParam(required = false) String walltowallWidth,
+                        @RequestParam(required = false) String footpath,
+                        @RequestParam(required = false) String median,
+                        @RequestParam(required = false) String swd,
+                        @RequestParam(required = false) String inby,
+                        @RequestParam(required = false) String latitude,
+                        @RequestParam(required = false) String longitude,
+                        @RequestParam(required = false) String streetboard,
+                        @RequestParam(required = false) MultipartFile roadImage,
+                        @RequestParam Integer startId // required for END street
+        ) {
+                Map<String, Object> result = apiService.saveStreetDetails(
+                                "END", roadName, roadZone, roadWard, roadId, roadType,
+                                manualZone, manualWard, manualroadType,
+                                roadLayType, lastLayOn, roadLength, carriagewayWidth,
+                                walltowallWidth, footpath, median, swd, inby, latitude,
+                                longitude, streetboard, roadImage, startId);
+                return ResponseEntity.ok(result);
+        }
+
+        @GetMapping(value = "/street/centrelist")
+        public List<?> getCentreRoadList(@RequestParam String inby) {
+                return apiService.getCentreRoadList(inby);
+        }
+
+        /**
+         * Save Centre Street details (linked with Start Street)
+         */
+        @PostMapping("/street/centre")
+        public ResponseEntity<Map<String, Object>> saveCentreStreet(
+                        @RequestParam String roadName,
+                        @RequestParam String roadZone,
+                        @RequestParam String roadWard,
+                        @RequestParam String roadId,
+                        @RequestParam String roadType,
+                        @RequestParam String manualZone,
+                        @RequestParam String manualWard,
+                        @RequestParam(required = false) String manualroadType,
+                        @RequestParam(required = false) String roadLayType,
+                        @RequestParam(required = false) String lastLayOn,
+                        @RequestParam(required = false) String roadLength,
+                        @RequestParam(required = false) String carriagewayWidth,
+                        @RequestParam(required = false) String walltowallWidth,
+                        @RequestParam(required = false) String footpath,
+                        @RequestParam(required = false) String median,
+                        @RequestParam(required = false) String swd,
+                        @RequestParam String inby,
+                        @RequestParam(required = false) String latitude,
+                        @RequestParam(required = false) String longitude,
+                        @RequestParam(required = false) String streetboard,
+                        @RequestParam(required = false) MultipartFile roadImage,
+                        @RequestParam Integer startId // required for END street
+        ) {
+                Map<String, Object> result = apiService.saveStreetDetails(
+                                "CENTRE", roadName, roadZone, roadWard, roadId, roadType,
+                                manualZone, manualWard, manualroadType,
+                                roadLayType, lastLayOn, roadLength, carriagewayWidth,
+                                walltowallWidth, footpath, median, swd, inby, latitude,
+                                longitude, streetboard, roadImage, startId);
+                return ResponseEntity.ok(result);
+        }
+
+        @GetMapping(value = "/getCompletedRoadLists")
+        public List<?> getCompletedRoadLists() {
+                return apiService.getCompletedRoadLists();
+        }
 }

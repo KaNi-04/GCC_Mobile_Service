@@ -21,11 +21,31 @@ public class RoadWarWebAPIController {
     @Autowired
     RoadWarWebService roadwarwebservice;
 
+    // @GetMapping("/getRoadMasterDetails")
+    // public Map<String, Object> getRoadMasterDetails(@RequestParam String loginId)
+    // {
+    // Map<String, Object> response = new HashMap<>();
+
+    // List<Map<String, Object>> roadDetails =
+    // roadwarwebservice.getRoadMasterDetails(loginId);
+
+    // if (roadDetails != null) {
+    // response.put("status", "200");
+    // response.put("message", "Success");
+    // response.put("data", roadDetails);
+    // } else {
+    // response.put("status", "200");
+    // response.put("message", "No Data Found");
+    // response.put("data", null);
+    // }
+    // return response;
+    // }
+
     @GetMapping("/getRoadMasterDetails")
-    public Map<String, Object> getRoadMasterDetails(@RequestParam String loginId) {
+    public Map<String, Object> getRoadMasterDetails(@RequestParam String road_id) {
         Map<String, Object> response = new HashMap<>();
 
-        List<Map<String, Object>> roadDetails = roadwarwebservice.getRoadMasterDetails(loginId);
+        Map<String, Object> roadDetails = roadwarwebservice.getRoadMasterDetails(road_id);
 
         if (roadDetails != null) {
             response.put("status", "200");
@@ -34,7 +54,7 @@ public class RoadWarWebAPIController {
         } else {
             response.put("status", "200");
             response.put("message", "No Data Found");
-            response.put("data", null);
+            response.put("data", "");
         }
         return response;
     }
@@ -45,16 +65,17 @@ public class RoadWarWebAPIController {
             @RequestParam("file1") MultipartFile file1,
             @RequestParam("file2") MultipartFile file2,
             @RequestParam("file3") MultipartFile file3,
-            @RequestParam("file4") MultipartFile file4,
+            @RequestParam(value = "file4", required = false) MultipartFile file4,
             @RequestParam("loginId") String loginId) {
         Map<String, Object> response = new HashMap<>();
 
         String result = roadwarwebservice.saveRoadMasterFiles(ref_id, file1, file2, file3, file4, loginId);
 
         if ("already_exists".equalsIgnoreCase(result)) {
+            Map<String, Object> existingData = roadwarwebservice.getRoadMasterFileDetails(ref_id);
             response.put("status", "200");
-            response.put("message", "Files already uploaded for this road. Duplicate upload not allowed.");
-            response.put("data", null);
+            response.put("message", "Files already uploaded for this road.");
+            response.put("data", existingData);
         } else if ("Success".equalsIgnoreCase(result)) {
             response.put("status", "200");
             response.put("message", "Success");

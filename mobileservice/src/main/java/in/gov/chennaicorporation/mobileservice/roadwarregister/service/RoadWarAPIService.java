@@ -42,7 +42,7 @@ public class RoadWarAPIService {
 	private JdbcTemplate jdbcRoadWar;
 	private final Environment environment;
 	private String fileBaseUrl;
-	
+
 	private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 	private static final int STRING_LENGTH = 15;
 	private static final Random RANDOM = new SecureRandom();
@@ -51,13 +51,13 @@ public class RoadWarAPIService {
 	public void setDataSource(@Qualifier("mysqlGccRoadWarSource") DataSource RoadWarDataSource) {
 		this.jdbcRoadWar = new JdbcTemplate(RoadWarDataSource);
 	}
-	
+
 	@Autowired
 	public RoadWarAPIService(Environment environment) {
 		this.environment = environment;
-		this.fileBaseUrl=environment.getProperty("fileBaseUrl");
+		this.fileBaseUrl = environment.getProperty("fileBaseUrl");
 	}
-	
+
 	public static String generateRandomString() {
 		StringBuilder result = new StringBuilder(STRING_LENGTH);
 		for (int i = 0; i < STRING_LENGTH; i++) {
@@ -65,7 +65,7 @@ public class RoadWarAPIService {
 		}
 		return result.toString();
 	}
-	
+
 	public static String generateRandomFileString(int lenthval) {
 		StringBuilder result = new StringBuilder(lenthval);
 		for (int i = 0; i < lenthval; i++) {
@@ -116,9 +116,9 @@ public class RoadWarAPIService {
 
 			// Datetime string
 			String datetimetxt = DateTimeUtil.getCurrentDateTime();
-			
-			datetimetxt = datetimetxt + "_"+ generateRandomFileString(6); // Attached Random text
-			
+
+			datetimetxt = datetimetxt + "_" + generateRandomFileString(6); // Attached Random text
+
 			// File name
 			String fileName = name + "_" + id + "_" + datetimetxt + "_" + file.getOriginalFilename();
 			fileName = fileName.replaceAll("\\s+", ""); // Remove space on filename
@@ -148,295 +148,345 @@ public class RoadWarAPIService {
 			return "Failed to save file " + file.getOriginalFilename();
 		}
 	}
-	
-	public List<Map<String, Object>> getRoadTypes(){
-        String sql = "SELECT `roadtype_id`, `name` FROM `road_type` WHERE `isactive`=1 AND `isdelete`=0 ORDER BY `orderby`";
-        List<Map<String, Object>> result = jdbcRoadWar.queryForList(sql);
+
+	public List<Map<String, Object>> getRoadTypes() {
+		String sql = "SELECT `roadtype_id`, `name` FROM `road_type` WHERE `isactive`=1 AND `isdelete`=0 ORDER BY `orderby`";
+		List<Map<String, Object>> result = jdbcRoadWar.queryForList(sql);
 		Map<String, Object> response = new HashMap<>();
-	    response.put("status", "Success");
-        response.put("message", "Road Type List.");
-        response.put("data", result);
-        
-        return Collections.singletonList(response);
-    }
-	
-	public List<Map<String, Object>> getRoadLayTypes(){
-        String sql = "SELECT `lay_type_id`, `name` FROM `road_lay_type` WHERE `isactive`=1 AND `isdelete`=0 ORDER BY `orderby`";
-        List<Map<String, Object>> result = jdbcRoadWar.queryForList(sql);
+		response.put("status", "Success");
+		response.put("message", "Road Type List.");
+		response.put("data", result);
+
+		return Collections.singletonList(response);
+	}
+
+	public List<Map<String, Object>> getRoadLayTypes() {
+		String sql = "SELECT `lay_type_id`, `name` FROM `road_lay_type` WHERE `isactive`=1 AND `isdelete`=0 ORDER BY `orderby`";
+		List<Map<String, Object>> result = jdbcRoadWar.queryForList(sql);
 		Map<String, Object> response = new HashMap<>();
-	    response.put("status", "Success");
-        response.put("message", "Road Lay Type List.");
-        response.put("data", result);
-        
-        return Collections.singletonList(response);
-    }
-	
+		response.put("status", "Success");
+		response.put("message", "Road Lay Type List.");
+		response.put("data", result);
+
+		return Collections.singletonList(response);
+	}
+
 	@Transactional
 	public List<Map<String, Object>> checkAssetExists(String latitudeStr, String longitudeStr) {
 		double latitude = Double.parseDouble(latitudeStr);
-	    double longitude = Double.parseDouble(longitudeStr);
-	    
-	    String checkSql = "SELECT COUNT(*) FROM road_list list " +
-	            "WHERE (6371008.8 * ACOS(COS(RADIANS(?)) * COS(RADIANS(list.latitude)) * " +
-	            "COS(RADIANS(list.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(list.latitude)))) < 50";
-	    
-	    Integer count = jdbcRoadWar.queryForObject(
-	    	    checkSql,
-	    	    Integer.class,
-	    	    latitude, longitude, latitude
-	    	);
-	    
-	    Map<String, Object> response = new HashMap<>();
-	    if (count != null && count > 0) {
-	    	response.put("count", count);
-	        response.put("status", "error");
-	        response.put("message", "Duplicate: Road already exists.");
-	    } else {
-	    	response.put("count", count);
-	        response.put("status", "success");
-	        response.put("message", "No existing Road found.");
-	    }
-	    return Collections.singletonList(response);
-	}
-	
-	public List<Map<String, Object>> getStartRoadList(String inby){
-        /* 
-         	String sql = "SELECT *, "
-        		+ "CONCAT('" + fileBaseUrl + "/gccofficialapp/files', start_img) AS start_img_url "
-        		+ " FROM `start_street_details` WHERE (`isactive`=1 AND `isdelete`=0) AND (`inby`=?) "
-        		+ "AND s.strat_id NOT IN ( SELECT e.start_id FROM end_street_details e )";
-        */
-        String sql ="SELECT "
-        		+ "    s.*, "
-        		+ "    CONCAT('" + fileBaseUrl + "/gccofficialapp/files', start_img) AS start_img_url "
-        		+ "FROM "
-        		+ "    `start_street_details` s "
-        		+ "WHERE "
-        		+ "    s.`isactive` = 1"
-        		+ "    AND s.`isdelete` = 0 AND (`inby`=?)"
-        		+ "    AND s.`strat_id` NOT IN ("
-        		+ "        SELECT e.`start_id` "
-        		+ "        FROM `end_street_details` e"
-        		+ "  )";
-        List<Map<String, Object>> result = jdbcRoadWar.queryForList(sql,inby);
+		double longitude = Double.parseDouble(longitudeStr);
+
+		String checkSql = "SELECT COUNT(*) FROM road_list list " +
+				"WHERE (6371008.8 * ACOS(COS(RADIANS(?)) * COS(RADIANS(list.latitude)) * " +
+				"COS(RADIANS(list.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(list.latitude)))) < 50";
+
+		Integer count = jdbcRoadWar.queryForObject(
+				checkSql,
+				Integer.class,
+				latitude, longitude, latitude);
+
 		Map<String, Object> response = new HashMap<>();
-	    response.put("status", "Success");
-        response.put("message", "Road Start List.");
-        response.put("data", result);
-        
-        return Collections.singletonList(response);
-    }
-	
+		if (count != null && count > 0) {
+			response.put("count", count);
+			response.put("status", "error");
+			response.put("message", "Duplicate: Road already exists.");
+		} else {
+			response.put("count", count);
+			response.put("status", "success");
+			response.put("message", "No existing Road found.");
+		}
+		return Collections.singletonList(response);
+	}
+
+	public List<Map<String, Object>> getStartRoadList(String inby) {
+		/*
+		 * String sql = "SELECT *, "
+		 * + "CONCAT('" + fileBaseUrl +
+		 * "/gccofficialapp/files', start_img) AS start_img_url "
+		 * +
+		 * " FROM `start_street_details` WHERE (`isactive`=1 AND `isdelete`=0) AND (`inby`=?) "
+		 * + "AND s.strat_id NOT IN ( SELECT e.start_id FROM end_street_details e )";
+		 */
+		String sql = "SELECT "
+				+ "    s.*, "
+				+ "    CONCAT('" + fileBaseUrl + "/gccofficialapp/files', start_img) AS start_img_url "
+				+ "FROM "
+				+ "    `start_street_details` s "
+				+ "WHERE "
+				+ "    s.`isactive` = 1"
+				+ "    AND s.`isdelete` = 0 AND (`inby`=?)"
+				+ "    AND s.`strat_id` NOT IN ("
+				+ "        SELECT c.`start_id` "
+				+ "        FROM `centre_street_details` c"
+				+ "  )";
+		List<Map<String, Object>> result = jdbcRoadWar.queryForList(sql, inby);
+		Map<String, Object> response = new HashMap<>();
+		response.put("status", "Success");
+		response.put("message", "Road Start List.");
+		response.put("data", result);
+
+		return Collections.singletonList(response);
+	}
+
 	@Transactional
 	public Map<String, Object> saveStreetDetails(
-	        String type,                // "START" or "END"
-	        String roadName,
-	        String roadZone,
-	        String roadWard,
-	        String roadId,
-	        String roadType,
-	        String manualZone,
-	        String manualWard,
-	        String manualroadType,
-	        String roadLayType,
-	        String lastLayOn,           // yyyy-MM-dd or yyyy-MM format
-	        String roadLength,
-	        String carriagewayWidth,
-	        String walltowallWidth,
-	        String footpath,
-	        String median,
-	        String swd,
-	        String inby,
-	        String latitude,
-	        String longitude,
-	        String streetboard,
-	        MultipartFile roadImage,
-	        Integer startId             // only for END street (foreign key to start_street_details)
+			String type, // "START" or "END"
+			String roadName,
+			String roadZone,
+			String roadWard,
+			String roadId,
+			String roadType,
+			String manualZone,
+			String manualWard,
+			String manualroadType,
+			String roadLayType,
+			String lastLayOn, // yyyy-MM-dd or yyyy-MM format
+			String roadLength,
+			String carriagewayWidth,
+			String walltowallWidth,
+			String footpath,
+			String median,
+			String swd,
+			String inby,
+			String latitude,
+			String longitude,
+			String streetboard,
+			MultipartFile roadImage,
+			Integer startId // only for END street (foreign key to start_street_details)
 	) {
-	    Map<String, Object> response = new HashMap<>();
+		Map<String, Object> response = new HashMap<>();
 
-	    // ✅ Handle file upload safely
-	    final String uploadedImg = (roadImage != null && !roadImage.isEmpty())
-	            ? fileUpload("RoadRegister", type.toLowerCase(), roadImage)
-	            : null;
-	    /*
-	    String uploadedImg = null;
-	    if (roadImage != null && !roadImage.isEmpty()) {
-	        uploadedImg = fileUpload("RoadRegister", type.toLowerCase(), roadImage);
-	    }
-		*/
-	    // ✅ Choose table & generated key column
-	    String sql;
-	    String[] generatedKey = new String[1];
+		// ✅ Handle file upload safely
+		final String uploadedImg = (roadImage != null && !roadImage.isEmpty())
+				? fileUpload("RoadRegister", type.toLowerCase(), roadImage)
+				: null;
+		/*
+		 * String uploadedImg = null;
+		 * if (roadImage != null && !roadImage.isEmpty()) {
+		 * uploadedImg = fileUpload("RoadRegister", type.toLowerCase(), roadImage);
+		 * }
+		 */
+		// ✅ Choose table & generated key column
+		String sql;
+		String[] generatedKey = new String[1];
 
-	    if ("START".equalsIgnoreCase(type)) {
-	        sql = "INSERT INTO start_street_details " +
-	                "(road_name, road_zone, road_ward, road_id, road_type, " +
-	                "manual_zone, manual_ward, manual_roadType, road_lay_type, last_lay_on, " +
-	                "road_length, carriageway_width, walltowall_width, footpath, median, " +
-	                "swd, inby, start_latitude, start_longitude, streetboard, start_img) " +
-	                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-	        generatedKey[0] = "strat_id";
-	    } else {
-	        sql = "INSERT INTO end_street_details " +
-	                "(road_name, road_zone, road_ward, road_id, road_type, " +
-	                "manual_zone, manual_ward, manual_roadType, road_lay_type, last_lay_on, " +
-	                "road_length, carriageway_width, walltowall_width, footpath, median, " +
-	                "swd, inby, start_latitude, start_longitude, streetboard, start_id, end_img) " +
-	                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-	        generatedKey[0] = "end_id";
-	    }
+		if ("START".equalsIgnoreCase(type)) {
+			sql = "INSERT INTO start_street_details " +
+					"(road_name, road_zone, road_ward, road_id, road_type, " +
+					"manual_zone, manual_ward, manual_roadType, road_lay_type, last_lay_on, " +
+					"road_length, carriageway_width, walltowall_width, footpath, median, " +
+					"swd, inby, start_latitude, start_longitude, streetboard, start_img) " +
+					"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+			generatedKey[0] = "strat_id";
+		} else if ("CENTRE".equalsIgnoreCase(type)) {
+			sql = "INSERT INTO centre_street_details " +
+					"(road_name, road_zone, road_ward, road_id, road_type, " +
+					"manual_zone, manual_ward, manual_roadType, road_lay_type, last_lay_on, " +
+					"road_length, carriageway_width, walltowall_width, footpath, median, " +
+					"swd, inby, start_latitude, start_longitude, streetboard, start_id, centre_img) " +
+					"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+			generatedKey[0] = "centre_id";
+		}
 
-	    KeyHolder keyHolder = new GeneratedKeyHolder();
+		else {
+			sql = "INSERT INTO end_street_details " +
+					"(road_name, road_zone, road_ward, road_id, road_type, " +
+					"manual_zone, manual_ward, manual_roadType, road_lay_type, last_lay_on, " +
+					"road_length, carriageway_width, walltowall_width, footpath, median, " +
+					"swd, inby, start_latitude, start_longitude, streetboard, start_id, end_img) " +
+					"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+			generatedKey[0] = "end_id";
+		}
 
-	    int affected = jdbcRoadWar.update(connection -> {
-	        PreparedStatement ps = connection.prepareStatement(sql, generatedKey);
-	        int i = 1;
-	        ps.setString(i++, roadName);
-	        ps.setString(i++, roadZone);
-	        ps.setString(i++, roadWard);
-	        ps.setString(i++, roadId);
-	        ps.setString(i++, roadType);
+		KeyHolder keyHolder = new GeneratedKeyHolder();
 
-	        // ✅ Manual fields
-	        ps.setString(i++, manualZone);
-	        ps.setString(i++, manualWard);
-	        ps.setString(i++, manualroadType);
-	        ps.setString(i++, roadLayType);
-	        ps.setString(i++, lastLayOn);
+		int affected = jdbcRoadWar.update(connection -> {
+			PreparedStatement ps = connection.prepareStatement(sql, generatedKey);
+			int i = 1;
+			ps.setString(i++, roadName);
+			ps.setString(i++, roadZone);
+			ps.setString(i++, roadWard);
+			ps.setString(i++, roadId);
+			ps.setString(i++, roadType);
 
-	        // ✅ Road dimensions
-	        ps.setString(i++, roadLength);
-	        ps.setString(i++, carriagewayWidth);
-	        ps.setString(i++, walltowallWidth);
-	        ps.setString(i++, footpath);
-	        ps.setString(i++, median);
-	        ps.setString(i++, swd);
-	        ps.setString(i++, inby);
+			// ✅ Manual fields
+			ps.setString(i++, manualZone);
+			ps.setString(i++, manualWard);
+			ps.setString(i++, manualroadType);
+			ps.setString(i++, roadLayType);
+			ps.setString(i++, lastLayOn);
 
-	        // ✅ Location + Board
-	        ps.setString(i++, latitude);
-	        ps.setString(i++, longitude);
-	        ps.setString(i++, streetboard);
+			// ✅ Road dimensions
+			ps.setString(i++, roadLength);
+			ps.setString(i++, carriagewayWidth);
+			ps.setString(i++, walltowallWidth);
+			ps.setString(i++, footpath);
+			ps.setString(i++, median);
+			ps.setString(i++, swd);
+			ps.setString(i++, inby);
 
-	        // ✅ Image & FK handling
-	        if ("START".equalsIgnoreCase(type)) {
-	            ps.setString(i++, uploadedImg);
-	        } else {
-	            ps.setObject(i++, startId);  // foreign key
-	            ps.setString(i++, uploadedImg);
-	        }
-	        return ps;
-	    }, keyHolder);
+			// ✅ Location + Board
+			ps.setString(i++, latitude);
+			ps.setString(i++, longitude);
+			ps.setString(i++, streetboard);
 
-	    if (affected > 0) {
-	        response.put("status", "success");
-	        response.put("insertId", keyHolder.getKey().intValue());
-	        response.put("message", type + " Street details saved successfully");
-	    } else {
-	        response.put("status", "error");
-	        response.put("message", type + " Street details insert failed");
-	    }
+			// ✅ Image & FK handling
+			if ("START".equalsIgnoreCase(type)) {
+				ps.setString(i++, uploadedImg);
+			} else if ("CENTRE".equalsIgnoreCase(type)) {
+				ps.setObject(i++, startId); // foreign key
+				ps.setString(i++, uploadedImg);
+			} else {
+				ps.setObject(i++, startId); // foreign key
+				ps.setString(i++, uploadedImg);
+			}
+			return ps;
+		}, keyHolder);
 
-	    return response;
+		if (affected > 0) {
+			response.put("status", "success");
+			response.put("insertId", keyHolder.getKey().intValue());
+			response.put("message", type + " Street details saved successfully");
+		} else {
+			response.put("status", "error");
+			response.put("message", type + " Street details insert failed");
+		}
+
+		return response;
 	}
-	
+
 	public List<Map<String, Object>> getCompletedRoadLists() {
-	    String sql = "SELECT "
-	            + "    s.strat_id AS UnicID, "
-	            + "    s.road_name AS StreetName, "
-	            + "    JSON_OBJECT("
-	            + "        'strat_id', s.strat_id, "
-	            + "        'road_name', s.road_name, "
-	            + "        'road_zone', s.road_zone, "
-	            + "        'road_ward', s.road_ward, "
-	            + "        'road_id', s.road_id, "
-	            + "        'road_type', s.road_type, "
-	            + "        'manual_zone', s.manual_zone, "
-	            + "        'manual_ward', s.manual_ward, "
-	            + "        'manual_roadType', s.manual_roadType, "
-	            + "        'road_lay_type', s.road_lay_type, "
-	            + "        'last_lay_on', s.last_lay_on, "
-	            + "        'road_length', s.road_length, "
-	            + "        'carriageway_width', s.carriageway_width, "
-	            + "        'walltowall_width', s.walltowall_width, "
-	            + "        'footpath', s.footpath, "
-	            + "        'median', s.median, "
-	            + "        'swd', s.swd, "
-	            + "        'inby', s.inby, "
-	            + "        'indate', s.indate, "
-	            + "        'start_latitude', s.start_latitude, "
-	            + "        'start_longitude', s.start_longitude, "
-	            + "        'isactive', s.isactive, "
-	            + "        'isdelete', s.isdelete, "
-	            + "        'streetboard', s.streetboard, "
-	            + "        'start_img', s.start_img, "
-	            + "        'start_img_url', CONCAT('" + fileBaseUrl + "/gccofficialapp/files', IFNULL(s.start_img, '/nostreetboard.png'))"
-	            + "    ) AS `start`, "
-	            + "    JSON_OBJECT("
-	            + "        'end_id', e.end_id, "
-	            + "        'road_name', e.road_name, "
-	            + "        'road_zone', e.road_zone, "
-	            + "        'road_ward', e.road_ward, "
-	            + "        'road_id', e.road_id, "
-	            + "        'road_type', e.road_type, "
-	            + "        'manual_zone', e.manual_zone, "
-	            + "        'manual_ward', e.manual_ward, "
-	            + "        'manual_roadType', e.manual_roadType, "
-	            + "        'road_lay_type', e.road_lay_type, "
-	            + "        'last_lay_on', e.last_lay_on, "
-	            + "        'road_length', e.road_length, "
-	            + "        'carriageway_width', e.carriageway_width, "
-	            + "        'walltowall_width', e.walltowall_width, "
-	            + "        'footpath', e.footpath, "
-	            + "        'median', e.median, "
-	            + "        'swd', e.swd, "
-	            + "        'inby', e.inby, "
-	            + "        'indate', e.indate, "
-	            + "        'start_latitude', e.start_latitude, "
-	            + "        'start_longitude', e.start_longitude, "
-	            + "        'isactive', e.isactive, "
-	            + "        'isdelete', e.isdelete, "
-	            + "        'streetboard', e.streetboard, "
-	            + "        'end_img', e.end_img, "
-	            + "        'end_img_url', CONCAT('" + fileBaseUrl + "/gccofficialapp/files', IFNULL(e.end_img, '/nostreetboard.png'))"
-	            + "    ) AS `end` "
-	            + "FROM start_street_details s "
-	            + "INNER JOIN end_street_details e "
-	            + "    ON e.start_id = s.strat_id "
-	            + "WHERE s.isactive = 1 "
-	            + "  AND s.isdelete = 0 "
-	            + "  AND e.isactive = 1 "
-	            + "  AND e.isdelete = 0";
+		String sql = "SELECT "
+				+ "    s.strat_id AS UnicID, "
+				+ "    s.road_name AS StreetName, "
+				+ "    JSON_OBJECT("
+				+ "        'strat_id', s.strat_id, "
+				+ "        'road_name', s.road_name, "
+				+ "        'road_zone', s.road_zone, "
+				+ "        'road_ward', s.road_ward, "
+				+ "        'road_id', s.road_id, "
+				+ "        'road_type', s.road_type, "
+				+ "        'manual_zone', s.manual_zone, "
+				+ "        'manual_ward', s.manual_ward, "
+				+ "        'manual_roadType', s.manual_roadType, "
+				+ "        'road_lay_type', s.road_lay_type, "
+				+ "        'last_lay_on', s.last_lay_on, "
+				+ "        'road_length', s.road_length, "
+				+ "        'carriageway_width', s.carriageway_width, "
+				+ "        'walltowall_width', s.walltowall_width, "
+				+ "        'footpath', s.footpath, "
+				+ "        'median', s.median, "
+				+ "        'swd', s.swd, "
+				+ "        'inby', s.inby, "
+				+ "        'indate', s.indate, "
+				+ "        'start_latitude', s.start_latitude, "
+				+ "        'start_longitude', s.start_longitude, "
+				+ "        'isactive', s.isactive, "
+				+ "        'isdelete', s.isdelete, "
+				+ "        'streetboard', s.streetboard, "
+				+ "        'start_img', s.start_img, "
+				+ "        'start_img_url', CONCAT('" + fileBaseUrl
+				+ "/gccofficialapp/files', IFNULL(s.start_img, '/nostreetboard.png'))"
+				+ "    ) AS `start`, "
+				+ "    JSON_OBJECT("
+				+ "        'end_id', e.end_id, "
+				+ "        'road_name', e.road_name, "
+				+ "        'road_zone', e.road_zone, "
+				+ "        'road_ward', e.road_ward, "
+				+ "        'road_id', e.road_id, "
+				+ "        'road_type', e.road_type, "
+				+ "        'manual_zone', e.manual_zone, "
+				+ "        'manual_ward', e.manual_ward, "
+				+ "        'manual_roadType', e.manual_roadType, "
+				+ "        'road_lay_type', e.road_lay_type, "
+				+ "        'last_lay_on', e.last_lay_on, "
+				+ "        'road_length', e.road_length, "
+				+ "        'carriageway_width', e.carriageway_width, "
+				+ "        'walltowall_width', e.walltowall_width, "
+				+ "        'footpath', e.footpath, "
+				+ "        'median', e.median, "
+				+ "        'swd', e.swd, "
+				+ "        'inby', e.inby, "
+				+ "        'indate', e.indate, "
+				+ "        'start_latitude', e.start_latitude, "
+				+ "        'start_longitude', e.start_longitude, "
+				+ "        'isactive', e.isactive, "
+				+ "        'isdelete', e.isdelete, "
+				+ "        'streetboard', e.streetboard, "
+				+ "        'end_img', e.end_img, "
+				+ "        'end_img_url', CONCAT('" + fileBaseUrl
+				+ "/gccofficialapp/files', IFNULL(e.end_img, '/nostreetboard.png'))"
+				+ "    ) AS `end` "
+				+ "FROM start_street_details s "
+				+ "INNER JOIN end_street_details e "
+				+ "    ON e.start_id = s.strat_id "
+				+ "WHERE s.isactive = 1 "
+				+ "  AND s.isdelete = 0 "
+				+ "  AND e.isactive = 1 "
+				+ "  AND e.isdelete = 0";
 
-	    List<Map<String, Object>> rawResult = jdbcRoadWar.queryForList(sql);
+		List<Map<String, Object>> rawResult = jdbcRoadWar.queryForList(sql);
 
-	    ObjectMapper mapper = new ObjectMapper();
-	    List<Map<String, Object>> formattedResult = new ArrayList<>();
+		ObjectMapper mapper = new ObjectMapper();
+		List<Map<String, Object>> formattedResult = new ArrayList<>();
 
-	    for (Map<String, Object> row : rawResult) {
-	        Map<String, Object> formattedRow = new HashMap<>();
-	        formattedRow.put("UnicID", row.get("UnicID"));
-	        formattedRow.put("StreetName", row.get("StreetName"));
+		for (Map<String, Object> row : rawResult) {
+			Map<String, Object> formattedRow = new HashMap<>();
+			formattedRow.put("UnicID", row.get("UnicID"));
+			formattedRow.put("StreetName", row.get("StreetName"));
 
-	        // Convert JSON strings to proper objects
-	        try {
-	            Map<String, Object> startObj = mapper.readValue(row.get("start").toString(), new TypeReference<Map<String, Object>>() {});
-	            Map<String, Object> endObj = mapper.readValue(row.get("end").toString(), new TypeReference<Map<String, Object>>() {});
-	            formattedRow.put("start", startObj);
-	            formattedRow.put("end", endObj);
-	        } catch (Exception ex) {
-	            ex.printStackTrace();
-	        }
+			// Convert JSON strings to proper objects
+			try {
+				Map<String, Object> startObj = mapper.readValue(row.get("start").toString(),
+						new TypeReference<Map<String, Object>>() {
+						});
+				Map<String, Object> endObj = mapper.readValue(row.get("end").toString(),
+						new TypeReference<Map<String, Object>>() {
+						});
+				formattedRow.put("start", startObj);
+				formattedRow.put("end", endObj);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
 
-	        formattedResult.add(formattedRow);
-	    }
+			formattedResult.add(formattedRow);
+		}
 
-	    Map<String, Object> response = new HashMap<>();
-	    response.put("status", "Success");
-	    response.put("message", "Completed road list.");
-	    response.put("data", formattedResult);
+		Map<String, Object> response = new HashMap<>();
+		response.put("status", "Success");
+		response.put("message", "Completed road list.");
+		response.put("data", formattedResult);
 
-	    return Collections.singletonList(response);
+		return Collections.singletonList(response);
+	}
+
+	public List<Map<String, Object>> getCentreRoadList(String inby) {
+		/*
+		 * String sql = "SELECT *, "
+		 * + "CONCAT('" + fileBaseUrl +
+		 * "/gccofficialapp/files', start_img) AS start_img_url "
+		 * +
+		 * " FROM `start_street_details` WHERE (`isactive`=1 AND `isdelete`=0) AND (`inby`=?) "
+		 * + "AND s.strat_id NOT IN ( SELECT e.start_id FROM end_street_details e )";
+		 */
+		String sql = "SELECT "
+				+ "    s.*, "
+				+ "    CONCAT('" + fileBaseUrl + "/gccofficialapp/files', centre_img) AS centre_img_url "
+				+ "FROM "
+				+ "    `centre_street_details` s "
+				+ "WHERE "
+				+ "    s.`isactive` = 1"
+				+ "    AND s.`isdelete` = 0 AND (`inby`=?)"
+				+ "    AND s.`start_id` NOT IN ("
+				+ "        SELECT e.`start_id` "
+				+ "        FROM `end_street_details` e"
+				+ "  )";
+		List<Map<String, Object>> result = jdbcRoadWar.queryForList(sql, inby);
+		Map<String, Object> response = new HashMap<>();
+		response.put("status", "Success");
+		response.put("message", "Road Centre List.");
+		response.put("data", result);
+
+		return Collections.singletonList(response);
 	}
 }
