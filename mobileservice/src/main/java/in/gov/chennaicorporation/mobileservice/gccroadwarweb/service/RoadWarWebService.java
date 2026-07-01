@@ -330,7 +330,7 @@ public class RoadWarWebService {
                     "    GROUP BY road_ref_id  " +
                     ") rd  " +
                     "ON rm.ref_id = rd.road_ref_id  " +
-                    "WHERE rm.road_id = ? ";
+                    "WHERE rm.is_active=1 and rm.is_delete=0 and rm.road_id = ? ";
 
             result = jdbcRoadWarWebTemplate.queryForMap(sqlQuery, road_id);
             return result;

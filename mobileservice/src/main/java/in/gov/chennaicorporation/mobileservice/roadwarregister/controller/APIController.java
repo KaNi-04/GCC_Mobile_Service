@@ -87,7 +87,7 @@ public class APIController {
                         @RequestParam(required = false) String footpath,
                         @RequestParam(required = false) String median,
                         @RequestParam(required = false) String swd,
-                        @RequestParam(required = false) String inby,
+                        @RequestParam String inby,
                         @RequestParam(required = false) String latitude,
                         @RequestParam(required = false) String longitude,
                         @RequestParam(required = false) String streetboard,

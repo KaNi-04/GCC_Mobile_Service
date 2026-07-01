@@ -281,20 +281,16 @@ public class RoadWarAPIService {
 		} else if ("CENTRE".equalsIgnoreCase(type)) {
 			sql = "INSERT INTO centre_street_details " +
 					"(road_name, road_zone, road_ward, road_id, road_type, " +
-					"manual_zone, manual_ward, manual_roadType, road_lay_type, last_lay_on, " +
-					"road_length, carriageway_width, walltowall_width, footpath, median, " +
-					"swd, inby, start_latitude, start_longitude, streetboard, start_id, centre_img) " +
-					"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+					"manual_zone, manual_ward, inby, start_latitude, start_longitude, start_id, centre_img) " +
+					"VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
 			generatedKey[0] = "centre_id";
 		}
 
 		else {
 			sql = "INSERT INTO end_street_details " +
 					"(road_name, road_zone, road_ward, road_id, road_type, " +
-					"manual_zone, manual_ward, manual_roadType, road_lay_type, last_lay_on, " +
-					"road_length, carriageway_width, walltowall_width, footpath, median, " +
-					"swd, inby, start_latitude, start_longitude, streetboard, start_id, end_img) " +
-					"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+					"manual_zone, manual_ward, inby, start_latitude, start_longitude, start_id, end_img) " +
+					"VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
 			generatedKey[0] = "end_id";
 		}
 
@@ -303,41 +299,53 @@ public class RoadWarAPIService {
 		int affected = jdbcRoadWar.update(connection -> {
 			PreparedStatement ps = connection.prepareStatement(sql, generatedKey);
 			int i = 1;
-			ps.setString(i++, roadName);
-			ps.setString(i++, roadZone);
-			ps.setString(i++, roadWard);
-			ps.setString(i++, roadId);
-			ps.setString(i++, roadType);
 
-			// ✅ Manual fields
-			ps.setString(i++, manualZone);
-			ps.setString(i++, manualWard);
-			ps.setString(i++, manualroadType);
-			ps.setString(i++, roadLayType);
-			ps.setString(i++, lastLayOn);
+			if ("CENTRE".equalsIgnoreCase(type) || "END".equalsIgnoreCase(type)) {
 
-			// ✅ Road dimensions
-			ps.setString(i++, roadLength);
-			ps.setString(i++, carriagewayWidth);
-			ps.setString(i++, walltowallWidth);
-			ps.setString(i++, footpath);
-			ps.setString(i++, median);
-			ps.setString(i++, swd);
-			ps.setString(i++, inby);
+				ps.setString(i++, roadName);
+				ps.setString(i++, roadZone);
+				ps.setString(i++, roadWard);
+				ps.setString(i++, roadId);
+				ps.setString(i++, roadType);
+				ps.setString(i++, manualZone);
+				ps.setString(i++, manualWard);
+				ps.setString(i++, inby);
+				ps.setString(i++, latitude);
+				ps.setString(i++, longitude);
+				ps.setObject(i++, startId); // foreign key
+				ps.setString(i++, uploadedImg);
 
-			// ✅ Location + Board
-			ps.setString(i++, latitude);
-			ps.setString(i++, longitude);
-			ps.setString(i++, streetboard);
+			} else {
+				ps.setString(i++, roadName);
+				ps.setString(i++, roadZone);
+				ps.setString(i++, roadWard);
+				ps.setString(i++, roadId);
+				ps.setString(i++, roadType);
+
+				// ✅ Manual fields
+				ps.setString(i++, manualZone);
+				ps.setString(i++, manualWard);
+				ps.setString(i++, manualroadType);
+				ps.setString(i++, roadLayType);
+				ps.setString(i++, lastLayOn);
+
+				// ✅ Road dimensions
+				ps.setString(i++, roadLength);
+				ps.setString(i++, carriagewayWidth);
+				ps.setString(i++, walltowallWidth);
+				ps.setString(i++, footpath);
+				ps.setString(i++, median);
+				ps.setString(i++, swd);
+				ps.setString(i++, inby);
+
+				// ✅ Location + Board
+				ps.setString(i++, latitude);
+				ps.setString(i++, longitude);
+				ps.setString(i++, streetboard);
+			}
 
 			// ✅ Image & FK handling
 			if ("START".equalsIgnoreCase(type)) {
-				ps.setString(i++, uploadedImg);
-			} else if ("CENTRE".equalsIgnoreCase(type)) {
-				ps.setObject(i++, startId); // foreign key
-				ps.setString(i++, uploadedImg);
-			} else {
-				ps.setObject(i++, startId); // foreign key
 				ps.setString(i++, uploadedImg);
 			}
 			return ps;
