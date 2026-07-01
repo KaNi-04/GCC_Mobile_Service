@@ -894,6 +894,178 @@ public class ieComplaintService {
 			System.out.println("ward.....12" + ward);
 			System.out.println("zone.....12" + zone);
 			// Zone 04 and Zone 08
+			/*
+			 * if (!"04".equals(zone) && !"08".equals(zone)) {
+			 * 
+			 * response.put("status", "Failed");
+			 * response.put("message", "No data available");
+			 * response.put("data", new ArrayList<>());
+			 * 
+			 * return response;
+			 * }
+			 * 
+			 * // Zone 07 - allow only wards 082,083,085
+			 * if ("07".equals(zone)
+			 * && Arrays.asList("082", "083", "085").contains(ward)) {
+			 * 
+			 * response.put("status", "Failed");
+			 * response.put("message", "No data available");
+			 * response.put("data", new ArrayList<>());
+			 * 
+			 * return response;
+			 * }
+			 */
+			String mappingSql = "SELECT zone, ward FROM gcc_users.ward_mapping WHERE userid = ?";
+
+			Map<String, Object> mapping = jdbcTemplate.queryForMap(mappingSql, loginid);
+
+			String multiplezone = mapping.get("zone") == null ? "all" : mapping.get("zone").toString().trim();
+			String multipleward = mapping.get("ward") == null ? "all" : mapping.get("ward").toString().trim();
+
+			StringBuilder sqlQuery = new StringBuilder();
+
+			sqlQuery.append(
+					"SELECT " +
+							" cd.zone, " +
+							" cd.ward, " +
+							" cd.street_name, " +
+							" cd.latitude, " +
+							" cd.longitude, " +
+							" CASE WHEN cd.image_path IS NOT NULL " +
+							" THEN CONCAT('" + fileBaseUrl + "/gccofficialapp/files', cd.image_path) " +
+							" ELSE '' END AS image_path, " +
+							" cd.remarks, " +
+							" cd.street_id, " +
+							" cd.cby, " +
+							" cm.complaint_name, " +
+							" cd.ref_id, " +
+							" cd.complaint_id, " +
+							" q.q_english AS question_name, " +
+							" CASE " +
+							"     WHEN q.input_type = 'text' THEN r.answer_text " +
+							"     ELSE GROUP_CONCAT(DISTINCT a.english_name ORDER BY a.answer_id SEPARATOR ', ') " +
+							" END AS answer_value " +
+							"FROM complaint_details cd " +
+							"LEFT JOIN response r ON r.ref_id = cd.ref_id " +
+							"LEFT JOIN questionmaster q ON q.question_id = r.q_id " +
+							"LEFT JOIN answer a ON FIND_IN_SET(a.answer_id, r.answer_id) " +
+							"JOIN complaint_master cm ON cm.complaint_id = cd.complaint_id " +
+							"WHERE cd.status='pending' ");
+
+			List<Object> params = new ArrayList<>();
+
+			// Zone Filter
+			if (!"all".equalsIgnoreCase(multiplezone)) {
+				sqlQuery.append(" AND FIND_IN_SET(cd.zone, ?) ");
+				params.add(multiplezone);
+			}
+
+			// Ward Filter
+			if (!"all".equalsIgnoreCase(multipleward)) {
+				sqlQuery.append(" AND FIND_IN_SET(cd.ward, ?) ");
+				params.add(multipleward);
+			}
+
+			sqlQuery.append(
+					" GROUP BY " +
+							" cd.zone, cd.ward, cd.street_name, cd.street_id, " +
+							" cd.latitude, cd.longitude, cd.image_path, " +
+							" cd.remarks, cd.cby, cm.complaint_name, " +
+							" cd.ref_id, cd.complaint_id, q.question_id, r.answer_text " +
+							" ORDER BY cd.ref_id, q.question_id");
+
+			List<Map<String, Object>> rows = jdbcTemplate.queryForList(sqlQuery.toString(), params.toArray());
+
+			/* "AND cd.ref_id NOT IN (SELECT ref_id FROM completion) " + */
+
+			// ✅ NO DATA CASE
+			if (rows == null || rows.isEmpty()) {
+				response.put("status", "Failed");
+				response.put("message", "No data available");
+				response.put("data", new ArrayList<>());
+				return response;
+			}
+
+			// ✅ GROUPING
+			Map<String, Map<String, Object>> complaintMap = new LinkedHashMap<>();
+
+			for (Map<String, Object> row : rows) {
+
+				String refId = String.valueOf(row.get("ref_id"));
+
+				if (!complaintMap.containsKey(refId)) {
+
+					Map<String, Object> complaint = new LinkedHashMap<>();
+
+					complaint.put("zone", row.get("zone"));
+					complaint.put("ward", row.get("ward"));
+					complaint.put("street_name", row.get("street_name"));
+					complaint.put("street_id", row.get("street_id"));
+
+					complaint.put("latitude", row.get("latitude"));
+					complaint.put("longitude", row.get("longitude"));
+					complaint.put("image_path", row.get("image_path"));
+					complaint.put("remarks", row.get("remarks"));
+					complaint.put("complaint_name", row.get("complaint_name"));
+
+					complaint.put("cby", row.get("cby"));
+
+					complaint.put("ref_id", refId);
+
+					complaint.put("questions", new ArrayList<>());
+
+					complaintMap.put(refId, complaint);
+				}
+
+				Map<String, Object> question = new LinkedHashMap<>();
+				question.put("question_name",
+						row.get("question_name") == null ? "" : row.get("question_name").toString());
+
+				question.put("answer_value",
+						row.get("answer_value") == null ? "" : row.get("answer_value").toString());
+				/*
+				 * question.put("question_name", row.get("question_name"));
+				 * question.put("answer_value", row.get("answer_value"));
+				 */
+
+				List<Map<String, Object>> questions = (List<Map<String, Object>>) complaintMap
+						.get(refId)
+						.get("questions");
+
+				questions.add(question);
+			}
+
+			List<Map<String, Object>> result = new ArrayList<>(complaintMap.values());
+
+			// ✅ SUCCESS RESPONSE
+			response.put("status", "Success");
+			response.put("message", "IE SiSO List.");
+			response.put("data", result);
+
+		} catch (Exception e) {
+
+			e.printStackTrace();
+
+			response.put("status", "Error");
+			response.put("message", "Something went wrong");
+			response.put("data", null);
+		}
+
+		return response;
+	}
+
+	public Map<String, Object> getZoneComplaintListforFeedback1beforegccuser(String loginid) {
+
+		Map<String, Object> response = new HashMap<>();
+
+		try {
+
+			// String ward = getWardByLoginId(loginid, "si_so");
+			String ward = getWardByLoginId(loginid);
+			String zone = getZoneByLoginId(loginid);
+			System.out.println("ward.....12" + ward);
+			System.out.println("zone.....12" + zone);
+			// Zone 04 and Zone 08
 			if (!"04".equals(zone) && !"08".equals(zone)) {
 
 				response.put("status", "Failed");
@@ -1841,6 +2013,148 @@ public class ieComplaintService {
 	// vendor pending list
 
 	public Map<String, Object> getvendorPendingList(String loginid) {
+
+		Map<String, Object> response = new HashMap<>();
+
+		try {
+
+			// Fetch Zone & Ward from ward_mapping
+			String mappingSql = "SELECT zone, ward FROM gcc_users.ward_mapping WHERE userid = ?";
+
+			Map<String, Object> mapping = jdbcTemplate.queryForMap(mappingSql, loginid);
+
+			String zone = mapping.get("zone") == null ? "all" : mapping.get("zone").toString().trim();
+			String ward = mapping.get("ward") == null ? "all" : mapping.get("ward").toString().trim();
+
+			System.out.println("Zone : " + zone);
+			System.out.println("Ward : " + ward);
+
+			StringBuilder sqlQuery = new StringBuilder();
+
+			sqlQuery.append(
+					"SELECT " +
+							" cd.zone, " +
+							" cd.ward, " +
+							" cd.street_name, " +
+							" cd.latitude, " +
+							" cd.longitude, " +
+							" CASE WHEN cd.image_path IS NOT NULL " +
+							" THEN CONCAT('" + fileBaseUrl + "/gccofficialapp/files', cd.image_path) " +
+							" ELSE '' END AS image_path, " +
+							" cd.remarks, " +
+							" cd.street_id, " +
+							" cd.cby, " +
+							" cm.complaint_name, " +
+							" cd.ref_id, " +
+							" cd.complaint_id, " +
+							" q.q_english AS question_name, " +
+							" CASE " +
+							"     WHEN q.input_type = 'text' THEN r.answer_text " +
+							"     ELSE GROUP_CONCAT(DISTINCT a.english_name ORDER BY a.answer_id SEPARATOR ', ') " +
+							" END AS answer_value " +
+							"FROM complaint_details cd " +
+							"LEFT JOIN response r ON r.ref_id = cd.ref_id " +
+							"LEFT JOIN questionmaster q ON q.question_id = r.q_id " +
+							"LEFT JOIN answer a ON FIND_IN_SET(a.answer_id, r.answer_id) " +
+							"JOIN complaint_master cm ON cm.complaint_id = cd.complaint_id " +
+							"WHERE cd.status='pending' " +
+							"AND cd.complaint_id IN (3,4,6,12) ");
+
+			List<Object> params = new ArrayList<>();
+
+			// Zone Filter
+			if (!"all".equalsIgnoreCase(zone)) {
+				sqlQuery.append(" AND FIND_IN_SET(cd.zone, ?) ");
+				params.add(zone);
+			}
+
+			// Ward Filter
+			if (!"all".equalsIgnoreCase(ward)) {
+				sqlQuery.append(" AND FIND_IN_SET(cd.ward, ?) ");
+				params.add(ward);
+			}
+
+			sqlQuery.append(
+					" GROUP BY " +
+							" cd.zone, cd.ward, cd.street_name, cd.street_id, " +
+							" cd.latitude, cd.longitude, cd.image_path, " +
+							" cd.remarks, cd.cby, cm.complaint_name, " +
+							" cd.ref_id, cd.complaint_id, " +
+							" q.question_id, r.answer_text " +
+							" ORDER BY cd.ref_id, q.question_id");
+
+			List<Map<String, Object>> rows = jdbcTemplate.queryForList(sqlQuery.toString(), params.toArray());
+
+			// No Data
+			if (rows == null || rows.isEmpty()) {
+				response.put("status", "Failed");
+				response.put("message", "No data available");
+				response.put("data", new ArrayList<>());
+				return response;
+			}
+
+			// Group complaints by ref_id
+			Map<String, Map<String, Object>> complaintMap = new LinkedHashMap<>();
+
+			for (Map<String, Object> row : rows) {
+
+				String refId = String.valueOf(row.get("ref_id"));
+
+				if (!complaintMap.containsKey(refId)) {
+
+					Map<String, Object> complaint = new LinkedHashMap<>();
+
+					complaint.put("zone", row.get("zone"));
+					complaint.put("ward", row.get("ward"));
+					complaint.put("street_name", row.get("street_name"));
+					complaint.put("street_id", row.get("street_id"));
+					complaint.put("latitude", row.get("latitude"));
+					complaint.put("longitude", row.get("longitude"));
+					complaint.put("image_path", row.get("image_path"));
+					complaint.put("remarks", row.get("remarks"));
+					complaint.put("complaint_name", row.get("complaint_name"));
+					complaint.put("cby", row.get("cby"));
+					complaint.put("ref_id", refId);
+					complaint.put("questions", new ArrayList<>());
+
+					complaintMap.put(refId, complaint);
+				}
+
+				Map<String, Object> question = new LinkedHashMap<>();
+
+				question.put(
+						"question_name",
+						row.get("question_name") == null ? "" : row.get("question_name").toString());
+
+				question.put(
+						"answer_value",
+						row.get("answer_value") == null ? "" : row.get("answer_value").toString());
+
+				List<Map<String, Object>> questions = (List<Map<String, Object>>) complaintMap.get(refId)
+						.get("questions");
+
+				questions.add(question);
+			}
+
+			List<Map<String, Object>> result = new ArrayList<>(complaintMap.values());
+
+			response.put("status", "Success");
+			response.put("message", "Vendor Pending List.");
+			response.put("data", result);
+
+		} catch (Exception e) {
+
+			e.printStackTrace();
+
+			response.put("status", "Error");
+			response.put("message", "Something went wrong");
+			response.put("data", null);
+		}
+
+		return response;
+	}
+
+	public Map<String, Object> getvendorPendingList1(String loginid) {
 
 		Map<String, Object> response = new HashMap<>();
 
