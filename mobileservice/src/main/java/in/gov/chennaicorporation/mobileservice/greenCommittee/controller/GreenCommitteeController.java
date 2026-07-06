@@ -47,8 +47,10 @@ public class GreenCommitteeController {
 
 	@GetMapping(value = "/getComplaintList")
 	public List<?> getComplaintList(
-			@RequestParam(value = "loginId", required = true) String loginId) {
-		return greenCommitteeService.getComplaintList(loginId);
+			@RequestParam(value = "loginId", required = true) String loginId,
+			@RequestParam(value = "zone", required = false) String zone,
+			@RequestParam(value = "ward", required = false) String ward) {
+		return greenCommitteeService.getComplaintList(loginId, zone, ward);
 	}
 
 	@PostMapping("/saveInspectionData")

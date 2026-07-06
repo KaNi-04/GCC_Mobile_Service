@@ -351,13 +351,13 @@ public class GreenCommitteeService {
 	// }
 
 	@Transactional(readOnly = true)
-	public List<?> getComplaintList(String loginId) {
+	public List<?> getComplaintList(String loginId, String zone, String ward) {
 
 		// 1️ Get department (GCC / NGO / TNFD)
 		String department = getUserDepartment(loginId);
 
 		// 2️ Get only ref_ids NOT inspected by this department
-		List<String> refIds = getAllinspectionComplaintList(department);
+		List<String> refIds = getAllinspectionComplaintList(department, zone, ward);
 
 		List<Map<String, Object>> dataList = new ArrayList<>();
 
@@ -387,7 +387,44 @@ public class GreenCommitteeService {
 		return jdbcTemplate.queryForObject(sql, String.class, loginId);
 	}
 
-	public List<String> getAllinspectionComplaintList(String inspectionDepartment) {
+	public List<String> getAllinspectionComplaintList(String inspectionDepartment, String zone, String ward) {
+
+		StringBuilder sql = new StringBuilder();
+		List<Object> params = new ArrayList<>();
+
+		sql.append("SELECT rd.ref_id ")
+				.append("FROM reg_details rd ")
+				.append("LEFT JOIN inspection_data id ")
+				.append(" ON rd.ref_id = id.ref_id ")
+				.append(" AND id.inspection_by = ? ")
+				.append(" AND id.isactive = 1 ")
+				.append("WHERE rd.is_active = 1 ")
+				.append(" AND id.ref_id IS NULL ");
+
+		params.add(inspectionDepartment);
+
+		// Apply total_trees condition only for NGO
+		if ("NGO".equalsIgnoreCase(inspectionDepartment)) {
+			sql.append(" AND rd.total_trees > 3 ");
+		}
+
+		if (zone != null && !zone.isEmpty()) {
+			sql.append(" AND rd.zone = ? ");
+			params.add(zone);
+		}
+
+		if (ward != null && !ward.isEmpty()) {
+			sql.append(" AND rd.ward = ? ");
+			params.add(ward);
+		}
+
+		return jdbcTemplate.query(
+				sql.toString(),
+				params.toArray(),
+				(rs, rowNum) -> rs.getString("ref_id"));
+	}
+
+	public List<String> getAllinspectionComplaintList1(String inspectionDepartment, String zone, String ward) {
 
 		String sql = "SELECT rd.ref_id " +
 				"FROM reg_details rd " +
@@ -398,9 +435,21 @@ public class GreenCommitteeService {
 				"WHERE rd.is_active = 1 " +
 				"  AND id.ref_id IS NULL";
 
+		List<Object> params = new ArrayList<>();
+		params.add(inspectionDepartment);
+
+		if (zone != null && !zone.isEmpty()) {
+			sql += " AND rd.zone = ? ";
+			params.add(zone);
+		}
+		if (ward != null && !ward.isEmpty()) {
+			sql += " AND rd.ward = ? ";
+			params.add(ward);
+		}
+
 		return jdbcTemplate.query(
 				sql,
-				new Object[] { inspectionDepartment },
+				params.toArray(),
 				(rs, rowNum) -> rs.getString("ref_id"));
 	}
 
