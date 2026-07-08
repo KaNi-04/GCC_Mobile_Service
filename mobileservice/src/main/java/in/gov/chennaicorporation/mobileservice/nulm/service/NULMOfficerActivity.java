@@ -169,7 +169,13 @@ public class NULMOfficerActivity {
 				+ "       a.inby, "
 				+ "       a.outby, "
 				+ "       a.inphoto, "
-				+ "       a.outphoto "
+				+ "       a.outphoto, "
+				+ "       CASE " +
+				"           WHEN DATE(a.indatetime) = CURDATE() THEN 'Present' " +
+				"           WHEN DATE(a.oddatetime) = CURDATE() THEN 'OD Marked' " +
+				"           WHEN DATE(a.leavedatetime) = CURDATE() THEN 'Leave Marked' " +
+				"           ELSE '' " +
+				"       END AS check "
 				+ "FROM enrollment_table e "
 				+ "LEFT JOIN attendance a ON e.enrollment_id = a.enrollment_id"
 				+ "    AND a.indatetime = ("
@@ -202,7 +208,12 @@ public class NULMOfficerActivity {
 				+ "       a.inby, "
 				+ "       a.outby, "
 				+ "       a.inphoto, "
-				+ "       a.outphoto "
+				+ "       a.outphoto, "
+				+ "      CASE "
+				+ " WHEN DATE(a.oddatetime) = CURDATE() THEN 'OD Marked' "
+				+ " WHEN DATE(a.leavedatetime) = CURDATE() THEN 'Leave Marked' "
+				+ " ELSE '' "
+				+ " END AS check "
 				+ " FROM enrollment_table e "
 				+ " LEFT JOIN attendance a ON e.enrollment_id = a.enrollment_id"
 				+ "    AND a.indatetime = ("
@@ -236,7 +247,12 @@ public class NULMOfficerActivity {
 				+ "       a.inby, "
 				+ "       a.outby, "
 				+ "       a.inphoto, "
-				+ "       a.outphoto "
+				+ "       a.outphoto, "
+				+ "      CASE "
+				+ " WHEN DATE(a.oddatetime) = CURDATE() THEN 'OD Marked' "
+				+ " WHEN DATE(a.leavedatetime) = CURDATE() THEN 'Leave Marked' "
+				+ " ELSE '' "
+				+ " END AS attendance_status "
 				+ " FROM enrollment_table e "
 				+ " LEFT JOIN attendance a ON e.enrollment_id = a.enrollment_id"
 				+ "    AND a.indatetime = ("
@@ -592,6 +608,16 @@ public class NULMOfficerActivity {
 				}
 			} else if ("od".equalsIgnoreCase(action)) {
 				// Mark On Duty (OD) even if no check-in
+
+				String updateSql = "UPDATE attendance " +
+						"SET outdatetime = DATE_ADD(indatetime, INTERVAL 8 HOUR) " +
+						"WHERE enrollment_id = ? " +
+						"AND outdatetime IS NULL " +
+						"ORDER BY indatetime DESC " +
+						"LIMIT 1";
+
+				int rows = jdbcNULMTemplate.update(updateSql, enrollId);
+
 				String sqlQuery = "INSERT INTO attendance (oddatetime, odby, enrollment_id, location, appversion, apptype) "
 						+ "VALUES (?, ?, ?, ?, ?, ?)";
 
@@ -609,6 +635,16 @@ public class NULMOfficerActivity {
 
 			} else if ("leave".equalsIgnoreCase(action)) {
 				// Mark Leave even if no check-in
+
+				String updateSql = "UPDATE attendance " +
+						"SET outdatetime = DATE_ADD(indatetime, INTERVAL 8 HOUR) " +
+						"WHERE enrollment_id = ? " +
+						"AND outdatetime IS NULL " +
+						"ORDER BY indatetime DESC " +
+						"LIMIT 1";
+
+				int rows = jdbcNULMTemplate.update(updateSql, enrollId);
+
 				String sqlQuery = "INSERT INTO attendance (leavedatetime, leaveby, enrollment_id, location, appversion, apptype) "
 						+ "VALUES (?, ?, ?, ?, ?, ?)";
 

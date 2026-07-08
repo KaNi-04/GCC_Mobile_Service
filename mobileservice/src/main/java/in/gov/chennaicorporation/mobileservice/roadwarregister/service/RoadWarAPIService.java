@@ -215,7 +215,7 @@ public class RoadWarAPIService {
 				+ "WHERE "
 				+ "    s.`isactive` = 1"
 				+ "    AND s.`isdelete` = 0 AND (`inby`=?)"
-				+ "    AND s.`strat_id` NOT IN ("
+				+ "    AND s.`start_id` NOT IN ("
 				+ "        SELECT c.`start_id` "
 				+ "        FROM `centre_street_details` c"
 				+ "  )";
@@ -274,9 +274,9 @@ public class RoadWarAPIService {
 
 			sql = "INSERT INTO start_street_details " +
 					"(road_name, road_zone, road_ward, road_id, road_type, " +
-					"manual_zone, manual_ward, inby, start_latitude, start_longitude, start_id, centre_img) " +
+					"manual_zone, manual_ward, inby, start_latitude, start_longitude, start_id, start_img) " +
 					"VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
-			generatedKey[0] = "strat_id";
+			generatedKey[0] = "start_id";
 		} else if ("CENTRE".equalsIgnoreCase(type)) {
 			sql = "INSERT INTO centre_street_details " +
 					"(road_name, road_zone, road_ward, road_id, road_type, " +
@@ -366,10 +366,10 @@ public class RoadWarAPIService {
 
 	public List<Map<String, Object>> getCompletedRoadLists() {
 		String sql = "SELECT "
-				+ "    s.strat_id AS UnicID, "
+				+ "    s.start_id AS UnicID, "
 				+ "    s.road_name AS StreetName, "
 				+ "    JSON_OBJECT("
-				+ "        'strat_id', s.strat_id, "
+				+ "        'start_id', s.start_id, "
 				+ "        'road_name', s.road_name, "
 				+ "        'road_zone', s.road_zone, "
 				+ "        'road_ward', s.road_ward, "
@@ -428,7 +428,7 @@ public class RoadWarAPIService {
 				+ "    ) AS `end` "
 				+ "FROM start_street_details s "
 				+ "INNER JOIN end_street_details e "
-				+ "    ON e.start_id = s.strat_id "
+				+ "    ON e.start_id = s.start_id "
 				+ "WHERE s.isactive = 1 "
 				+ "  AND s.isdelete = 0 "
 				+ "  AND e.isactive = 1 "
