@@ -175,7 +175,7 @@ public class NULMOfficerActivity {
 				"           WHEN DATE(a.oddatetime) = CURDATE() THEN 'OD Marked' " +
 				"           WHEN DATE(a.leavedatetime) = CURDATE() THEN 'Leave Marked' " +
 				"           ELSE '' " +
-				"       END AS check "
+				"       END AS attendance_status "
 				+ "FROM enrollment_table e "
 				+ "LEFT JOIN attendance a ON e.enrollment_id = a.enrollment_id"
 				+ "    AND a.indatetime = ("
@@ -213,7 +213,7 @@ public class NULMOfficerActivity {
 				+ " WHEN DATE(a.oddatetime) = CURDATE() THEN 'OD Marked' "
 				+ " WHEN DATE(a.leavedatetime) = CURDATE() THEN 'Leave Marked' "
 				+ " ELSE '' "
-				+ " END AS check "
+				+ " END AS attendance_status "
 				+ " FROM enrollment_table e "
 				+ " LEFT JOIN attendance a ON e.enrollment_id = a.enrollment_id"
 				+ "    AND a.indatetime = ("
