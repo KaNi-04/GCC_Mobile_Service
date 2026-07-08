@@ -160,15 +160,25 @@ public class PmcController {
     }
     
     
+    @GetMapping("/getfoodswingCategory")
+    public List<Map<String, Object>> getfoodswingCategory(
+            @RequestParam int shiftid,
+            @RequestParam int hub_id,
+            @RequestParam String date) {
+
+        return pmcservice.getfoodswingCategory(shiftid, hub_id, date);
+    }
+    
     @GetMapping("/getfoodswingDataNoCategory")
     public List<Map<String, Object>> getfoodswingDataNoCategory(
             @RequestParam int shiftid,
             @RequestParam int hub_id,
             @RequestParam String date,
             @RequestParam(value = "latitude", required = false) String latitude,
-    		@RequestParam(value = "longitude", required = false) String longitude) {
+    		@RequestParam(value = "longitude", required = false) String longitude,
+            @RequestParam(value = "qcm_id", required = false) Integer qcm_id) {
 
-        return pmcservice.getfoodswingDataNoCategory(shiftid, hub_id, date,latitude,longitude);
+        return pmcservice.getfoodswingDataNoCategory(shiftid, hub_id, date,latitude,longitude,qcm_id);
     }
     
     

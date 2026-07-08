@@ -2406,7 +2406,111 @@ public class PmcService {
 	    return Collections.singletonList(response);
 	}
 	
-	public List<Map<String, Object>> getfoodswingDataNoCategory(int shiftid, int hub_id, String date,String latitude,String longitude) {
+	
+	public List<Map<String, Object>> getfoodswingCategory(int shiftid, int hub_id, String date) {
+
+	    String formattedDate = convertDateFormat(date, 0);
+	    Map<String, Object> response = new HashMap<>();
+
+	    try {
+
+	        //   2. Check audit exists
+	        StringBuilder auditCheckSql = new StringBuilder(
+	                "SELECT id FROM pmc_audit WHERE shiftid=? AND hub_id=? AND isactive=1 AND isdelete=0 "
+	        );
+
+	        List<Object> auditParams = new ArrayList<>();
+	        auditParams.add(shiftid);
+	        auditParams.add(hub_id);
+
+	        if (date != null && !date.trim().isEmpty()) {
+	            auditCheckSql.append(" AND audit_date=? ");
+	            auditParams.add(formattedDate);
+	        }
+
+	        List<Integer> auditIds = jdbcPmcTemplate.query(
+	                auditCheckSql.toString(),
+	                (rs, rowNum) -> rs.getInt("id"),
+	                auditParams.toArray()
+	        );
+
+	        if (auditIds.isEmpty()) {
+	            response.put("message", "No Audit data for " + date +" - shift -"+shiftid);
+	            response.put("status", "Failed");
+	            return Collections.singletonList(response);
+	        }
+
+	        //   3. Fetch data (same query)
+	        StringBuilder reportSql = new StringBuilder();
+
+	        reportSql.append(
+	                "SELECT pa.qcm_id,qcm.code,qcm.audit_category,qcm.penalty,qcm.img_url,qcm.orderby "
+	                + "FROM pmc_audit pa "
+	                + "LEFT JOIN questions_category_master qcm ON qcm.qcm_id=pa.qcm_id AND qcm.isactive=1 AND qcm.isdelete=0 "
+	                + "LEFT JOIN pmc_feedback pf ON pf.pmc_audit_id = pa.id AND pf.isactive=1 AND pf.isdelete=0 AND pf.food_swing_sts is NULL "
+	                + "JOIN pmc_answer_master pam ON pam.aid = pf.answer AND pam.isactive=1 AND pam.isdelete=0 AND pam.opt_mandatory=1 "
+	                + "WHERE pa.shiftid=? AND pa.hub_id=? AND pa.isactive=1 AND pa.isdelete=0 "
+	        );
+
+	        List<Object> params = new ArrayList<>();
+	        params.add(shiftid);
+	        params.add(hub_id);
+
+	        if (date != null && !date.trim().isEmpty()) {
+	            reportSql.append(" AND pa.audit_date=? ");
+	            params.add(formattedDate);
+	        }
+	        reportSql.append(" GROUP BY pa.qcm_id ");
+	        reportSql.append(" ORDER BY qcm.orderby ");
+
+	        
+	        List<Map<String, Object>> result = jdbcPmcTemplate.queryForList(reportSql.toString(), params.toArray());
+	           Iterator<Map<String, Object>> iterator = result.iterator();
+	           ObjectMapper mapper = new ObjectMapper();
+	           while (iterator.hasNext()) {
+	               Map<String, Object> row = iterator.next();
+	               Object optionsRaw = row.get("options");
+	               if (optionsRaw != null && optionsRaw instanceof String) {
+	                   try {
+	                       List<Map<String, Object>> optionsParsed = mapper.readValue((String) optionsRaw, List.class);
+	   
+	                       // Sort options by 'orderby'
+	                       optionsParsed.sort(Comparator.comparing(opt -> {
+	                           Object order = opt.get("orderby");
+	                           return (order instanceof Number) ? ((Number) order).intValue() : 0;
+	                       }));
+	   
+	                       row.put("options", optionsParsed);
+	                   } catch (Exception e) {
+	                       row.put("options", null); // fallback if malformed
+	                   }
+	               }
+	           
+	           }
+
+	        //   5. Final response
+	        response.put("data", result);
+	        response.put("message", "Food Swing Category Details for " + date);
+	        response.put("status", "Success");
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        response.put("message", "Error in getting category data");
+	        response.put("status", "Failed");
+	    }
+
+	    return Collections.singletonList(response);
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	public List<Map<String, Object>> getfoodswingDataNoCategory(int shiftid, int hub_id, String date,String latitude,String longitude,Integer qcm_id) {
 
 	    String formattedDate = convertDateFormat(date, 0);
 	    Map<String, Object> response = new HashMap<>();
@@ -2465,6 +2569,12 @@ public class PmcService {
 	            auditCheckSql.append(" AND audit_date=? ");
 	            auditParams.add(formattedDate);
 	        }
+	        
+	        if (qcm_id != null && qcm_id > 0) {
+	        	auditCheckSql.append(" AND qcm_id=? ");
+	        	auditParams.add(qcm_id);
+	        }
+
 
 	        List<Integer> auditIds = jdbcPmcTemplate.query(
 	                auditCheckSql.toString(),
@@ -2477,6 +2587,8 @@ public class PmcService {
 	            response.put("status", "Failed");
 	            return Collections.singletonList(response);
 	        }
+	        
+	        System.err.println("auditIds=="+auditIds);
 
 	        //   3. Fetch data (same query)
 	        StringBuilder reportSql = new StringBuilder();
@@ -2523,9 +2635,18 @@ public class PmcService {
 	            reportSql.append(" AND pa.audit_date=? ");
 	            params.add(formattedDate);
 	        }
+	        
+	        if (qcm_id != null && qcm_id > 0) {
+	            reportSql.append(" AND pa.qcm_id=? ");
+	            params.add(qcm_id);
+	        }
+	        
+	               	        
 	        reportSql.append(" GROUP BY pf.id ");
 	        reportSql.append(" ORDER BY pq.orderby ");
 
+	        
+	        System.out.println(reportSql.toString());
 	        
 	        List<Map<String, Object>> result = jdbcPmcTemplate.queryForList(reportSql.toString(), params.toArray());
 	           Iterator<Map<String, Object>> iterator = result.iterator();
