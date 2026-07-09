@@ -43,7 +43,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.gov.chennaicorporation.mobileservice.gccactivity.service.DateTimeUtil;
 
 @Service
-public class BusShelterActivity {
+public class BusShelterPosterRemovalActivity {
 	private JdbcTemplate jdbcBusShelterTemplate;
 
 	private final Environment environment;
@@ -59,7 +59,7 @@ public class BusShelterActivity {
 	}
 
 	@Autowired
-	public BusShelterActivity(Environment environment) {
+	public BusShelterPosterRemovalActivity(Environment environment) {
 		this.environment = environment;
 		this.fileBaseUrl = environment.getProperty("fileBaseUrl");
 	}
@@ -175,6 +175,12 @@ public class BusShelterActivity {
 			String longitude,
 			String loginid) {
 
+		String configSql = "SELECT fromdate, todate FROM bus_shelter_activity_master WHERE id = 3 AND isactive = 1";
+
+		Map<String, Object> config = jdbcBusShelterTemplate.queryForMap(configSql);
+		String fromDate = config.get("fromdate").toString();
+		String toDate = config.get("todate").toString();
+
 		String sqlWhere = "";
 		String radius = getConfigValue();
 
@@ -183,38 +189,31 @@ public class BusShelterActivity {
 			sqlWhere += " AND ((6371008.8 * acos(ROUND(cos(radians(" + latitude
 					+ ")) * cos(radians(bsl.latitude)) * cos(radians(bsl.longitude) - radians(" + longitude
 					+ ")) + sin(radians(" + latitude + ")) * sin(radians(bsl.latitude)), 9))) < " + radius + ")"
-					+ " ORDER BY"
-					+ "    bsl.`id` DESC";
+					+ " ORDER BY bsl.`road` ASC";
+		} else {
+			sqlWhere += " ORDER BY bsl.road ASC";
 		}
 
-		String sql = "SELECT  "
-				+ "    bsl.*,  "
-				+ "    CONCAT('" + fileBaseUrl + "/gccofficialapp/files', bsl.image) AS photo, "
-				+ "    bf.type AS qtype, "
-				+ "    DATE_FORMAT(bf.latest_feedback_date, '%d-%m-%Y') AS latestfeedbackdate "
-				+ "FROM  "
-				+ "    bus_shelter_list bsl "
-				+ "LEFT JOIN ( "
-				+ "    SELECT  "
-				+ "        bsf.shelter_id,  "
-				+ "        bsf.type, "
-				+ "        bsf.cdate AS latest_feedback_date "
-				+ "    FROM  "
-				+ "        bus_shelter_feedback bsf "
-				+ "    INNER JOIN ( "
-				+ "        SELECT  "
-				+ "            shelter_id,  "
-				+ "            MAX(id) AS max_id "
-				+ "        FROM  "
-				+ "            bus_shelter_feedback "
-				+ "        GROUP BY shelter_id "
-				+ "    ) latest ON bsf.shelter_id = latest.shelter_id AND bsf.id = latest.max_id "
-				+ ") bf ON bsl.id = bf.shelter_id "
-				+ "WHERE  "
-				+ "    bsl.isactive = 1  "
-				+ "    AND bsl.gcc_app_updated = 0 " + sqlWhere;
+		String sql = "SELECT bsl.*, bsprf.type, bsprf.cdate AS feedbackdate, "
+				+ "CASE "
+				+ "WHEN bsprf.type IS NULL OR bsprf.type = '' THEN 'Before' "
+				+ "WHEN LOWER(bsprf.type) = 'before' THEN 'After' "
+				+ "WHEN LOWER(bsprf.type) = 'after' THEN 'Completed' "
+				+ "ELSE 'Before' END AS current_btn "
+				+ "FROM bus_shelter_list bsl "
+				+ "LEFT JOIN (SELECT t1.* " +
+				"    FROM bus_shelter_poster_removal_feedback t1  " +
+				"    INNER JOIN (  " +
+				"        SELECT shelter_id, MAX(id) AS id  " +
+				"        FROM bus_shelter_poster_removal_feedback  " +
+				"        WHERE isactive = 1  " +
+				"        GROUP BY shelter_id  " +
+				"    ) t2  " +
+				"    ON t1.id = t2.id) bsprf ON bsprf.shelter_id = bsl.id "
+				+ "AND bsprf.isactive = 1 AND DATE(bsprf.cdate) BETWEEN ? AND ? "
+				+ "where bsl.isactive=1 " + sqlWhere;
 		System.out.println(sql);
-		List<Map<String, Object>> result = jdbcBusShelterTemplate.queryForList(sql);
+		List<Map<String, Object>> result = jdbcBusShelterTemplate.queryForList(sql, fromDate, toDate);
 
 		Map<String, Object> response = new HashMap<>();
 		response.put("status", "Success");
@@ -239,13 +238,13 @@ public class BusShelterActivity {
 		// String sql = "SELECT * FROM question_list WHERE isactive=1 AND `pid`=0 AND
 		// `qtype` LIKE ?";
 		String sql = "SELECT ql.id AS question_id, ql.q_english, ql.q_tamil, "
-				+ "ql.isactive, ql.img_required, ql.pid, ql.qtype, ql.feedbacktype, ql.img_is_mandatory, "
+				+ "ql.isactive, ql.img_required,ql.img_is_mandatory, ql.pid, ql.qtype, ql.feedbacktype, "
 				+ "CASE WHEN ql.feedbacktype = 'select' THEN JSON_ARRAYAGG"
 				+ "( JSON_OBJECT( 'option_id', qov.id, 'english_name', qov.english_name, 'tamil_name', "
 				+ "qov.tamil_name, 'value', qov.value, 'isactive', qov.isactive, 'isdelete', qov.isdelete ) ) "
 				+ "ELSE NULL END AS options FROM question_list ql "
 				+ "LEFT JOIN q_option_value qov ON qov.qid = ql.id "
-				+ "AND ql.feedbacktype = 'select' WHERE ql.isactive = 1 AND `pid`=0 AND `qtype` LIKE ? GROUP BY ql.id";
+				+ "AND ql.feedbacktype = 'select' WHERE ql.isactive = 1 AND ql.`typeid`=3 AND `pid`=0 AND `qtype` LIKE ? GROUP BY ql.id ORDER BY ql.orderby ASC";
 
 		List<Map<String, Object>> result = jdbcBusShelterTemplate.queryForList(sql, "%" + qtype + "%");
 
@@ -281,10 +280,10 @@ public class BusShelterActivity {
 		return Collections.singletonList(response);
 	}
 
-	public String inactiveFeedBack(String type, String toilet_id) {
+	public String inactiveFeedBack(String type, String shelter_id) {
 
-		String sql = "UPDATE `bus_shelter_feedback` SET `isactive`=0 WHERE DATE(`bus_shelter_feedback`.`cdate`) = CURDATE() AND `type`= ? AND `shelter_id`=?";
-		jdbcBusShelterTemplate.update(sql, type, toilet_id);
+		String sql = "UPDATE `bus_shelter_poster_removal_feedback` SET `isactive`=0 WHERE DATE(`cdate`) = CURDATE() AND `type`= ? AND `shelter_id`=?";
+		jdbcBusShelterTemplate.update(sql, type, shelter_id);
 
 		return "sussess";
 	}
@@ -416,9 +415,9 @@ public class BusShelterActivity {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 		String todayDate = today.format(formatter);
 
-		inactiveFeedBack(type, shelter_id); // Upadte already insert data.
+		// inactiveFeedBack(type, shelter_id); // Upadte already insert data.
 
-		String sqlQuery = "INSERT INTO `bus_shelter_feedback`("
+		String sqlQuery = "INSERT INTO `bus_shelter_poster_removal_feedback`("
 				+ "`shelter_id`, `cby`, "
 				+ "`q1`, `q2`, `q3`, `q4`, `q5`, `q6`, `q7`, `q8`, `q9`, `q10`, `q11`, "
 				+ "`remarks`,`latitude`, `longitude`,`zone`,`ward`,`type`,`image`,"
@@ -503,4 +502,177 @@ public class BusShelterActivity {
 		return Collections.singletonList(response);
 	}
 
+	// Reports
+
+	public List<Map<String, Object>> getZoneReport(String loginid) {
+
+		String configSql = "SELECT fromdate, todate FROM bus_shelter_activity_master WHERE id = 3 AND isactive = 1";
+
+		Map<String, Object> config = jdbcBusShelterTemplate.queryForMap(configSql);
+		String fromDate = config.get("fromdate").toString();
+		String toDate = config.get("todate").toString();
+
+		String sql = "SELECT"
+				+ "    IFNULL(CAST(bsl.zone AS CHAR), 'Grand Total') AS zone,"
+				+ "    COUNT(DISTINCT bsl.id) AS total_bus_shelter,"
+				+ "    COUNT(DISTINCT CASE"
+				+ "        WHEN fb.before_cnt > 0 AND fb.after_cnt > 0"
+				+ "        THEN bsl.id"
+				+ "    END) AS completed,"
+				+ "    COUNT(DISTINCT bsl.id) - COUNT(DISTINCT CASE"
+				+ "        WHEN fb.before_cnt > 0 AND fb.after_cnt > 0"
+				+ "        THEN bsl.id"
+				+ "    END) AS pending "
+				+ "FROM bus_shelter_list bsl "
+				+ "LEFT JOIN ("
+				+ "    SELECT"
+				+ "        shelter_id,"
+				+ "        SUM(type='before') AS before_cnt,"
+				+ "        SUM(type='after') AS after_cnt"
+				+ "    FROM bus_shelter_poster_removal_feedback "
+				+ "    WHERE isactive = 1 AND DATE(cdate) BETWEEN ? AND ? "
+				+ "    GROUP BY shelter_id "
+				+ ") fb ON fb.shelter_id = bsl.id "
+				+ "WHERE bsl.isactive = 1 "
+				+ "GROUP BY bsl.zone WITH ROLLUP";
+
+		List<Map<String, Object>> result = jdbcBusShelterTemplate.queryForList(sql, fromDate, toDate);
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("status", "Success");
+		response.put("message", "Bus Shelter Zone Report.");
+		response.put("fromDate", fromDate);
+		response.put("toDate", toDate);
+		response.put("data", result);
+
+		return Collections.singletonList(response);
+	}
+
+	public List<Map<String, Object>> getWardReport(String loginid, String zone) {
+
+		String configSql = "SELECT fromdate, todate FROM bus_shelter_activity_master WHERE id = 3 AND isactive = 1";
+
+		Map<String, Object> config = jdbcBusShelterTemplate.queryForMap(configSql);
+		String fromDate = config.get("fromdate").toString();
+		String toDate = config.get("todate").toString();
+
+		String sql = "SELECT"
+				+ "    IFNULL(CAST(bsl.ward AS CHAR), 'Grand Total') AS ward,"
+				+ "    COUNT(DISTINCT bsl.id) AS total_bus_shelter,"
+				+ "    COUNT(DISTINCT CASE"
+				+ "        WHEN fb.before_cnt > 0 AND fb.after_cnt > 0"
+				+ "        THEN bsl.id"
+				+ "    END) AS completed,"
+				+ "    COUNT(DISTINCT bsl.id) -"
+				+ "    COUNT(DISTINCT CASE"
+				+ "        WHEN fb.before_cnt > 0 AND fb.after_cnt > 0"
+				+ "        THEN bsl.id"
+				+ "    END) AS pending "
+				+ "FROM bus_shelter_list bsl "
+				+ "LEFT JOIN ("
+				+ "    SELECT"
+				+ "        shelter_id,"
+				+ "        SUM(type='before') AS before_cnt,"
+				+ "        SUM(type='after') AS after_cnt"
+				+ "    FROM bus_shelter_poster_removal_feedback"
+				+ "    WHERE isactive = 1 AND DATE(cdate) BETWEEN ? AND ?"
+				+ "    GROUP BY shelter_id "
+				+ ") fb ON fb.shelter_id = bsl.id "
+				+ "WHERE bsl.isactive = 1 "
+				+ "AND bsl.zone = ? "
+				+ "GROUP BY bsl.ward WITH ROLLUP";
+
+		List<Map<String, Object>> result = jdbcBusShelterTemplate.queryForList(sql, fromDate, toDate, zone);
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("status", "Success");
+		response.put("message", "Bus Shelter Ward Report.");
+		response.put("data", result);
+
+		return Collections.singletonList(response);
+	}
+
+	public List<Map<String, Object>> getCompletedReport(String loginid, String ward) {
+
+		String configSql = "SELECT fromdate, todate FROM bus_shelter_activity_master WHERE id = 3 AND isactive = 1";
+
+		Map<String, Object> config = jdbcBusShelterTemplate.queryForMap(configSql);
+		String fromDate = config.get("fromdate").toString();
+		String toDate = config.get("todate").toString();
+
+		String sql = "SELECT "
+				+ "    bsl.*, "
+				+ ""
+				+ "    MAX(CASE WHEN bsprf.type='before' THEN bsprf.cdate END) AS before_cdate, "
+				+ "    MAX(CASE WHEN bsprf.type='after' THEN bsprf.cdate END) AS after_cdate, "
+				+ ""
+				+ "    MAX(CASE WHEN bsprf.type='before' THEN CONCAT('" + fileBaseUrl
+				+ "/gccofficialapp/files', bsprf.q5_image) END) AS before_image, "
+				+ "    MAX(CASE WHEN bsprf.type='after' THEN CONCAT('" + fileBaseUrl
+				+ "/gccofficialapp/files', bsprf.q6_image) END) AS after_image "
+				+ ""
+				+ "FROM bus_shelter_list bsl "
+				+ "JOIN bus_shelter_poster_removal_feedback bsprf "
+				+ "ON bsprf.shelter_id=bsl.id "
+				+ "AND bsprf.isactive=1 AND DATE(bsprf.cdate) BETWEEN ? AND ? "
+				+ "WHERE bsl.ward=? "
+				+ "AND bsl.isactive=1 "
+
+				+ "GROUP BY bsl.id "
+
+				+ "HAVING "
+				+ "SUM(bsprf.type='before')>0 "
+				+ "AND "
+				+ "SUM(bsprf.type='after')>0 "
+				+ ""
+				+ "ORDER BY bsl.road";
+
+		List<Map<String, Object>> result = jdbcBusShelterTemplate.queryForList(sql, fromDate, toDate, ward);
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("status", "Success");
+		response.put("message", "Bus Shelter Completed Report.");
+		response.put("data", result);
+
+		return Collections.singletonList(response);
+	}
+
+	public List<Map<String, Object>> getPendingReport(String loginid, String ward) {
+
+		String configSql = "SELECT fromdate, todate FROM bus_shelter_activity_master WHERE id = 3 AND isactive = 1";
+
+		Map<String, Object> config = jdbcBusShelterTemplate.queryForMap(configSql);
+		String fromDate = config.get("fromdate").toString();
+		String toDate = config.get("todate").toString();
+
+		String sql = "SELECT bsl.* "
+				+ "FROM bus_shelter_list bsl "
+				+ "LEFT JOIN ( "
+				+ "    SELECT "
+				+ "        shelter_id, "
+				+ "        SUM(type='before') before_cnt, "
+				+ "        SUM(type='after') after_cnt "
+				+ "    FROM bus_shelter_poster_removal_feedback "
+				+ "    WHERE isactive=1 AND DATE(cdate) BETWEEN ? AND ? "
+				+ "    GROUP BY shelter_id "
+				+ ") fb"
+				+ " ON fb.shelter_id=bsl.id "
+				+ "WHERE bsl.ward=? "
+				+ "AND bsl.isactive=1 "
+				+ "AND ("
+				+ "    fb.before_cnt IS NULL "
+				+ " "
+				+ "    OR fb.after_cnt IS NULL "
+				+ ") "
+				+ "ORDER BY bsl.road ";
+
+		List<Map<String, Object>> result = jdbcBusShelterTemplate.queryForList(sql, fromDate, toDate, ward);
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("status", "Success");
+		response.put("message", "Bus Shelter Pending Report.");
+		response.put("data", result);
+
+		return Collections.singletonList(response);
+	}
 }

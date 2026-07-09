@@ -215,8 +215,8 @@ public class RoadWarAPIService {
 				+ "WHERE "
 				+ "    s.`isactive` = 1"
 				+ "    AND s.`isdelete` = 0 AND (`inby`=?)"
-				+ "    AND s.`start_id` NOT IN ("
-				+ "        SELECT c.`start_id` "
+				+ "    AND s.`road_id` NOT IN ("
+				+ "        SELECT c.`road_id` "
 				+ "        FROM `centre_street_details` c"
 				+ "  )";
 		List<Map<String, Object>> result = jdbcRoadWar.queryForList(sql, inby);
@@ -486,7 +486,7 @@ public class RoadWarAPIService {
 				+ "WHERE "
 				+ "    s.`isactive` = 1"
 				+ "    AND s.`isdelete` = 0 AND (`inby`=?)"
-				+ "    AND s.`start_id` NOT IN ("
+				+ "    AND s.`road_id` NOT IN ("
 				+ "        SELECT e.`start_id` "
 				+ "        FROM `end_street_details` e"
 				+ "  )";
