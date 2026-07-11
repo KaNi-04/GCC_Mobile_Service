@@ -76,6 +76,21 @@ public class ChildSurveyApiController {
                 "message", result));
     }
 
+    @PostMapping(value = "/save", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> saveSurveyJson(@RequestBody Map<String, Object> jsonParams) {
+        Map<String, String> params = new HashMap<>();
+        if (jsonParams != null) {
+            for (Map.Entry<String, Object> entry : jsonParams.entrySet()) {
+                params.put(entry.getKey(), entry.getValue() == null ? "" : entry.getValue().toString());
+            }
+        }
+        String result = childSurveyService.saveSurveyFromParams(params);
+
+        return ResponseEntity.ok(Map.of(
+                "status", true,
+                "message", result));
+    }
+
     @PostMapping(value = "/save_1", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE,
             MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<?> saveParticipateSurvey(@RequestParam Map<String, String> params) {

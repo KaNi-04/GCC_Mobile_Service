@@ -639,6 +639,17 @@ public class DataSourceConfig {
 		dataSource.setPassword(dbpassword);
 		return dataSource;
 	}
+	
+	////////////////////////////// For Rag Picker Survey ////////////////////////
+	@Bean(name = "mysqlRagPickerSurveyDataSource")
+	public DataSource mysqlRagPickerSurveyDataSource() {
+		DriverManagerDataSource dataSource = new DriverManagerDataSource();
+		dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+		dataSource.setUrl("jdbc:mysql://" + host + "/gcc_rag_pick_survey");
+		dataSource.setUsername("root");
+		dataSource.setPassword(dbpassword);
+		return dataSource;
+	}
 
 	////////// Tenements//////////////////////
 	@Bean(name = "mysqlTenementDataSource")

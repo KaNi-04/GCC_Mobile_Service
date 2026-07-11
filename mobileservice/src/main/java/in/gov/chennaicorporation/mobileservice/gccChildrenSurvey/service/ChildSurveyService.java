@@ -13,6 +13,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+
 @Service
 public class ChildSurveyService {
 
@@ -99,7 +102,7 @@ public class ChildSurveyService {
 
         if (masterTable != null && !masterTable.isEmpty()) {
             options = getOptionsFromMaster(masterTable, qid);
-        } 
+        }
 
         questionMap.put("options", options);
 
@@ -357,6 +360,47 @@ public class ChildSurveyService {
             }
         }
 
+        // Detect and save family members details if passed as JSON string
+        String familyMembersJson = params.get("family_members");
+        if (familyMembersJson == null) {
+            familyMembersJson = params.get("familyMembers");
+        }
+        if (familyMembersJson == null) {
+            familyMembersJson = params.get("treeData");
+        }
+
+        // We will keep a list of keys that were parsed as family members JSON to skip
+        // them in the main q-param loop
+        List<String> parsedJsonKeys = new ArrayList<>();
+        if (familyMembersJson != null && !familyMembersJson.trim().isEmpty()
+                && familyMembersJson.trim().startsWith("[")) {
+            try {
+                List<Map<String, Object>> familyList = parseFamilyMembersJson(familyMembersJson);
+                if (familyList != null && !familyList.isEmpty()) {
+                    saveFamilyMembers(familyList, surveyId, cby);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Also check if any qX parameter contains the JSON list of family members
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            String fieldName = entry.getKey().trim();
+            String answer = entry.getValue() == null ? "" : entry.getValue().trim();
+            if (fieldName.startsWith("q") && answer.startsWith("[") && answer.endsWith("]")) {
+                try {
+                    List<Map<String, Object>> familyList = parseFamilyMembersJson(answer);
+                    if (familyList != null && !familyList.isEmpty()) {
+                        saveFamilyMembers(familyList, surveyId, cby);
+                        parsedJsonKeys.add(fieldName);
+                    }
+                } catch (Exception e) {
+                    // Ignore, not a valid JSON list, process as normal q parameter
+                }
+            }
+        }
+
         String insertSql = "INSERT INTO child_survey_response " +
                 "(survey_id, qid, answer, others_answer, cby, parent_answer_id, cdate, isactive, isdelete) " +
                 "VALUES (?, ?, ?, ?, ?, ?, NOW(), 1, 0)";
@@ -364,6 +408,9 @@ public class ChildSurveyService {
         for (Map.Entry<String, String> entry : params.entrySet()) {
 
             String fieldName = entry.getKey().trim(); // q1, q2...
+            if (parsedJsonKeys.contains(fieldName)) {
+                continue;
+            }
             String answer = entry.getValue() == null ? "" : entry.getValue().trim();
 
             // System.out.println("👉 Processing: " + fieldName);
@@ -574,6 +621,194 @@ public class ChildSurveyService {
             e.printStackTrace();
             throw new RuntimeException("Error fetching batch details: " + e.getMessage());
         }
+    }
+
+    private void saveFamilyMembers(List<Map<String, Object>> familyList, String surveyId, String cby) {
+        if (familyList == null || familyList.isEmpty()) {
+            return;
+        }
+
+        String insertFamilySql = "INSERT INTO child_survey_response_family_members " +
+                "(qid, answer, others_answer, cby, survey_id, parent_answer_id, cdate, isactive, isdelete) " +
+                "VALUES (?, ?, ?, ?, ?, ?, NOW(), 1, 0)";
+
+        for (Map<String, Object> member : familyList) {
+            for (Map.Entry<String, Object> field : member.entrySet()) {
+                String key = field.getKey().trim();
+                Object valObj = field.getValue();
+                String answer = valObj == null ? "" : valObj.toString().trim();
+
+                // Skip utility/metadata keys if any
+                if ("parent_answer_id".equalsIgnoreCase(key) || "parent_aid".equalsIgnoreCase(key)) {
+                    continue;
+                }
+
+                // Resolve qid
+                Integer qid = null;
+                if (key.startsWith("q")) {
+                    try {
+                        qid = Integer.parseInt(key.substring(1));
+                    } catch (Exception e) {
+                        // ignore
+                    }
+                } else {
+                    try {
+                        qid = Integer.parseInt(key);
+                    } catch (Exception e) {
+                        // ignore
+                    }
+                }
+
+                // If not numeric/q-prefixed, resolve statically first
+                if (qid == null) {
+                    String cleanKey = key.toLowerCase().trim();
+                    if ("name".equals(cleanKey)) {
+                        qid = 6;
+                    } else if ("gender".equals(cleanKey)) {
+                        qid = 7;
+                    } else if ("age".equals(cleanKey)) {
+                        qid = 10;
+                    } else if ("relationship".equals(cleanKey)) {
+                        qid = 21;
+                    } else if ("education".equals(cleanKey)) {
+                        qid = 26;
+                    } else if ("occupation".equals(cleanKey)) {
+                        qid = 22;
+                    }
+                }
+
+                // Fallback: If still null, try resolving by field_name or matching q_english
+                // (case-insensitive) from DB without active/delete constraint
+                if (qid == null) {
+                    try {
+                        String cleanKey = key.toLowerCase().trim();
+                        String getQidSql = "SELECT qid FROM child_survey_questions_master " +
+                                "WHERE (LOWER(field_name) = ? OR LOWER(q_english) = ? OR LOWER(q_english) LIKE ?) LIMIT 1";
+                        List<Integer> qidList = jdbcChildSurveyTemplate.queryForList(getQidSql, Integer.class,
+                                cleanKey, cleanKey, cleanKey + "%");
+                        if (!qidList.isEmpty()) {
+                            qid = qidList.get(0);
+                        }
+                    } catch (Exception e) {
+                        // ignore
+                    }
+                }
+
+                if (qid != null) {
+                    // Extract parent_answer_id (if any is provided in the member object or resolved
+                    // from mapping)
+                    Integer parentAnswerId = null;
+                    Object parentAidVal = member.get("parent_answer_id");
+                    if (parentAidVal == null) {
+                        parentAidVal = member.get("parent_aid");
+                    }
+                    if (parentAidVal != null) {
+                        try {
+                            parentAnswerId = Integer.parseInt(parentAidVal.toString());
+                        } catch (Exception e) {
+                            // ignore
+                        }
+                    }
+
+                    // If still null, try resolving statically
+                    if (parentAnswerId == null) {
+                        if (qid == 10) {
+                            parentAnswerId = 1;
+                        } else if (qid == 21) {
+                            parentAnswerId = 8;
+                        } else if (qid == 26) {
+                            parentAnswerId = 9;
+                        } else if (qid == 22) {
+                            parentAnswerId = 5;
+                        }
+                    }
+
+                    // Fallback: If still null, try resolving from mapping table (without
+                    // active/delete constraint)
+                    if (parentAnswerId == null) {
+                        try {
+                            String parentAidSql = "SELECT parent_aid FROM child_question_mapping WHERE child_qid = ? LIMIT 1";
+                            List<Integer> list = jdbcChildSurveyTemplate.queryForList(parentAidSql, Integer.class, qid);
+                            if (!list.isEmpty()) {
+                                parentAnswerId = list.get(0);
+                            }
+                        } catch (Exception e) {
+                            // ignore
+                        }
+                    }
+
+                    // Extract others_answer if any
+                    String othersKey = key + "_other";
+                    Object othersValObj = member.get(othersKey);
+                    String othersValue = othersValObj == null ? "" : othersValObj.toString().trim();
+
+                    // Insert to child_survey_response_family_members
+                    try {
+                        jdbcChildSurveyTemplate.update(insertFamilySql, qid, answer, othersValue, cby, surveyId,
+                                parentAnswerId);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+    }
+
+    private List<Map<String, Object>> parseFamilyMembersJson(String jsonStr) {
+        if (jsonStr == null || jsonStr.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        String str = jsonStr.trim();
+        // First try parsing using standard ObjectMapper
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(str, new TypeReference<List<Map<String, Object>>>() {
+            });
+        } catch (Exception e) {
+            // Ignore standard JSON parsing exception, try lenient fallback
+        }
+
+        // Lenient parsing fallback
+        List<Map<String, Object>> list = new ArrayList<>();
+        try {
+            if (str.startsWith("[")) {
+                str = str.substring(1);
+            }
+            if (str.endsWith("]")) {
+                str = str.substring(0, str.length() - 1);
+            }
+            str = str.trim();
+            if (str.isEmpty()) {
+                return list;
+            }
+
+            // Match all occurrences of { ... }
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\{([^}]+)\\}");
+            java.util.regex.Matcher matcher = pattern.matcher(str);
+            while (matcher.find()) {
+                String objContent = matcher.group(1);
+                Map<String, Object> map = new LinkedHashMap<>();
+                String[] pairs = objContent.split(",");
+                for (String pair : pairs) {
+                    int colonIdx = pair.indexOf(':');
+                    if (colonIdx != -1) {
+                        String key = pair.substring(0, colonIdx).trim();
+                        String value = pair.substring(colonIdx + 1).trim();
+                        if ((value.startsWith("\"") && value.endsWith("\""))
+                                || (value.startsWith("'") && value.endsWith("'"))) {
+                            value = value.substring(1, value.length() - 1);
+                        }
+                        map.put(key, value);
+                    }
+                }
+                if (!map.isEmpty()) {
+                    list.add(map);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
 }
