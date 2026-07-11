@@ -154,10 +154,10 @@ public class BusShelterPosterRemovalActivity {
 	}
 
 	//////////////////////////////
-	public String getConfigValue() {
-		String sqlQuery = "SELECT `id`, `lat_long_radius` FROM `config` LIMIT 1";
+	public String getConfigValue(int id) {
+		String sqlQuery = "SELECT `id`, `lat_long_radius` FROM `config` where id = ? LIMIT 1";
 		String value = "50"; // default fallback value
-		List<Map<String, Object>> results = jdbcBusShelterTemplate.queryForList(sqlQuery);
+		List<Map<String, Object>> results = jdbcBusShelterTemplate.queryForList(sqlQuery, id);
 
 		if (!results.isEmpty()) {
 			Map<String, Object> row = results.get(0);
@@ -182,7 +182,7 @@ public class BusShelterPosterRemovalActivity {
 		String toDate = config.get("todate").toString();
 
 		String sqlWhere = "";
-		String radius = getConfigValue();
+		String radius = getConfigValue(1);
 
 		if (latitude != null && longitude != null && !latitude.isBlank() && !latitude.isEmpty() && !longitude.isBlank()
 				&& !longitude.isEmpty()) {
@@ -288,6 +288,46 @@ public class BusShelterPosterRemovalActivity {
 		return "sussess";
 	}
 
+	private boolean isWithinMeters(String shelterId, String userLat, String userLng, double radius) {
+
+		String sql = "SELECT latitude, longitude FROM bus_shelter_list WHERE id = ? AND isactive = 1 LIMIT 1";
+
+		List<Map<String, Object>> list = jdbcBusShelterTemplate.queryForList(sql, shelterId);
+
+		if (list.isEmpty()) {
+			return false;
+		}
+
+		double assetLat = Double.parseDouble(list.get(0).get("latitude").toString());
+		double assetLng = Double.parseDouble(list.get(0).get("longitude").toString());
+
+		double lat = Double.parseDouble(userLat);
+		double lng = Double.parseDouble(userLng);
+
+		double distance = calculateDistance(assetLat, assetLng, lat, lng);
+
+		return distance <= radius;
+	}
+
+	private double calculateDistance(double lat1, double lon1,
+			double lat2, double lon2) {
+
+		final int EARTH_RADIUS = 6371000; // meters
+
+		double dLat = Math.toRadians(lat2 - lat1);
+		double dLon = Math.toRadians(lon2 - lon1);
+
+		double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+				+ Math.cos(Math.toRadians(lat1))
+						* Math.cos(Math.toRadians(lat2))
+						* Math.sin(dLon / 2)
+						* Math.sin(dLon / 2);
+
+		double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+		return EARTH_RADIUS * c;
+	}
+
 	@Transactional
 	public List<Map<String, Object>> saveFeedback(
 			String shelter_id,
@@ -324,6 +364,16 @@ public class BusShelterPosterRemovalActivity {
 			String type) {
 		List<Map<String, Object>> result = null;
 		Map<String, Object> response = new HashMap<>();
+
+		double radius = Double.parseDouble(getConfigValue(2)); // Get Check radius from config
+		if (!isWithinMeters(shelter_id, latitude, longitude, radius)) {
+
+			response.put("status", "error");
+			response.put("message", "You must be within " + radius + " meters of the Bus Shelter.");
+
+			return Collections.singletonList(response);
+		}
+
 		int lastInsertId = 0;
 
 		String image = "";
