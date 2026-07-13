@@ -372,6 +372,37 @@ public class ChildSurveyService {
         // We will keep a list of keys that were parsed as family members JSON to skip
         // them in the main q-param loop
         List<String> parsedJsonKeys = new ArrayList<>();
+
+        // Group and parse family members sent as structured parameters like q58[0][name]
+        Map<String, Map<Integer, Map<String, Object>>> structuredFamilyMap = new HashMap<>();
+        java.util.regex.Pattern structPattern = java.util.regex.Pattern.compile("^q(\\d+)\\[(\\d+)\\]\\[([a-zA-Z0-9_]+)\\]$");
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            String key = entry.getKey().trim();
+            String val = entry.getValue() == null ? "" : entry.getValue().trim();
+            java.util.regex.Matcher m = structPattern.matcher(key);
+            if (m.matches()) {
+                String qidStr = m.group(1);
+                String qPrefix = "q" + qidStr;
+                int index = Integer.parseInt(m.group(2));
+                String prop = m.group(3);
+                
+                structuredFamilyMap.computeIfAbsent(qPrefix, k -> new java.util.TreeMap<>())
+                                   .computeIfAbsent(index, k -> new LinkedHashMap<>())
+                                   .put(prop, val);
+                
+                // Track this key to skip in the normal parameter loop
+                parsedJsonKeys.add(key);
+                // Also track the parent key (like "q58") to skip it
+                parsedJsonKeys.add(qPrefix);
+            }
+        }
+        // Save the grouped structured family members
+        for (Map.Entry<String, Map<Integer, Map<String, Object>>> entry : structuredFamilyMap.entrySet()) {
+            List<Map<String, Object>> familyList = new ArrayList<>(entry.getValue().values());
+            if (!familyList.isEmpty()) {
+                saveFamilyMembers(familyList, surveyId, cby);
+            }
+        }
         if (familyMembersJson != null && !familyMembersJson.trim().isEmpty()
                 && familyMembersJson.trim().startsWith("[")) {
             try {
