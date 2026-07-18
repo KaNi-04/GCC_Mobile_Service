@@ -270,6 +270,14 @@ public class RoadWarAPIService {
 		String sql;
 		String[] generatedKey = new String[1];
 
+		String existsql = "select count(*) from start_street_details where road_id = ? and isactive=1 and isdelete=0";
+		int exists = jdbcRoadWar.queryForObject(existsql, Integer.class, roadId);
+		if (exists > 0) {
+			response.put("status", "error");
+			response.put("message", "Road already exists.");
+			return response;
+		}
+
 		if ("START".equalsIgnoreCase(type)) {
 
 			sql = "INSERT INTO start_street_details " +
